@@ -23,12 +23,12 @@ Distributed Systems 2019-2020, 2nd semester project
 | Task set | To-Do                         | Leader              |
 | ---------|-------------------------------| --------------------|
 | core     | protocol buffers, silo-client | _(whole team)_      |
-| T1       | cam_join, cam_info, eye       | __ |
-| T2       | report, spotter               | __       |
-| T3       | track, trackMatch, trace      | __     |
-| T4       | test T1                       | __     |
-| T5       | test T2                       | __ |
-| T6       | test T3                       | __       |
+| T1       | cam_join, cam_info, eye       | _Afonso Gonçalves_  |
+| T2       | report, spotter               | _Daniel Seara_      |
+| T3       | track, trackMatch, trace      | _Marcelo Santos_    |
+| T4       | test T1                       | _Daniel Seara_      |
+| T5       | test T2                       | _Marcelo Santos_    |
+| T6       | test T3                       | _Afonso Gonçalves_  |
 
 
 ## Getting Started
