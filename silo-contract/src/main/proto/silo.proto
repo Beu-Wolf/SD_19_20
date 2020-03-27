@@ -4,3 +4,118 @@
 syntax = "proto3";
 package pt.tecnico.sauron.silo.grpc;
 
+import "google/type/latlng.proto";
+import "google/protobuf/timestamp.proto";
+
+message Cam {
+    string name = 1;
+    google.type.LatLng coords = 2;
+}
+
+message JoinRequest {
+    Cam cam = 1;
+}
+
+message JoinResponse {
+    // empty
+    // On error, status message will be sent
+}
+
+message InfoRequest {
+    string name = 1;
+}
+
+message InfoResponse {
+    google.type.LatLng coords = 1;
+}
+
+enum ObservationType {
+    UNSPEC = 0;
+    CAR = 1;
+    PERSON = 2;
+}
+
+message Observation {
+    ObservationType type = 1;
+    string id = 2;
+}
+
+message ReportResponse {
+    // empty
+}
+
+service ReportService {
+    rpc CamJoin(JoinRequest) returns (JoinResponse);
+    rpc CamInfo(InfoRequest) returns (InfoResponse);
+    rpc Report(stream Observation) returns (ReportResponse);
+}
+
+message QueryRequest {
+    ObservationType type = 1;
+    string id = 2;
+}
+
+message QueryResponse {
+    Observation observation = 1;
+    google.protobuf.Timestamp timestamp = 2;
+    Cam cam = 3;
+}
+
+service QueryService {
+    rpc Track (QueryRequest) returns (QueryResponse);
+    rpc TrackMatch (QueryRequest) returns (stream QueryResponse);
+    rpc Trace (QueryRequest) returns (stream QueryResponse);
+}
+
+message PingRequest {
+    string text = 1;
+}
+
+message PingResponse {
+    string text = 1;
+}
+
+message ClearRequest {
+    // empty
+}
+
+message ClearResponse {
+    // empty
+}
+
+message InitRequest {
+    // TODO ???
+}
+
+message InitResponse {
+    // TODO ???
+}
+
+service ControlService {
+    rpc Ping(PingRequest) returns (PingResponse);
+    rpc Clear(ClearRequest) returns (ClearResponse);
+    rpc Init(InitRequest) returns (InitResponse);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
