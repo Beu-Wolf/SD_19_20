@@ -31,14 +31,10 @@ public class SiloServerApp {
 
 		try {
 			server.start();
+			System.out.println("Server started");
+			server.awaitTermination();
 		} catch(IOException e) {
 			System.err.println("Error starting server at port: " + port);
-		}
-
-
-		System.out.println("Server started");
-		try {
-			server.awaitTermination();
 		} catch (InterruptedException e) {
 			System.err.println("Error terminating server at port: " + port);
 			Thread.currentThread().interrupt();
