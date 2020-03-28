@@ -18,7 +18,7 @@ public class BaseIT {
 		testProps = new Properties();
 
 		try {
-			testProps.load(PingIT.class.getResourceAsStream(TEST_PROP_FILE));
+			testProps.load(BaseIT.class.getResourceAsStream(TEST_PROP_FILE));
 			System.out.println("Test properties:");
 			System.out.println(testProps);
 		}catch (IOException e) {
