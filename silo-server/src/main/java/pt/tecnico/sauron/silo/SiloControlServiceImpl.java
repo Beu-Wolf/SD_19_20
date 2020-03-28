@@ -2,6 +2,8 @@ package pt.tecnico.sauron.silo;
 
 import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.*;
+
+import pt.tecnico.sauron.silo.domain.exceptions.ErrorMessages;
 import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.Silo;
 
@@ -12,7 +14,7 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
         String input = request.getText();
 
         if (input == null || input.isBlank()) {
-            responseObserver.onError(INVALID_ARGUMENT.withDescription("Input cannot be blank!").asRuntimeException());
+            responseObserver.onError(INVALID_ARGUMENT.withDescription(ErrorMessages.BLANK_INPUT.getLabel()).asRuntimeException());
             return;
         }
 
