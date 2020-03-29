@@ -1,9 +1,7 @@
 package pt.tecnico.sauron.silo;
 
 
-import io.grpc.BindableService;
-import io.grpc.Server;
-import io.grpc.ServerBuilder;
+import io.grpc.*;
 
 import java.io.IOException;
 
@@ -25,13 +23,10 @@ public class SiloServerApp {
 		}
 
 		final int port = Integer.parseInt(args[0]);
-		final BindableService impl = new SiloControlServiceImpl();
-
-		Server server = ServerBuilder.forPort(port).addService(impl).build();
 
 		try {
+			SiloServer server = new SiloServer(port);
 			server.start();
-			System.out.println("Server started");
 			server.awaitTermination();
 		} catch(IOException e) {
 			System.err.println("Error starting server at port: " + port);
