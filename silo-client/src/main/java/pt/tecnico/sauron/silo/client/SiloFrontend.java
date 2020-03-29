@@ -16,8 +16,10 @@ public class SiloFrontend {
         _ctrlStub = ControlServiceGrpc.newBlockingStub(_channel);
     }
 
-    public Silo.PingResponse ctrlPing(Silo.PingRequest request) {
-        return _ctrlStub.ping(request);
+    public String ctrlPing(String sentence) {
+        Silo.PingRequest request = Silo.PingRequest.newBuilder().setText(sentence).build();
+        Silo.PingResponse response = _ctrlStub.ping(request);
+        return response.getText();
     }
 
     public void shutdown() {

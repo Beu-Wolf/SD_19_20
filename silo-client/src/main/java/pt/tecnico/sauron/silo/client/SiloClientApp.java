@@ -2,7 +2,6 @@ package pt.tecnico.sauron.silo.client;
 
 
 import io.grpc.StatusRuntimeException;
-import pt.tecnico.sauron.silo.grpc.Silo;
 
 public class SiloClientApp {
 	
@@ -26,9 +25,9 @@ public class SiloClientApp {
 
 		SiloFrontend siloFrontend = new SiloFrontend(host, port);
 		try {
-			Silo.PingRequest request = Silo.PingRequest.newBuilder().setText("friend").build();
-			Silo.PingResponse response = siloFrontend.ctrlPing(request);
-			System.out.println(response.getText());
+			String sentence = "friend";
+			String response = siloFrontend.ctrlPing(sentence);
+			System.out.println(response);
 		} catch (StatusRuntimeException e) {
 			System.err.println("Caught exception with description: " + e.getStatus().getDescription());
 		}
