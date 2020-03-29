@@ -37,7 +37,7 @@ enum ObservationType {
 
 message Observation {
     ObservationType type = 1;
-    string id = 2;
+    string observationId = 2;
 }
 
 message ReportResponse {
@@ -96,26 +96,3 @@ service ControlService {
     rpc Clear(ClearRequest) returns (ClearResponse);
     rpc Init(InitRequest) returns (InitResponse);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
