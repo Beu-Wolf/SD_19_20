@@ -14,11 +14,16 @@ import java.time.LocalDateTime;
 
 public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBase {
 
+    private pt.tecnico.sauron.silo.domain.Silo silo;
+
+    SiloReportServiceImpl(pt.tecnico.sauron.silo.domain.Silo silo) {
+        this.silo = silo;
+    }
 
     @Override
     public StreamObserver<Silo.Observation> report(StreamObserver<Silo.ReportResponse> responseObserver) {
         final String name = SiloReportServiceInterceptor.CAM_NAME.get();
-        Cam cam = pt.tecnico.sauron.silo.domain.Silo.getCam(name);
+        Cam cam = silo.getCam(name);
         if (cam == null)
             responseObserver.onError(Status.NOT_FOUND.withDescription(ErrorMessages.NO_CAM_FOUND).asRuntimeException());
 
@@ -28,7 +33,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
                 try {
                     Observation obs = createReport(observation.getType(), observation.getObservationId());
                     Report report = new Report(cam, obs, LocalDateTime.now());
-                    pt.tecnico.sauron.silo.domain.Silo.registerObservation(report);
+                    silo.registerObservation(report);
                 } catch (InvalidCarIdException e) {
                     responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(ErrorMessages.INVALID_CAR_ID).asRuntimeException());
                 } catch (InvalidPersonIdException e) {
@@ -61,6 +66,4 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
                 throw new TypeNotSupportedException();
         }
     }
-
-
 }

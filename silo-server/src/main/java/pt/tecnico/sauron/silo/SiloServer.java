@@ -15,7 +15,7 @@ public class SiloServer {
     private final Silo silo = new Silo();
 
     final BindableService controlImpl = new SiloControlServiceImpl();
-    final BindableService reportImpl = new SiloReportServiceImpl();
+    final BindableService reportImpl = new SiloReportServiceImpl(silo);
 
     public SiloServer(int port){
         this(ServerBuilder.forPort(port), port);

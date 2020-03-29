@@ -5,8 +5,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Silo {
-    private static LinkedList<Report> reports = new LinkedList<>();
-    private static Map<String, Cam> cams = new ConcurrentHashMap<>();
+    private LinkedList<Report> reports = new LinkedList<>();
+    private Map<String, Cam> cams = new ConcurrentHashMap<>();
 
     public Silo() {}
 
@@ -14,11 +14,11 @@ public class Silo {
         cams.put(cam.getName(), cam);
     }
 
-    public static synchronized void registerObservation(Report report) {
+    public synchronized void registerObservation(Report report) {
         reports.addFirst(report);
     }
 
-    public static Cam getCam(String name) {
+    public Cam getCam(String name) {
         return cams.get(name);
     }
 }
