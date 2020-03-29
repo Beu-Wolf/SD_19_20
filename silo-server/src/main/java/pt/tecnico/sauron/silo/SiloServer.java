@@ -20,7 +20,7 @@ public class SiloServer {
     public SiloServer(int port){
         this(ServerBuilder.forPort(port), port);
     }
-    /** Create a RouteGuide server using serverBuilder as a base and features as data. */
+    /** Create a Silo server using serverBuilder as a base. */
     public SiloServer(ServerBuilder<?> serverBuilder, int port) {
         this.port = port;
         server = serverBuilder.addService(controlImpl).addService(ServerInterceptors.intercept(reportImpl, new SiloReportServiceInterceptor())).build();
