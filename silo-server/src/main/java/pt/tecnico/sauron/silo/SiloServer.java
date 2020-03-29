@@ -3,6 +3,7 @@ package pt.tecnico.sauron.silo;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.ServerInterceptors;
 import pt.tecnico.sauron.silo.domain.Silo;
 
 import java.io.IOException;
@@ -14,6 +15,7 @@ public class SiloServer {
     private final Silo silo = new Silo();
 
     final BindableService controlImpl = new SiloControlServiceImpl();
+    final BindableService reportImpl = new SiloReportServiceImpl();
 
     public SiloServer(int port){
         this(ServerBuilder.forPort(port), port);
@@ -21,7 +23,7 @@ public class SiloServer {
     /** Create a RouteGuide server using serverBuilder as a base and features as data. */
     public SiloServer(ServerBuilder<?> serverBuilder, int port) {
         this.port = port;
-        server = serverBuilder.addService(controlImpl).build();
+        server = serverBuilder.addService(controlImpl).addService(ServerInterceptors.intercept(reportImpl, new SiloReportServiceInterceptor())).build();
     }
 
     public void start() throws IOException {
