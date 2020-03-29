@@ -11,16 +11,15 @@ public class PingIT extends BaseIT{
 
     @Test
     public void pingOKTest() {
-        Silo.PingRequest request = Silo.PingRequest.newBuilder().setText("friend").build();
-        Silo.PingResponse response = siloFrontend.ctrlPing(request);
-        Assertions.assertEquals("Hello friend!", response.getText());
+        String sentence = "friend";
+        String response = siloFrontend.ctrlPing(sentence);
+        Assertions.assertEquals("Hello friend!", response);
     }
 
     @Test
     public void emptyPingTest() {
-        Silo.PingRequest request = Silo.PingRequest.newBuilder().setText("").build();
         Assertions.assertEquals(INVALID_ARGUMENT, Assertions.assertThrows(
-                StatusRuntimeException.class, ()->siloFrontend.ctrlPing(request))
+                StatusRuntimeException.class, ()->siloFrontend.ctrlPing(""))
                 .getStatus().getCode());
     }
 
