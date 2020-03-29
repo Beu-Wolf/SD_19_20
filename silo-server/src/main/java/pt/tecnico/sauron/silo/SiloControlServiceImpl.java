@@ -14,7 +14,7 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
         String input = request.getText();
 
         if (input == null || input.isBlank()) {
-            responseObserver.onError(INVALID_ARGUMENT.withDescription(ErrorMessages.BLANK_INPUT.getLabel()).asRuntimeException());
+            responseObserver.onError(INVALID_ARGUMENT.withDescription(ErrorMessages.BLANK_INPUT).asRuntimeException());
             return;
         }
 
