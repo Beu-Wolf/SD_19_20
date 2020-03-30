@@ -9,7 +9,7 @@ import pt.tecnico.sauron.silo.domain.Person;
 import pt.tecnico.sauron.silo.domain.Car;
 import pt.tecnico.sauron.silo.domain.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
-import pt.tecnico.sauron.silo.grpc.Silo;
+import pt.tecnico.sauron.silo.grpc.*;
 
 import java.time.LocalDateTime;
 
