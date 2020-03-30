@@ -1,12 +1,11 @@
 package pt.tecnico.sauron.silo.client;
 
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.Metadata;
+import io.grpc.*;
 import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
+import pt.tecnico.sauron.silo.client.exceptions.InvalidArgumentException;
 import pt.tecnico.sauron.silo.client.exceptions.TypeNotSupportedException;
 import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
@@ -15,60 +14,68 @@ import pt.tecnico.sauron.silo.grpc.Silo;
 import java.util.List;
 
 public class SiloFrontend {
-    private final ManagedChannel _channel;
-    private final ControlServiceGrpc.ControlServiceBlockingStub _ctrlStub;
-    private ReportServiceGrpc.ReportServiceStub _reportStub;
+    private ManagedChannel channel;
+    private ControlServiceGrpc.ControlServiceBlockingStub ctrlStub;
+    private ReportServiceGrpc.ReportServiceStub reportStub;
     public static final Metadata.Key<String> METADATA_CAM_NAME = Metadata.Key.of("name", Metadata.ASCII_STRING_MARSHALLER);
 
     public SiloFrontend(String host, int port) {
         String target = host + ":" + port;
-        _channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-        _ctrlStub = ControlServiceGrpc.newBlockingStub(_channel);
-        _reportStub = ReportServiceGrpc.newStub(_channel);
+        this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+        this.ctrlStub = ControlServiceGrpc.newBlockingStub(this.channel);
+        this.reportStub = ReportServiceGrpc.newStub(this.channel);
     }
 
     public void camJoin(CamDto cam) {}
 
     public CamDto camInfo(String name) { return null; }
 
-    public void report(String name, List<ObservationDto> observations) throws TypeNotSupportedException{
+    public void report(String name, List<ObservationDto> observations) throws TypeNotSupportedException, InvalidArgumentException{
         Metadata header = new Metadata();
         header.put(METADATA_CAM_NAME, name);
-        _reportStub = MetadataUtils.attachHeaders(_reportStub, header);
+        reportStub = MetadataUtils.attachHeaders(reportStub, header);
 
         StreamObserver<Silo.ReportResponse> reportObserver =  new StreamObserver<>() {
             @Override
             public void onNext(Silo.ReportResponse reportResponse) { }
             @Override
-            public void onError(Throwable throwable) {}
+            public void onError(Throwable throwable) {
+                System.err.println("Error while reporting!");
+            }
             @Override
             public void onCompleted() {
                 System.out.println("Successfully reported observations!");
             }
         };
 
-        StreamObserver<Silo.Observation> observationObserver = _reportStub.report(reportObserver);
+        try {
+            StreamObserver<Silo.Observation> observationObserver = reportStub.report(reportObserver);
+            for (ObservationDto observationDto : observations) {
+                ObservationDto.ObservationType type = observationDto.getType();
+                Silo.ObservationType observationType;
+                switch (type) {
+                    case CAR:
+                        observationType = Silo.ObservationType.CAR;
+                        break;
+                    case PERSON:
+                        observationType = Silo.ObservationType.PERSON;
+                        break;
+                    default:
+                        throw new TypeNotSupportedException();
+                }
 
-        for(ObservationDto observationDto : observations) {
-            ObservationDto.ObservationType type = observationDto.getType();
-            Silo.ObservationType observationType;
-            switch (type) {
-                case CAR:
-                    observationType = Silo.ObservationType.CAR;
-                    break;
-                case PERSON:
-                    observationType = Silo.ObservationType.PERSON;
-                    break;
-                default:
-                    throw new TypeNotSupportedException();
+                Silo.Observation observation = Silo.Observation.newBuilder().setObservationId(observationDto.getId())
+                        .setType(observationType).build();
+                observationObserver.onNext(observation);
             }
-
-            Silo.Observation observation = Silo.Observation.newBuilder().setObservationId(observationDto.getId())
-                    .setType(observationType).build();
-            observationObserver.onNext(observation);
+            observationObserver.onCompleted();
+        } catch (StatusRuntimeException e) {
+            if(e.getStatus() == Status.INVALID_ARGUMENT) {
+                throw new InvalidArgumentException(e.getStatus().getDescription());
+            }
         }
 
-        observationObserver.onCompleted();
+
     }
 
     public ObservationDto track(ObservationDto.ObservationType type, String id) { return null; }
@@ -79,7 +86,7 @@ public class SiloFrontend {
 
     public String ctrlPing(String sentence) {
         Silo.PingRequest request = Silo.PingRequest.newBuilder().setText(sentence).build();
-        Silo.PingResponse response = _ctrlStub.ping(request);
+        Silo.PingResponse response = ctrlStub.ping(request);
         return response.getText();
     }
 
@@ -88,6 +95,6 @@ public class SiloFrontend {
     public void ctrlInit() {}
 
     public void shutdown() {
-        _channel.shutdown();
+        channel.shutdown();
     }
 }
