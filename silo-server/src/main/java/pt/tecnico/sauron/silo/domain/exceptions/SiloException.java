@@ -5,4 +5,6 @@ public class SiloException extends Exception {
 
     public SiloException(String errorMessage) { this.errorMessage = errorMessage; }
 
+    @Override
+    public String getMessage() { return this.errorMessage; }
 }

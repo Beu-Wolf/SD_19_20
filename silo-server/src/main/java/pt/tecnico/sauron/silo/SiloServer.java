@@ -14,6 +14,7 @@ public class SiloServer {
     private final Silo silo = new Silo();
 
     final BindableService controlImpl = new SiloControlServiceImpl();
+    final BindableService queryImpl = new SiloQueryServiceImpl(silo);
 
     public SiloServer(int port){
         this(ServerBuilder.forPort(port), port);
@@ -21,7 +22,7 @@ public class SiloServer {
     /** Create a Silo server using serverBuilder as a base. */
     public SiloServer(ServerBuilder<?> serverBuilder, int port) {
         this.port = port;
-        server = serverBuilder.addService(controlImpl).build();
+        server = serverBuilder.addService(controlImpl).addService(queryImpl).build();
     }
 
     public void start() throws IOException {
