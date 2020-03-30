@@ -8,4 +8,6 @@ public class CamDto {
         this.name = name;
         this.coords = new CoordsDto(lat, lon);
     }
+
+    public String getName() { return this.name; }
 }

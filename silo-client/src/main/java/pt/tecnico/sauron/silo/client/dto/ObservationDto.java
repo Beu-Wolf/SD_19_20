@@ -1,6 +1,5 @@
 package pt.tecnico.sauron.silo.client.dto;
 
-
 public class ObservationDto {
     public enum ObservationType { UNSPEC, CAR, PERSON }
 
@@ -14,4 +13,10 @@ public class ObservationDto {
 
     public ObservationType getType() { return this.type; }
     public String getId() { return this.id; }
+
+    @Override
+    public String toString() {
+        return this.type.toString() + " with id " + this.id + ";";
+    }
+
 }
