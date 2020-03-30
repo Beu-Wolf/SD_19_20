@@ -23,7 +23,7 @@ public class SiloServer {
     /** Create a Silo server using serverBuilder as a base. */
     public SiloServer(ServerBuilder<?> serverBuilder, int port) {
         this.port = port;
-        server = serverBuilder.addService(controlImpl).addService(ServerInterceptors.intercept(reportImpl, new SiloReportServiceInterceptor())).build();
+        this.server = serverBuilder.addService(this.controlImpl).addService(ServerInterceptors.intercept(this.reportImpl, new SiloReportServiceInterceptor())).build();
     }
 
     public void start() throws IOException {
