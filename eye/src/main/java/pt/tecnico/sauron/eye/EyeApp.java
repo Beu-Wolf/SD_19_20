@@ -93,7 +93,6 @@ public class EyeApp {
 	}
 
 	private static void registerObservation(String type, String id) {
-		System.out.println("[DBG] Observed a " + type + " with id " + id);
 		ObservationDto.ObservationType observationType;
 		switch (type) {
 			case "person":
