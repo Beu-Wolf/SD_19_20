@@ -60,20 +60,7 @@ public class SiloFrontend {
         StreamObserver<Silo.Observation> requestObserver = this.reportStub.report(responseObserver);
         try {
             for (ObservationDto observationDto : observations) {
-                ObservationDto.ObservationType type = observationDto.getType();
-                Silo.ObservationType observationType;
-                switch (type) {
-                    case CAR:
-                        observationType = Silo.ObservationType.CAR;
-                        break;
-                    case PERSON:
-                        observationType = Silo.ObservationType.PERSON;
-                        break;
-                    default:
-                        throw new TypeNotSupportedException();
-                }
-                System.out.println(observationDto.toString());
-
+                Silo.ObservationType observationType = getObservationType(observationDto);
                 Silo.Observation observation = Silo.Observation.newBuilder().setObservationId(observationDto.getId())
                         .setType(observationType).build();
                 requestObserver.onNext(observation);
@@ -105,6 +92,25 @@ public class SiloFrontend {
     public void ctrlClear() {}
 
     public void ctrlInit() {}
+
+
+    public Silo.ObservationType getObservationType(ObservationDto observationDto) throws TypeNotSupportedException {
+        Silo.ObservationType observationType;
+        ObservationDto.ObservationType type = observationDto.getType();
+
+
+        switch (type) {
+            case CAR:
+                observationType = Silo.ObservationType.CAR;
+                break;
+            case PERSON:
+                observationType = Silo.ObservationType.PERSON;
+                break;
+            default:
+                throw new TypeNotSupportedException();
+        }
+        return observationType;
+    }
 
     public void shutdown() {
         this.channel.shutdown();
