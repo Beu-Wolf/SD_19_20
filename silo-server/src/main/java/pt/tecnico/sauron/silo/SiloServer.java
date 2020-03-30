@@ -13,7 +13,7 @@ public class SiloServer {
     private final Server server;
     private final Silo silo = new Silo();
 
-    final BindableService controlImpl = new SiloControlServiceImpl();
+    final BindableService controlImpl = new SiloControlServiceImpl(silo);
 
     public SiloServer(int port){
         this(ServerBuilder.forPort(port), port);

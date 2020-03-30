@@ -28,6 +28,8 @@ public class SiloClientApp {
 			String sentence = "friend";
 			String response = siloFrontend.ctrlPing(sentence);
 			System.out.println(response);
+			String status  = siloFrontend.ctrlClear();
+			System.out.println(status);
 		} catch (StatusRuntimeException e) {
 			System.err.println("Caught exception with description: " + e.getStatus().getDescription());
 		}

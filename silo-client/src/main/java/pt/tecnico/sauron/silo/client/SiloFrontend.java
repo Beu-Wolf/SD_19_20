@@ -37,7 +37,13 @@ public class SiloFrontend {
         return response.getText();
     }
 
-    public void ctrlClear() {}
+    public String ctrlClear() {
+        Silo.ClearResponse response =  _ctrlStub.clear(Silo.ClearRequest.getDefaultInstance());
+        if(!response.equals(Silo.ClearResponse.getDefaultInstance())) {
+            return "NOK";
+        }
+        return "OK";
+    }
 
     public void ctrlInit() {}
 

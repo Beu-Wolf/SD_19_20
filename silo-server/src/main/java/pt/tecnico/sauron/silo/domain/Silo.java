@@ -17,4 +17,13 @@ public class Silo {
     public synchronized void registerObservation(Report report) {
         reports.addFirst(report);
     }
+
+    public void clearCams() {
+        cams.clear();
+    }
+
+    public void clearObservations() {
+        reports.clear();
+    }
+
 }

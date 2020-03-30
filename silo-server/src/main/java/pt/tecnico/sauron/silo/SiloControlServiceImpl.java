@@ -9,6 +9,12 @@ import pt.tecnico.sauron.silo.grpc.Silo;
 
 public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImplBase {
 
+    private pt.tecnico.sauron.silo.domain.Silo silo;
+
+    SiloControlServiceImpl(pt.tecnico.sauron.silo.domain.Silo silo) {
+        this.silo = silo;
+    }
+
     @Override
     public void ping(Silo.PingRequest request, StreamObserver<Silo.PingResponse> responseObserver) {
         String input = request.getText();
@@ -22,6 +28,15 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
         Silo.PingResponse response = Silo.PingResponse.newBuilder()
                 .setText(output).build();
         responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void clear( Silo.ClearRequest request, StreamObserver<Silo.ClearResponse> responseObserver) {
+        silo.clearObservations();
+        silo.clearCams();
+
+        responseObserver.onNext(Silo.ClearResponse.getDefaultInstance());
         responseObserver.onCompleted();
     }
 
