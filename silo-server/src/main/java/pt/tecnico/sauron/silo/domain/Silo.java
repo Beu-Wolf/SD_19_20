@@ -1,6 +1,5 @@
 package pt.tecnico.sauron.silo.domain;
 
-import pt.tecnico.sauron.silo.domain.exceptions.ErrorMessages;
 import pt.tecnico.sauron.silo.domain.exceptions.NoCameraFoundException;
 
 import java.util.LinkedList;

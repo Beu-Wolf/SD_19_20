@@ -5,7 +5,6 @@ import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
-import pt.tecnico.sauron.silo.client.exceptions.TypeNotSupportedException;
 import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.Silo;
@@ -31,7 +30,7 @@ public class SiloFrontend {
 
     public CamDto camInfo(String name) { return null; }
 
-    public void report(String name, List<ObservationDto> observations) throws TypeNotSupportedException, InterruptedException {
+    public void report(String name, List<ObservationDto> observations) throws InterruptedException {
         Metadata header = new Metadata();
         header.put(METADATA_CAM_NAME, name);
         this.reportStub = MetadataUtils.attachHeaders(this.reportStub, header);
@@ -64,7 +63,8 @@ public class SiloFrontend {
                 Silo.Observation observation = Silo.Observation.newBuilder().setObservationId(observationDto.getId())
                         .setType(observationType).build();
                 requestObserver.onNext(observation);
-                Thread.sleep(10);
+                Thread.sleep(10);                         //As per the documentation for client side streaming in gRPC, we should sleep for an amount of time between each call
+                                                            // to allow for the server to send an error if it happens
             }
         } catch (RuntimeException e) {
             requestObserver.onError(e);
@@ -94,7 +94,7 @@ public class SiloFrontend {
     public void ctrlInit() {}
 
 
-    public Silo.ObservationType getObservationType(ObservationDto observationDto) throws TypeNotSupportedException {
+    public Silo.ObservationType getObservationType(ObservationDto observationDto) {
         Silo.ObservationType observationType;
         ObservationDto.ObservationType type = observationDto.getType();
 
@@ -107,7 +107,7 @@ public class SiloFrontend {
                 observationType = Silo.ObservationType.PERSON;
                 break;
             default:
-                throw new TypeNotSupportedException();
+                observationType = Silo.ObservationType.UNSPEC;
         }
         return observationType;
     }
