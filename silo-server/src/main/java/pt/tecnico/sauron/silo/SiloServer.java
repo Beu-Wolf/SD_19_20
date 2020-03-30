@@ -7,6 +7,7 @@ import io.grpc.ServerInterceptors;
 import pt.tecnico.sauron.silo.domain.Silo;
 
 import java.io.IOException;
+import java.util.Scanner;
 
 public class SiloServer {
 
@@ -32,6 +33,12 @@ public class SiloServer {
     }
 
     public void awaitTermination() throws InterruptedException {
+        new Thread(()-> {
+            System.out.println("Press enter to shutdown");
+            new Scanner(System.in).nextLine();
+            server.shutdown();
+        }).start();
+
         server.awaitTermination();
     }
 }
