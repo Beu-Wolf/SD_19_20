@@ -36,8 +36,6 @@ public class SiloFrontend {
         this.reportStub = MetadataUtils.attachHeaders(this.reportStub, header);
         final CountDownLatch latch = new CountDownLatch(1);
 
-        System.out.println(observations.toString());
-
         StreamObserver<Silo.ReportResponse> responseObserver =  new StreamObserver<>() {
             @Override
             public void onNext(Silo.ReportResponse reportResponse) { }
@@ -63,6 +61,9 @@ public class SiloFrontend {
                 Silo.Observation observation = Silo.Observation.newBuilder().setObservationId(observationDto.getId())
                         .setType(observationType).build();
                 requestObserver.onNext(observation);
+                if(latch.getCount() == 0) {
+                    return;
+                }
                 Thread.sleep(10);                         //As per the documentation for client side streaming in gRPC, we should sleep for an amount of time between each call
                                                             // to allow for the server to send an error if it happens
             }
