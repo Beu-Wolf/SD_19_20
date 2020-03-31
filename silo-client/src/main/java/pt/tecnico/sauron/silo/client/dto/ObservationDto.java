@@ -11,8 +11,12 @@ public class ObservationDto {
         this.id = id;
     }
 
+    public ObservationType getType() { return this.type; }
+    public String getId() { return this.id; }
+
     @Override
     public String toString() {
         return this.type.toString() + " with id " + this.id + ";";
     }
+
 }
