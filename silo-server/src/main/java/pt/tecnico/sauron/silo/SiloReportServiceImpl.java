@@ -1,12 +1,9 @@
 package pt.tecnico.sauron.silo;
 
+import com.google.type.LatLng;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import pt.tecnico.sauron.silo.domain.Cam;
-import pt.tecnico.sauron.silo.domain.Observation;
-import pt.tecnico.sauron.silo.domain.Report;
-import pt.tecnico.sauron.silo.domain.Person;
-import pt.tecnico.sauron.silo.domain.Car;
+import pt.tecnico.sauron.silo.domain.*;
 import pt.tecnico.sauron.silo.domain.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
 
@@ -21,42 +18,79 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
     }
 
     @Override
+    public void camJoin(pt.tecnico.sauron.silo.grpc.Silo.JoinRequest request, io.grpc.stub.StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.JoinResponse> responseObserver) {
+        String name = request.getCam().getName();
+        Coords coords = new Coords(request.getCam().getCoords().getLatitude(), request.getCam().getCoords().getLongitude());
+        Cam cam = new Cam(name, coords);
+
+        try {
+            this.silo.registerCam(cam);
+            pt.tecnico.sauron.silo.grpc.Silo.JoinResponse response = pt.tecnico.sauron.silo.grpc.Silo.JoinResponse.getDefaultInstance();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch(DuplicateCameraNameException e) {
+            responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
+        }
+    }
+
+    @Override
+    public void camInfo(pt.tecnico.sauron.silo.grpc.Silo.InfoRequest request, io.grpc.stub.StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.InfoResponse> responseObserver) {
+        String name = request.getName();
+
+        try {
+            Cam cam = this.silo.getCam(name);
+            Double lat = cam.getLat();
+            Double lon = cam.getLon();
+            pt.tecnico.sauron.silo.grpc.Silo.InfoResponse response = pt.tecnico.sauron.silo.grpc.Silo.InfoResponse.newBuilder().
+                    setCoords(
+                            LatLng.newBuilder()
+                                    .setLatitude(lat)
+                                    .setLongitude(lon)
+                                    .build()
+                    ).build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch(NoCameraFoundException e) {
+            responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
+        }
+    }
+
+
+    @Override
     public StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.Observation> report(StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.ReportResponse> responseObserver) {
+        Cam cam;
         try {
             final String name = SiloReportServiceInterceptor.CAM_NAME.get();
-            Cam cam = silo.getCam(name);
-
-            return new StreamObserver<>() {
-                @Override
-                public void onNext(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) {
-                    try {
-                        Observation obs = createReport(observation.getType(), observation.getObservationId());
-                        Report report = new Report(cam, obs, LocalDateTime.now());
-                        silo.registerObservation(report);
-                    } catch (InvalidCarIdException e) {
-                        responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(ErrorMessages.INVALID_CAR_ID).asRuntimeException());
-                    } catch (InvalidPersonIdException e) {
-                        responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(ErrorMessages.INVALID_PERSON_ID).asRuntimeException());
-                    } catch (TypeNotSupportedException e) {
-                        responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(ErrorMessages.TYPE_NOT_SUPPORTED).asRuntimeException());
-                    }
-                }
-
-                @Override
-                public void onError(Throwable throwable) {
-                    System.err.println("Error while reporting: " + Status.fromThrowable(throwable).getDescription());
-                }
-
-                @Override
-                public void onCompleted() {
-                    responseObserver.onNext(pt.tecnico.sauron.silo.grpc.Silo.ReportResponse.getDefaultInstance());
-                    responseObserver.onCompleted();
-                }
-            };
+            cam = this.silo.getCam(name);
         } catch (NoCameraFoundException e) {
-            responseObserver.onError(Status.NOT_FOUND.withDescription(ErrorMessages.NO_CAM_FOUND).asRuntimeException());
+            responseObserver.onError(Status.NOT_FOUND.withDescription(e.getMessage()).asRuntimeException());
             return null;
         }
+
+        return new StreamObserver<>() {
+            @Override
+            public void onNext(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) {
+                try {
+                    Observation obs = createReport(observation.getType(), observation.getObservationId());
+                    Report report = new Report(cam, obs, LocalDateTime.now());
+                    silo.registerObservation(report);
+                } catch (SiloException e) {
+                    responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
+                }
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                System.err.println("Error while reporting: " + Status.fromThrowable(throwable).getDescription());
+            }
+
+            @Override
+            public void onCompleted() {
+                responseObserver.onNext(pt.tecnico.sauron.silo.grpc.Silo.ReportResponse.getDefaultInstance());
+                responseObserver.onCompleted();
+            }
+        };
     }
 
     public Observation createReport(pt.tecnico.sauron.silo.grpc.Silo.ObservationType type, String id) throws InvalidCarIdException, InvalidPersonIdException, TypeNotSupportedException {
