@@ -4,7 +4,6 @@ import pt.tecnico.sauron.silo.client.SiloFrontend;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
-import pt.tecnico.sauron.silo.client.exceptions.ReportException;
 
 import java.util.LinkedList;
 import java.util.List;
