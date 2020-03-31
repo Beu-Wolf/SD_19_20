@@ -16,4 +16,7 @@ public class Cam {
     public Coords getCoords() {
         return coords;
     }
+
+    public Double getLat() { return this.coords.getLat(); }
+    public Double getLon() { return this.coords.getLon(); }
 }
