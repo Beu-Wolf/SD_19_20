@@ -9,11 +9,17 @@ public class Coords {
         this.lon = lon;
     }
 
-    public double getLat() {
-        return lat;
-    }
-
+    public double getLat() { return lat; }
     public double getLon() {
         return lon;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(o instanceof Coords) {
+            Coords c = (Coords)o;
+            return this.lat == c.getLat() && this.lon == c.getLon();
+        }
+        return false;
     }
 }

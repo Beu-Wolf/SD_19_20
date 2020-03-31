@@ -16,4 +16,16 @@ public class Cam {
     public Coords getCoords() {
         return coords;
     }
+
+    public Double getLat() { return this.coords.getLat(); }
+    public Double getLon() { return this.coords.getLon(); }
+
+    @Override
+    public boolean equals(Object o) {
+        if(o instanceof Cam) {
+            Cam c = (Cam)o;
+            return c.getName() == this.name && this.coords.equals(c.getCoords());
+        }
+        return false;
+    }
 }
