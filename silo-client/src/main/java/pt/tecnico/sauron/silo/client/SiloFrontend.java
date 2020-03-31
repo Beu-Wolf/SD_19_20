@@ -6,10 +6,7 @@ import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
-import pt.tecnico.sauron.silo.client.exceptions.CameraNotFoundException;
-import pt.tecnico.sauron.silo.client.exceptions.ErrorMessages;
-import pt.tecnico.sauron.silo.client.exceptions.PingException;
-import pt.tecnico.sauron.silo.client.exceptions.ReportException;
+import pt.tecnico.sauron.silo.client.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.Silo;
@@ -33,7 +30,7 @@ public class SiloFrontend {
         this.reportBlockingStub = ReportServiceGrpc.newBlockingStub(this.channel);
     }
 
-    public void camJoin(CamDto cam) {
+    public void camJoin(CamDto cam) throws CameraAlreadyExistsException {
         Silo.JoinRequest request = Silo.JoinRequest.newBuilder()
                 .setCam(Silo.Cam.newBuilder()
                         .setName(cam.getName())
@@ -47,7 +44,8 @@ public class SiloFrontend {
         try {
             this.reportBlockingStub.camJoin(request);
         } catch(RuntimeException e) {
-            System.err.println(e.getMessage());
+            Status status = Status.fromThrowable(e);
+            throw new CameraAlreadyExistsException(status.getDescription());
         }
     }
 
@@ -59,12 +57,9 @@ public class SiloFrontend {
             LatLng coords = response.getCoords();
             return new CamDto(name, coords.getLatitude(), coords.getLongitude());
         } catch (RuntimeException e) {
-            Status.Code statusCode = Status.fromThrowable(e).getCode();
-            if(statusCode == Status.Code.NOT_FOUND) {
-                throw new CameraNotFoundException(e.getMessage());
-            }
+            Status status = Status.fromThrowable(e);
+            throw new CameraNotFoundException(status.getDescription());
         }
-        return null;
     }
 
     public void report(String name, List<ObservationDto> observations) throws ReportException {
@@ -102,7 +97,7 @@ public class SiloFrontend {
                     return;
                 }
                 try {
-                    Thread.sleep(10);                                           //As per the documentation for client side streaming in gRPC, we should sleep for an amount of time between each call
+                    Thread.sleep(10);                                           // As per the documentation for client side streaming in gRPC, we should sleep for an amount of time between each call
                 } catch (InterruptedException e) {                                 // to allow for the server to send an error if it happens
                     Thread.currentThread().interrupt();
                     throw new ReportException(ErrorMessages.WAITING_THREAD_INTERRUPT);
