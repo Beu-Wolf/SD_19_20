@@ -5,10 +5,16 @@ import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
+import pt.tecnico.sauron.silo.client.dto.ReportDto;
+import pt.tecnico.sauron.silo.client.exceptions.InvalidArgumentException;
+import pt.tecnico.sauron.silo.client.exceptions.QueryException;
 import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
+import pt.tecnico.sauron.silo.grpc.QueryServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.Silo;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -17,6 +23,7 @@ public class SiloFrontend {
     private ManagedChannel channel;
     private ControlServiceGrpc.ControlServiceBlockingStub ctrlStub;
     private ReportServiceGrpc.ReportServiceStub reportStub;
+    private QueryServiceGrpc.QueryServiceStub queryStub;
     public static final Metadata.Key<String> METADATA_CAM_NAME = Metadata.Key.of("name", Metadata.ASCII_STRING_MARSHALLER);
 
     public SiloFrontend(String host, int port) {
@@ -24,6 +31,7 @@ public class SiloFrontend {
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         this.ctrlStub = ControlServiceGrpc.newBlockingStub(this.channel);
         this.reportStub = ReportServiceGrpc.newStub(this.channel);
+        this.queryStub = QueryServiceGrpc.newStub(this.channel);
     }
 
     public void camJoin(CamDto cam) {}
@@ -78,7 +86,49 @@ public class SiloFrontend {
 
     }
 
-    public ObservationDto track(ObservationDto.ObservationType type, String id) { return null; }
+    public ReportDto track(ObservationDto.ObservationType type, String id)
+        throws QueryException, InterruptedException {
+
+        final CountDownLatch finishLatch = new CountDownLatch(1);
+
+        // Having arrays of 1 element is the only way to set
+        // these variables from the inner class
+        final ReportDto[] reportDto = new ReportDto[1];
+        final boolean[] error = new boolean[1];
+
+        StreamObserver<Silo.QueryResponse> responseObserver = new StreamObserver<Silo.QueryResponse>() {
+            @Override
+            public void onNext(Silo.QueryResponse queryResponse) {
+                reportDto[0] = GRPCToReportDto(queryResponse);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                // We can't throw exceptions from here to the outer method
+                error[0] = true;
+                finishLatch.countDown();
+            }
+
+            @Override
+            public void onCompleted() {
+                finishLatch.countDown();
+            }
+        };
+
+        Silo.QueryRequest request = Silo.QueryRequest.newBuilder()
+                .setType(ObservationTypeToGRPC(type))
+                .setId(id).build();
+
+        queryStub.track(request, responseObserver);
+
+        finishLatch.await(10, TimeUnit.SECONDS);
+
+        if (error[0]) {
+            throw new QueryException();
+        } else {
+            return reportDto[0];
+        }
+    }
 
     // public void trackMatch(ObservationDto.ObservationType type, String query, Lambda)
 
@@ -115,5 +165,44 @@ public class SiloFrontend {
 
     public void shutdown() {
         this.channel.shutdown();
+    }
+
+    private ObservationDto GRPCToObservationDto(Silo.Observation observation) {
+        return new ObservationDto(GRPCToObservationType(observation.getType()),
+                observation.getObservationId());
+    }
+
+    private CamDto GRPCToCamDto(Silo.Cam cam) {
+        return new CamDto(cam.getName(), cam.getCoords().getLatitude(), cam.getCoords().getLongitude());
+    }
+
+    private ReportDto GRPCToReportDto(Silo.QueryResponse response) {
+        ObservationDto observationDto = GRPCToObservationDto(response.getObservation());
+        CamDto camDto = GRPCToCamDto(response.getCam());
+        Instant timestamp = Instant.ofEpochSecond(response.getTimestamp().getSeconds());
+
+        return new ReportDto(observationDto, camDto, timestamp);
+    }
+
+    private ObservationDto.ObservationType GRPCToObservationType(Silo.ObservationType type) {
+        switch(type) {
+            case CAR:
+                return ObservationDto.ObservationType.CAR;
+            case PERSON:
+                return ObservationDto.ObservationType.PERSON;
+            default:
+                return ObservationDto.ObservationType.UNSPEC;
+        }
+    }
+
+    private Silo.ObservationType ObservationTypeToGRPC(ObservationDto.ObservationType type) {
+        switch(type) {
+            case CAR:
+                return Silo.ObservationType.CAR;
+            case PERSON:
+                return Silo.ObservationType.PERSON;
+            default:
+                return Silo.ObservationType.UNSPEC;
+        }
     }
 }
