@@ -43,6 +43,7 @@ public class SiloFrontend {
 
         try {
             this.reportBlockingStub.camJoin(request);
+            System.out.println("Registered Successfully!");
         } catch(RuntimeException e) {
             Status status = Status.fromThrowable(e);
             throw new CameraAlreadyExistsException(status.getDescription());
