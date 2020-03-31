@@ -20,6 +20,12 @@
 	</properties>
 
 	<dependencies>
+		<!-- client brings contract in order to use the frontend -->
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>silo-client</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 
 	<build>
