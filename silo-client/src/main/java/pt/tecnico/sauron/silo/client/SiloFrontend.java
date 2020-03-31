@@ -1,10 +1,15 @@
 package pt.tecnico.sauron.silo.client;
 
-import io.grpc.*;
+import com.google.type.LatLng;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.Metadata;
+import io.grpc.Status;
 import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
+import pt.tecnico.sauron.silo.client.exceptions.CameraNotFoundException;
 import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.Silo;
@@ -17,6 +22,7 @@ public class SiloFrontend {
     private ManagedChannel channel;
     private ControlServiceGrpc.ControlServiceBlockingStub ctrlStub;
     private ReportServiceGrpc.ReportServiceStub reportStub;
+    private ReportServiceGrpc.ReportServiceBlockingStub reportBlockingStub;
     public static final Metadata.Key<String> METADATA_CAM_NAME = Metadata.Key.of("name", Metadata.ASCII_STRING_MARSHALLER);
 
     public SiloFrontend(String host, int port) {
@@ -24,11 +30,42 @@ public class SiloFrontend {
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         this.ctrlStub = ControlServiceGrpc.newBlockingStub(this.channel);
         this.reportStub = ReportServiceGrpc.newStub(this.channel);
+        this.reportBlockingStub = ReportServiceGrpc.newBlockingStub(this.channel);
     }
 
-    public void camJoin(CamDto cam) {}
+    public void camJoin(CamDto cam) {
+        Silo.JoinRequest request = Silo.JoinRequest.newBuilder()
+                .setCam(Silo.Cam.newBuilder()
+                        .setName(cam.getName())
+                        .setCoords(LatLng.newBuilder()
+                                .setLatitude(cam.getLat())
+                                .setLongitude(cam.getLon())
+                                .build())
+                        .build())
+                .build();
 
-    public CamDto camInfo(String name) { return null; }
+        try {
+            this.reportBlockingStub.camJoin(request);
+        } catch(RuntimeException e) {
+            System.err.println(e.getMessage());
+        }
+    }
+
+    public CamDto camInfo(String name) throws CameraNotFoundException {
+        Silo.InfoRequest request = Silo.InfoRequest.newBuilder().setName(name).build();
+        Silo.InfoResponse response;
+        try {
+            response = this.reportBlockingStub.camInfo(request);
+            LatLng coords = response.getCoords();
+            return new CamDto(name, coords.getLatitude(), coords.getLongitude());
+        } catch (RuntimeException e) {
+            Status.Code statusCode = Status.fromThrowable(e).getCode();
+            if(statusCode == Status.Code.NOT_FOUND) {
+                throw new CameraNotFoundException(e.getMessage());
+            }
+        }
+        return null;
+    }
 
     public void report(String name, List<ObservationDto> observations) throws InterruptedException {
         Metadata header = new Metadata();
