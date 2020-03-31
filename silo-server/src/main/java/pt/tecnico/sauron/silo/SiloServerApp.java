@@ -1,7 +1,6 @@
 package pt.tecnico.sauron.silo;
 
 
-import io.grpc.*;
 
 import java.io.IOException;
 

@@ -9,7 +9,5 @@ public class CamDto {
         this.coords = new CoordsDto(lat, lon);
     }
 
-    public String getName() {
-        return name;
-    }
+    public String getName() { return this.name; }
 }
