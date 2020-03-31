@@ -1,10 +1,12 @@
 package pt.tecnico.sauron.silo.client;
 
+import com.google.type.LatLng;
 import io.grpc.*;
 import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
+import pt.tecnico.sauron.silo.client.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.Silo;
@@ -17,6 +19,7 @@ public class SiloFrontend {
     private ManagedChannel channel;
     private ControlServiceGrpc.ControlServiceBlockingStub ctrlStub;
     private ReportServiceGrpc.ReportServiceStub reportStub;
+    private ReportServiceGrpc.ReportServiceBlockingStub reportBlockingStub;
     public static final Metadata.Key<String> METADATA_CAM_NAME = Metadata.Key.of("name", Metadata.ASCII_STRING_MARSHALLER);
 
     public SiloFrontend(String host, int port) {
@@ -24,13 +27,49 @@ public class SiloFrontend {
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         this.ctrlStub = ControlServiceGrpc.newBlockingStub(this.channel);
         this.reportStub = ReportServiceGrpc.newStub(this.channel);
+        this.reportBlockingStub = ReportServiceGrpc.newBlockingStub(this.channel);
     }
 
-    public void camJoin(CamDto cam) {}
+    public void camJoin(CamDto cam) throws CameraAlreadyExistsException, CameraRegisterException {
+        Silo.JoinRequest request = Silo.JoinRequest.newBuilder()
+                .setCam(Silo.Cam.newBuilder()
+                        .setName(cam.getName())
+                        .setCoords(LatLng.newBuilder()
+                                .setLatitude(cam.getLat())
+                                .setLongitude(cam.getLon())
+                                .build())
+                        .build())
+                .build();
 
-    public CamDto camInfo(String name) { return null; }
+        try {
+            this.reportBlockingStub.camJoin(request);
+            System.out.println("Registered Successfully!");
+        } catch(RuntimeException e) {
+            Status status = Status.fromThrowable(e);
+            if(status == Status.ALREADY_EXISTS) {
+                throw new CameraAlreadyExistsException();
+            }
+            throw new CameraRegisterException();
+        }
+    }
 
-    public void report(String name, List<ObservationDto> observations) throws InterruptedException {
+    public CamDto camInfo(String name) throws CameraNotFoundException, CameraInfoException {
+        Silo.InfoRequest request = Silo.InfoRequest.newBuilder().setName(name).build();
+        Silo.InfoResponse response;
+        try {
+            response = this.reportBlockingStub.camInfo(request);
+            LatLng coords = response.getCoords();
+            return new CamDto(name, coords.getLatitude(), coords.getLongitude());
+        } catch (RuntimeException e) {
+            Status status = Status.fromThrowable(e);
+            if(status == Status.NOT_FOUND) {
+                throw new CameraNotFoundException();
+            }
+            throw new CameraInfoException();
+        }
+    }
+
+    public void report(String name, List<ObservationDto> observations) throws ReportException {
         Metadata header = new Metadata();
         header.put(METADATA_CAM_NAME, name);
         this.reportStub = MetadataUtils.attachHeaders(this.reportStub, header);
@@ -64,18 +103,24 @@ public class SiloFrontend {
                 if(latch.getCount() == 0) {
                     return;
                 }
-                Thread.sleep(10);                         //As per the documentation for client side streaming in gRPC, we should sleep for an amount of time between each call
-                                                            // to allow for the server to send an error if it happens
+                try {
+                    Thread.sleep(10);                                           // As per the documentation for client side streaming in gRPC, we should sleep for an amount of time between each call
+                } catch (InterruptedException e) {                                 // to allow for the server to send an error if it happens
+                    Thread.currentThread().interrupt();
+                    throw new ReportException(ErrorMessages.WAITING_THREAD_INTERRUPT);
+                }
             }
         } catch (RuntimeException e) {
             requestObserver.onError(e);
-            System.out.println("Error while sending reports" + e.toString());
+            throw new ReportException(e.toString());
         }
         requestObserver.onCompleted();
-        latch.await(10, TimeUnit.SECONDS);
-
-
-
+        try {
+            latch.await(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ReportException(ErrorMessages.WAITING_THREAD_INTERRUPT);
+        }
     }
 
     public ObservationDto track(ObservationDto.ObservationType type, String id) { return null; }
@@ -84,10 +129,14 @@ public class SiloFrontend {
 
     // public void trace(ObservationDto.ObservationType type, String id, Lambda)
 
-    public String ctrlPing(String sentence) {
+    public String ctrlPing(String sentence) throws PingException{
         Silo.PingRequest request = Silo.PingRequest.newBuilder().setText(sentence).build();
-        Silo.PingResponse response = this.ctrlStub.ping(request);
-        return response.getText();
+        try {
+            Silo.PingResponse response = this.ctrlStub.ping(request);
+            return response.getText();
+        } catch (StatusRuntimeException e) {
+            throw new PingException(e.getStatus().getDescription());
+        }
     }
 
     public void ctrlClear() {}
