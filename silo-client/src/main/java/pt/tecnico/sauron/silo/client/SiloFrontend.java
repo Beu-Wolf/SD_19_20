@@ -61,29 +61,31 @@ public class SiloFrontend {
         try {
             for (ObservationDto observationDto : observations) {
                 Silo.ObservationType observationType = getObservationType(observationDto);
-                Silo.Observation observation = Silo.Observation.newBuilder().setObservationId(observationDto.getId())
-                        .setType(observationType).build();
+                Silo.Observation observation = Silo.Observation.newBuilder()
+                        .setObservationId(observationDto.getId())
+                        .setType(observationType)
+                        .build();
                 requestObserver.onNext(observation);
                 if(latch.getCount() == 0) {
                     return;
                 }
-                try {
-                    Thread.sleep(10);                                           //As per the documentation for client side streaming in gRPC, we should sleep for an amount of time between each call
-                } catch (InterruptedException e) {                                 // to allow for the server to send an error if it happens
-                    Thread.currentThread().interrupt();
-                    throw new ReportException(ErrorMessages.WAITING_THREAD_INTERRUPT);
-                }
+
+                // As per the documentation for client side streaming in gRPC,
+                // we should sleep for an amount of time between each call
+                // to allow for the server to send an error if it happens
+                Thread.sleep(10);
+
             }
-        } catch (RuntimeException e) {
-            requestObserver.onError(e);
-            throw new ReportException(e.toString());
-        }
-        requestObserver.onCompleted();
-        try {
+
+            requestObserver.onCompleted();
             latch.await(10, TimeUnit.SECONDS);
+
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new ReportException(ErrorMessages.WAITING_THREAD_INTERRUPT);
+        } catch (RuntimeException e) {
+            requestObserver.onError(e);
+            throw new ReportException(e.toString());
         }
     }
 
