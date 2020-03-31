@@ -29,7 +29,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch(DuplicateCameraNameException e) {
-            responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
+            responseObserver.onError(Status.ALREADY_EXISTS.asRuntimeException());
         }
     }
 
@@ -52,7 +52,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch(NoCameraFoundException e) {
-            responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
+            responseObserver.onError(Status.NOT_FOUND.asRuntimeException());
         }
     }
 
