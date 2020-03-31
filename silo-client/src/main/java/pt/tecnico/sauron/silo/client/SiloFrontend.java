@@ -26,6 +26,7 @@ public class SiloFrontend {
     private ControlServiceGrpc.ControlServiceBlockingStub ctrlStub;
     private ReportServiceGrpc.ReportServiceStub reportStub;
     private QueryServiceGrpc.QueryServiceStub queryStub;
+    private QueryServiceGrpc.QueryServiceBlockingStub queryBlockingStub;
     public static final Metadata.Key<String> METADATA_CAM_NAME = Metadata.Key.of("name", Metadata.ASCII_STRING_MARSHALLER);
 
     public SiloFrontend(String host, int port) {
@@ -34,6 +35,7 @@ public class SiloFrontend {
         this.ctrlStub = ControlServiceGrpc.newBlockingStub(this.channel);
         this.reportStub = ReportServiceGrpc.newStub(this.channel);
         this.queryStub = QueryServiceGrpc.newStub(this.channel);
+        this.queryBlockingStub = QueryServiceGrpc.newBlockingStub(this.channel);
     }
 
     public void camJoin(CamDto cam) {}
@@ -95,46 +97,19 @@ public class SiloFrontend {
     }
 
     public ReportDto track(ObservationDto.ObservationType type, String id)
-        throws QueryException, InterruptedException {
-
-        final CountDownLatch finishLatch = new CountDownLatch(1);
-
-        // Having arrays of 1 element is the only way to set
-        // these variables from the inner class
-        final ReportDto[] reportDto = new ReportDto[1];
-        final boolean[] error = new boolean[1];
-
-        StreamObserver<Silo.QueryResponse> responseObserver = new StreamObserver<Silo.QueryResponse>() {
-            @Override
-            public void onNext(Silo.QueryResponse queryResponse) {
-                reportDto[0] = GRPCToReportDto(queryResponse);
-            }
-
-            @Override
-            public void onError(Throwable throwable) {
-                // We can't throw exceptions from here to the outer method
-                error[0] = true;
-                finishLatch.countDown();
-            }
-
-            @Override
-            public void onCompleted() {
-                finishLatch.countDown();
-            }
-        };
-
+        throws QueryException {
         Silo.QueryRequest request = Silo.QueryRequest.newBuilder()
                 .setType(ObservationTypeToGRPC(type))
                 .setId(id).build();
 
-        queryStub.track(request, responseObserver);
+        try {
+            return GRPCToReportDto(queryBlockingStub.track(request));
+        } catch(StatusRuntimeException e) {
+            if (e.getStatus() == Status.NOT_FOUND) {
+                throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
+            }
 
-        finishLatch.await(10, TimeUnit.SECONDS);
-
-        if (error[0]) {
             throw new QueryException();
-        } else {
-            return reportDto[0];
         }
     }
 

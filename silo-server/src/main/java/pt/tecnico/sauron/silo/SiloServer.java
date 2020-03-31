@@ -27,7 +27,7 @@ public class SiloServer {
         this.port = port;
         this.server = serverBuilder.addService(this.controlImpl)
                 .addService(ServerInterceptors.intercept(this.reportImpl, new SiloReportServiceInterceptor()))
-                .addService(queryImpl)
+                .addService(this.queryImpl)
                 .build();
     }
 
