@@ -10,4 +10,6 @@ public class CamDto {
     }
 
     public String getName() { return this.name; }
+    public Double getLat() { return this.coords.getLat(); }
+    public Double getLon() { return this.coords.getLon(); }
 }
