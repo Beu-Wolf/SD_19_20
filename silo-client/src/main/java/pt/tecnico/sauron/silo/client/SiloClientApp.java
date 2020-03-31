@@ -2,6 +2,7 @@ package pt.tecnico.sauron.silo.client;
 
 
 import io.grpc.StatusRuntimeException;
+import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 
 public class SiloClientApp {
 	
@@ -28,10 +29,9 @@ public class SiloClientApp {
 			String sentence = "friend";
 			String response = siloFrontend.ctrlPing(sentence);
 			System.out.println(response);
-		} catch (StatusRuntimeException e) {
-			System.err.println("Caught exception with description: " + e.getStatus().getDescription());
+		} catch (FrontendException e) {
+			System.err.println("Caught exception with description: " + e.getMessage());
 		}
-
 		siloFrontend.shutdown();
 	}
 

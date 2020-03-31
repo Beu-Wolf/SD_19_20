@@ -1,9 +1,9 @@
 package pt.tecnico.sauron.silo.client;
 
-import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.*;
-import pt.tecnico.sauron.silo.grpc.Silo;
-
+import pt.tecnico.sauron.silo.client.exceptions.ErrorMessages;
+import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
+import pt.tecnico.sauron.silo.client.exceptions.PingException;
 
 import static io.grpc.Status.Code.INVALID_ARGUMENT;
 
@@ -12,15 +12,19 @@ public class PingIT extends BaseIT{
     @Test
     public void pingOKTest() {
         String sentence = "friend";
-        String response = siloFrontend.ctrlPing(sentence);
-        Assertions.assertEquals("Hello friend!", response);
+        try {
+            String response = siloFrontend.ctrlPing(sentence);
+            Assertions.assertEquals("Hello friend!", response);
+        } catch (FrontendException e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
     public void emptyPingTest() {
-        Assertions.assertEquals(INVALID_ARGUMENT, Assertions.assertThrows(
-                StatusRuntimeException.class, ()->siloFrontend.ctrlPing(""))
-                .getStatus().getCode());
+        Assertions.assertEquals(ErrorMessages.BLANK_PING_INPUT, Assertions.assertThrows(
+                PingException.class, ()->siloFrontend.ctrlPing(""))
+                .getMessage());
     }
 
 }

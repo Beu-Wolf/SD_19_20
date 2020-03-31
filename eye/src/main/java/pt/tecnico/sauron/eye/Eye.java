@@ -3,6 +3,7 @@ package pt.tecnico.sauron.eye;
 import pt.tecnico.sauron.silo.client.SiloFrontend;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
+import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -84,6 +85,10 @@ public class Eye {
     }
 
     private void sendObservations() {
-        this.siloFrontend.report(this.cam.getName(), observationBuffer);
+        try {
+            this.siloFrontend.report(this.cam.getName(), observationBuffer);
+        } catch (FrontendException e) {
+                System.err.println("Got error message: " + e.getMessage());
+        }
     }
 }
