@@ -1,6 +1,7 @@
 package pt.tecnico.sauron.silo.domain;
 
 import pt.tecnico.sauron.silo.domain.exceptions.ObservationNotFoundException;
+import pt.tecnico.sauron.silo.domain.exceptions.NoCameraFoundException;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -30,4 +31,12 @@ public class Silo {
     }
 
     public List<Report> getReports() { return this.reports; }
+
+    public Cam getCam(String name) throws NoCameraFoundException {
+        Cam cam = cams.get(name);
+        if (cam == null) {
+            throw new NoCameraFoundException();
+        }
+        return cam;
+    }
 }

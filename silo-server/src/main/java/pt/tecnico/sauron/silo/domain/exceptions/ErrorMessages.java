@@ -6,4 +6,6 @@ public class ErrorMessages {
     public static String INVALID_CAR_ID = "Car ID must be a valid portuguese license plate!";
     public static String UNIMPLEMENTED_OBSERVATION_TYPE = "Can't handle observation type!";
     public static String OBSERVATION_NOT_FOUND = "Observation not found!";
+    public static String NO_CAM_FOUND = "Camera not found!";
+    public static String TYPE_NOT_SUPPORTED = "Type to observe not supported!";
 }

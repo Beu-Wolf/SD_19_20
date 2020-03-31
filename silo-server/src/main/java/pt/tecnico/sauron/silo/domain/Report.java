@@ -7,6 +7,12 @@ public class Report {
     private Observation observation;
     private Instant timestamp;
 
+    public Report(Cam cam, Observation observation, Instant timestamp) {
+        this.cam = cam;
+        this.observation = observation;
+        this.timestamp = timestamp;
+    }
+
     public Cam getCam() {
         return cam;
     }
@@ -18,4 +24,5 @@ public class Report {
     public Instant getTimestamp() {
         return timestamp;
     }
+
 }
