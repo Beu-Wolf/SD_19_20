@@ -93,7 +93,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
         };
     }
 
-    public Observation createReport(pt.tecnico.sauron.silo.grpc.Silo.ObservationType type, String id) throws InvalidCarIdException, InvalidPersonIdException, TypeNotSupportedException {
+    private Observation createReport(pt.tecnico.sauron.silo.grpc.Silo.ObservationType type, String id) throws InvalidCarIdException, InvalidPersonIdException, TypeNotSupportedException {
         switch (type) {
             case CAR:
                 return new Car(id);
