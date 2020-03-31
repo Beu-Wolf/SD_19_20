@@ -9,7 +9,6 @@ import pt.tecnico.sauron.silo.domain.Person;
 import pt.tecnico.sauron.silo.domain.Car;
 import pt.tecnico.sauron.silo.domain.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
-import pt.tecnico.sauron.silo.grpc.*;
 
 import java.time.LocalDateTime;
 
@@ -22,14 +21,14 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
     }
 
     @Override
-    public StreamObserver<Silo.Observation> report(StreamObserver<Silo.ReportResponse> responseObserver) {
+    public StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.Observation> report(StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.ReportResponse> responseObserver) {
         try {
             final String name = SiloReportServiceInterceptor.CAM_NAME.get();
             Cam cam = silo.getCam(name);
 
             return new StreamObserver<>() {
                 @Override
-                public void onNext(Silo.Observation observation) {
+                public void onNext(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) {
                     try {
                         Observation obs = createReport(observation.getType(), observation.getObservationId());
                         Report report = new Report(cam, obs, LocalDateTime.now());
@@ -50,7 +49,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
 
                 @Override
                 public void onCompleted() {
-                    responseObserver.onNext(Silo.ReportResponse.getDefaultInstance());
+                    responseObserver.onNext(pt.tecnico.sauron.silo.grpc.Silo.ReportResponse.getDefaultInstance());
                     responseObserver.onCompleted();
                 }
             };
@@ -60,7 +59,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
         }
     }
 
-    public Observation createReport(Silo.ObservationType type, String id) throws InvalidCarIdException, InvalidPersonIdException, TypeNotSupportedException {
+    public Observation createReport(pt.tecnico.sauron.silo.grpc.Silo.ObservationType type, String id) throws InvalidCarIdException, InvalidPersonIdException, TypeNotSupportedException {
         switch (type) {
             case CAR:
                 return new Car(id);
