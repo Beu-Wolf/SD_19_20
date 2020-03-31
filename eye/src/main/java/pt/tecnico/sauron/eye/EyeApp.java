@@ -1,6 +1,7 @@
 package pt.tecnico.sauron.eye;
 
 import pt.tecnico.sauron.silo.client.SiloFrontend;
+import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 
 public class EyeApp {
 
@@ -28,8 +29,12 @@ public class EyeApp {
 		final double lat = Double.parseDouble(args[3]);
 		final double lon = Double.parseDouble(args[4]);
 
-		Eye eye = new Eye(siloFrontend, name, lat, lon);
+		try {
+			Eye eye = new Eye(siloFrontend, name, lat, lon);
+			eye.interactive();
+		} catch(FrontendException e) {
+			System.err.println(e.getMessage());
+		}
 
-		eye.interactive();
 	}
 }

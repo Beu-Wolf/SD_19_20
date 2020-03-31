@@ -3,6 +3,8 @@ package pt.tecnico.sauron.eye;
 import pt.tecnico.sauron.silo.client.SiloFrontend;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
+import pt.tecnico.sauron.silo.client.exceptions.CameraAlreadyExistsException;
+import pt.tecnico.sauron.silo.client.exceptions.CameraRegisterException;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 
 import java.util.LinkedList;
@@ -30,7 +32,7 @@ public class Eye {
     private CamDto cam;
     private List<ObservationDto> observationBuffer = new LinkedList<>();
 
-    public Eye(SiloFrontend siloFrontend, String name, double lat, double lon) {
+    public Eye(SiloFrontend siloFrontend, String name, double lat, double lon) throws CameraRegisterException, CameraAlreadyExistsException {
         this.siloFrontend = siloFrontend;
         this.cam = new CamDto(name, lat, lon);
 

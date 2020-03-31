@@ -30,7 +30,7 @@ public class SiloFrontend {
         this.reportBlockingStub = ReportServiceGrpc.newBlockingStub(this.channel);
     }
 
-    public void camJoin(CamDto cam) throws CameraAlreadyExistsException {
+    public void camJoin(CamDto cam) throws CameraAlreadyExistsException, CameraRegisterException {
         Silo.JoinRequest request = Silo.JoinRequest.newBuilder()
                 .setCam(Silo.Cam.newBuilder()
                         .setName(cam.getName())
@@ -46,11 +46,14 @@ public class SiloFrontend {
             System.out.println("Registered Successfully!");
         } catch(RuntimeException e) {
             Status status = Status.fromThrowable(e);
-            throw new CameraAlreadyExistsException(status.getDescription());
+            if(status == Status.ALREADY_EXISTS) {
+                throw new CameraAlreadyExistsException();
+            }
+            throw new CameraRegisterException();
         }
     }
 
-    public CamDto camInfo(String name) throws CameraNotFoundException {
+    public CamDto camInfo(String name) throws CameraNotFoundException, CameraInfoException {
         Silo.InfoRequest request = Silo.InfoRequest.newBuilder().setName(name).build();
         Silo.InfoResponse response;
         try {
@@ -59,7 +62,10 @@ public class SiloFrontend {
             return new CamDto(name, coords.getLatitude(), coords.getLongitude());
         } catch (RuntimeException e) {
             Status status = Status.fromThrowable(e);
-            throw new CameraNotFoundException(status.getDescription());
+            if(status == Status.NOT_FOUND) {
+                throw new CameraNotFoundException();
+            }
+            throw new CameraInfoException();
         }
     }
 
