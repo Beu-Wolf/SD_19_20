@@ -27,8 +27,8 @@ public class Eye {
 
     // attributes
     private SiloFrontend siloFrontend;
-    private static CamDto cam;
-    private static List<ObservationDto> observationBuffer = new LinkedList<>();
+    private CamDto cam;
+    private List<ObservationDto> observationBuffer = new LinkedList<>();
 
     public Eye(SiloFrontend siloFrontend, String name, double lat, double lon) {
         this.siloFrontend = siloFrontend;
@@ -89,6 +89,7 @@ public class Eye {
             this.siloFrontend.report(this.cam.getName(), observationBuffer);
         } catch (FrontendException e) {
                 System.err.println("Got error message: " + e.getMessage());
+
         }
     }
 }
