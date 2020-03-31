@@ -40,6 +40,7 @@ public class SiloServer {
         new Thread(()-> {
             System.out.println("Press enter to shutdown");
             new Scanner(System.in).nextLine();
+            System.out.println("Shutting down");
             server.shutdown();
         }).start();
 
