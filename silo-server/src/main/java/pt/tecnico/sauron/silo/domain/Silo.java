@@ -13,7 +13,7 @@ public class Silo {
 
     public Silo() {}
 
-    public void registerCam(Cam cam) throws DuplicateCameraNameException {
+    public synchronized void registerCam(Cam cam) throws DuplicateCameraNameException {
         String name = cam.getName();
         if(this.cams.containsKey(name)) {
             if(cam != this.cams.get(name)) {
