@@ -102,8 +102,10 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         boolean found = false;
 
         for (Report report : silo.getReportsByNew()) {
+            Observation observation = report.getObservation();
             try {
-                if (report.getObservation().getId() == queryId) {
+                if (domainObservationToTypeGRPC(observation) == type &&
+                        observation.getId() == queryId) {
                     found = true;
                     responseObserver.onNext(domainReportToGRPC(report));
                 }
