@@ -1,7 +1,6 @@
 package pt.tecnico.sauron.silo.client;
 
 
-import io.grpc.StatusRuntimeException;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 
 public class SiloClientApp {
