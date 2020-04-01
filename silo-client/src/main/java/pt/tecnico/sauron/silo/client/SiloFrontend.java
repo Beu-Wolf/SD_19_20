@@ -175,7 +175,30 @@ public class SiloFrontend {
         }
     }
 
-    // public void trace(ObservationDto.ObservationType type, String id, Lambda)
+    public Iterator<ReportDto> trace(ObservationDto.ObservationType type, String id)
+        throws QueryException {
+
+        Silo.QueryRequest request = Silo.QueryRequest.newBuilder()
+                .setType(ObservationTypeToGRPC(type))
+                .setId(id)
+                .build();
+
+        try {
+            return Iterators.transform(queryBlockingStub.trace(request),
+                    new Function<Silo.QueryResponse, ReportDto>() {
+                        @Override
+                        public ReportDto apply(Silo.QueryResponse queryResponse) {
+                            return GRPCToReportDto(queryResponse);
+                        }
+                    });
+        } catch(StatusRuntimeException e) {
+            if (e.getStatus() == Status.NOT_FOUND) {
+                throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
+            }
+
+            throw new QueryException();
+        }
+    }
 
     public String ctrlPing(String sentence) throws PingException{
         Silo.PingRequest request = Silo.PingRequest.newBuilder().setText(sentence).build();

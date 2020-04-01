@@ -98,6 +98,28 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         }
     }
 
+    @Override
+    public void trace(QueryRequest request, StreamObserver<QueryResponse> responseObserver) {
+        ObservationType type = request.getType();
+        String queryId = request.getId();
+        boolean found = false;
+
+        for (Report report : silo.getReports()) {
+            try {
+                if (report.getObservation().getId() == queryId) {
+                    found = true;
+                    responseObserver.onNext(domainReportToGRPC(report));
+                }
+            } catch (SiloInvalidArgumentException e) {}
+        }
+
+        if (!found) {
+            responseObserver.onError(Status.NOT_FOUND.asRuntimeException());
+        } else {
+            responseObserver.onCompleted();
+        }
+    }
+
     private QueryResponse domainReportToGRPC(Report report) throws SiloInvalidArgumentException {
         return QueryResponse.newBuilder()
                 .setTimestamp(Timestamp.newBuilder().setSeconds(report.getTimestamp().getEpochSecond()))
@@ -129,5 +151,19 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
 
         return pt.tecnico.sauron.silo.grpc.Silo.Cam.newBuilder().setCoords(coords)
                 .setName(cam.getName()).build();
+    }
+
+    private Observation GRPCtoDomainObservation(pt.tecnico.sauron.silo.grpc.Silo.Observation observation)
+        throws SiloInvalidArgumentException {
+        String id = observation.getObservationId();
+
+        switch (observation.getType()) {
+            case PERSON:
+                return new Person(id);
+            case CAR:
+                return new Car(id);
+            default:
+                throw new SiloInvalidArgumentException(ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE);
+        }
     }
 }
