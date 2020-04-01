@@ -92,7 +92,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         }
 
         if (matched.isEmpty()) {
-            responseObserver.onError(Status.NOT_FOUND.asException());
+            responseObserver.onError(Status.NOT_FOUND.asRuntimeException());
         } else {
             responseObserver.onCompleted();
         }

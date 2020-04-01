@@ -1,5 +1,7 @@
 package pt.tecnico.sauron.silo.client;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Iterators;
 import com.google.type.LatLng;
 import io.grpc.*;
 import io.grpc.stub.MetadataUtils;
@@ -14,6 +16,7 @@ import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.Silo;
 
 import java.time.Instant;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -147,7 +150,30 @@ public class SiloFrontend {
         }
     }
 
-    // public void trackMatch(ObservationDto.ObservationType type, String query, Lambda)
+    public Iterator<ReportDto> trackMatch(ObservationDto.ObservationType type, String query)
+        throws QueryException {
+
+        Silo.QueryRequest request = Silo.QueryRequest.newBuilder()
+                .setType(ObservationTypeToGRPC(type))
+                .setId(query)
+                .build();
+
+        try {
+            return Iterators.transform(queryBlockingStub.trackMatch(request),
+                    new Function<Silo.QueryResponse, ReportDto>() {
+                        @Override
+                        public ReportDto apply(Silo.QueryResponse queryResponse) {
+                            return GRPCToReportDto(queryResponse);
+                        }
+                    });
+        } catch(StatusRuntimeException e) {
+            if (e.getStatus() == Status.NOT_FOUND) {
+                throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
+            }
+
+            throw new QueryException();
+        }
+    }
 
     // public void trace(ObservationDto.ObservationType type, String id, Lambda)
 
