@@ -7,7 +7,7 @@ import pt.tecnico.sauron.silo.domain.*;
 import pt.tecnico.sauron.silo.domain.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBase {
 
@@ -73,7 +73,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
             public void onNext(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) {
                 try {
                     Observation obs = createReport(observation.getType(), observation.getObservationId());
-                    Report report = new Report(cam, obs, LocalDateTime.now());
+                    Report report = new Report(cam, obs, Instant.now());
                     silo.registerObservation(report);
                 } catch (SiloException e) {
                     responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());

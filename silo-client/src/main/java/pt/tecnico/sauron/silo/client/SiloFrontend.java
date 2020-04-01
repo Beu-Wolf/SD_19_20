@@ -6,11 +6,14 @@ import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
+import pt.tecnico.sauron.silo.client.dto.ReportDto;
 import pt.tecnico.sauron.silo.client.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
+import pt.tecnico.sauron.silo.grpc.QueryServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.Silo;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -19,6 +22,8 @@ public class SiloFrontend {
     private ManagedChannel channel;
     private ControlServiceGrpc.ControlServiceBlockingStub ctrlStub;
     private ReportServiceGrpc.ReportServiceStub reportStub;
+    private QueryServiceGrpc.QueryServiceStub queryStub;
+    private QueryServiceGrpc.QueryServiceBlockingStub queryBlockingStub;
     private ReportServiceGrpc.ReportServiceBlockingStub reportBlockingStub;
     public static final Metadata.Key<String> METADATA_CAM_NAME = Metadata.Key.of("name", Metadata.ASCII_STRING_MARSHALLER);
 
@@ -27,6 +32,8 @@ public class SiloFrontend {
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         this.ctrlStub = ControlServiceGrpc.newBlockingStub(this.channel);
         this.reportStub = ReportServiceGrpc.newStub(this.channel);
+        this.queryStub = QueryServiceGrpc.newStub(this.channel);
+        this.queryBlockingStub = QueryServiceGrpc.newBlockingStub(this.channel);
         this.reportBlockingStub = ReportServiceGrpc.newBlockingStub(this.channel);
     }
 
@@ -123,7 +130,22 @@ public class SiloFrontend {
         }
     }
 
-    public ObservationDto track(ObservationDto.ObservationType type, String id) { return null; }
+    public ReportDto track(ObservationDto.ObservationType type, String id)
+        throws QueryException {
+        Silo.QueryRequest request = Silo.QueryRequest.newBuilder()
+                .setType(ObservationTypeToGRPC(type))
+                .setId(id).build();
+
+        try {
+            return GRPCToReportDto(queryBlockingStub.track(request));
+        } catch(StatusRuntimeException e) {
+            if (e.getStatus() == Status.NOT_FOUND) {
+                throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
+            }
+
+            throw new QueryException();
+        }
+    }
 
     // public void trackMatch(ObservationDto.ObservationType type, String query, Lambda)
 
@@ -164,5 +186,44 @@ public class SiloFrontend {
 
     public void shutdown() {
         this.channel.shutdown();
+    }
+
+    private ObservationDto GRPCToObservationDto(Silo.Observation observation) {
+        return new ObservationDto(GRPCToObservationType(observation.getType()),
+                observation.getObservationId());
+    }
+
+    private CamDto GRPCToCamDto(Silo.Cam cam) {
+        return new CamDto(cam.getName(), cam.getCoords().getLatitude(), cam.getCoords().getLongitude());
+    }
+
+    private ReportDto GRPCToReportDto(Silo.QueryResponse response) {
+        ObservationDto observationDto = GRPCToObservationDto(response.getObservation());
+        CamDto camDto = GRPCToCamDto(response.getCam());
+        Instant timestamp = Instant.ofEpochSecond(response.getTimestamp().getSeconds());
+
+        return new ReportDto(observationDto, camDto, timestamp);
+    }
+
+    private ObservationDto.ObservationType GRPCToObservationType(Silo.ObservationType type) {
+        switch(type) {
+            case CAR:
+                return ObservationDto.ObservationType.CAR;
+            case PERSON:
+                return ObservationDto.ObservationType.PERSON;
+            default:
+                return ObservationDto.ObservationType.UNSPEC;
+        }
+    }
+
+    private Silo.ObservationType ObservationTypeToGRPC(ObservationDto.ObservationType type) {
+        switch(type) {
+            case CAR:
+                return Silo.ObservationType.CAR;
+            case PERSON:
+                return Silo.ObservationType.PERSON;
+            default:
+                return Silo.ObservationType.UNSPEC;
+        }
     }
 }
