@@ -3,6 +3,7 @@ package pt.tecnico.sauron.spotter;
 import io.grpc.StatusRuntimeException;
 import pt.tecnico.sauron.silo.client.SiloFrontend;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
+import pt.tecnico.sauron.silo.client.exceptions.QueryException;
 
 import java.util.Scanner;
 import java.util.regex.Matcher;
@@ -67,6 +68,8 @@ public class Spotter {
 
             }catch (StatusRuntimeException e) {
                 System.out.println(e.getStatus().getDescription());
+            } catch (QueryException e) {
+                System.out.println(e.getMessage());
             }
 
         }
