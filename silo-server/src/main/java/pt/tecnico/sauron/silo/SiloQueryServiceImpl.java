@@ -85,7 +85,11 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
 
                     responseObserver.onNext(domainReportToGRPC(report));
                 }
-            } catch (SiloInvalidArgumentException e) {}
+            } catch (SiloInvalidArgumentException e) {
+                responseObserver.onError(Status.UNIMPLEMENTED.withDescription(
+                        ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE).asRuntimeException());
+                return;
+            }
         }
 
         if (matched.isEmpty()) {
@@ -109,7 +113,11 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
                     found = true;
                     responseObserver.onNext(domainReportToGRPC(report));
                 }
-            } catch (SiloInvalidArgumentException e) {}
+            } catch (SiloInvalidArgumentException e) {
+                responseObserver.onError(Status.UNIMPLEMENTED.withDescription(
+                        ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE).asRuntimeException());
+                return;
+            }
         }
 
         if (!found) {
