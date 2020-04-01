@@ -2,7 +2,6 @@ package pt.tecnico.sauron.silo;
 
 import com.google.protobuf.Timestamp;
 import com.google.type.LatLng;
-import io.grpc.StatusException;
 import io.grpc.stub.StreamObserver;
 import io.grpc.Status;
 import pt.tecnico.sauron.silo.domain.*;
@@ -14,8 +13,6 @@ import pt.tecnico.sauron.silo.grpc.Silo.QueryRequest;
 import pt.tecnico.sauron.silo.grpc.Silo.QueryResponse;
 import pt.tecnico.sauron.silo.grpc.Silo.ObservationType;
 
-import java.time.Instant;
-import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
@@ -76,7 +73,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         pattern = pattern.replace("*", "\\E.*\\Q");
         Pattern p = Pattern.compile(pattern);
 
-        for (Report report : silo.getReports()) {
+        for (Report report : silo.getReportsByNew()) {
             Observation observation = report.getObservation();
             String id = observation.getId();
 
@@ -104,7 +101,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         String queryId = request.getId();
         boolean found = false;
 
-        for (Report report : silo.getReports()) {
+        for (Report report : silo.getReportsByNew()) {
             try {
                 if (report.getObservation().getId() == queryId) {
                     found = true;
