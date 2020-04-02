@@ -56,12 +56,13 @@ public class Spotter {
                     System.out.println(reportDto);
                 } else if (Pattern.matches(SPOT_CAR_PARTIAL, command)) {
                     String id = getIdfromPattern(command, spotCarPartial, 1);
-                    Iterator<ReportDto> it = siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, id);
-                    showReports(it, true);
+                    siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, id);
+                    // showReports(it, true);
                 } else if (Pattern.matches(SPOT_PERSON_PARTIAL, command)) {
                     String id = getIdfromPattern(command, spotPersonPartial, 1);
-                    Iterator<ReportDto> it = siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, id);
-                    showReports(it, true);
+                    // Iterator<ReportDto> it =
+                    siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, id);
+                    // showReports(it, true);
                 } else if (Pattern.matches(TRACE_CAR, command)) {
                     String id = getIdfromPattern(command, traceCar, 1);
                     Iterator<ReportDto> it = siloFrontend.trace(ObservationDto.ObservationType.CAR, id);

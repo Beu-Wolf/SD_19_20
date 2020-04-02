@@ -17,6 +17,7 @@ import pt.tecnico.sauron.silo.grpc.Silo;
 
 import java.time.Instant;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -151,8 +152,9 @@ public class SiloFrontend {
         }
     }
 
-    public Iterator<ReportDto> trackMatch(ObservationDto.ObservationType type, String query)
+    public List<ReportDto> trackMatch(ObservationDto.ObservationType type, String query)
         throws QueryException {
+        LinkedList<ReportDto> results = new LinkedList<>();
 
         Silo.QueryRequest request = Silo.QueryRequest.newBuilder()
                 .setType(ObservationTypeToGRPC(type))
@@ -160,13 +162,10 @@ public class SiloFrontend {
                 .build();
 
         try {
-            return Iterators.transform(queryBlockingStub.trackMatch(request),
-                    new Function<Silo.QueryResponse, ReportDto>() {
-                        @Override
-                        public ReportDto apply(Silo.QueryResponse queryResponse) {
-                            return GRPCToReportDto(queryResponse);
-                        }
-                    });
+            for (Iterator<Silo.QueryResponse> it = queryBlockingStub.trackMatch(request); it.hasNext(); ) {
+                results.push(GRPCToReportDto(it.next()));
+            }
+            return results;
         } catch(StatusRuntimeException e) {
             Status status = Status.fromThrowable(e);
             if (status.getCode() == Status.Code.NOT_FOUND) {
