@@ -62,34 +62,53 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         }
     }
 
+    private class TrackMatchComparator {
+        Pattern p;
+
+        TrackMatchComparator(String pattern) {
+            pattern = Pattern.quote(pattern);
+            pattern = pattern.replace("*", "\\E.*\\Q");
+            p = Pattern.compile(pattern);
+        }
+
+        // typeSample - only used to check types
+        boolean matches(Car typeSample, Car toMatch) {
+            return p.matcher(toMatch.getId()).find();
+        }
+
+        boolean matches(Person typeSample, Person toMatch) {
+            return p.matcher(toMatch.getId()).find();
+        }
+
+        boolean matches(Observation typeSample, Observation toMatch)
+            throws SiloInvalidArgumentException {
+            throw new SiloInvalidArgumentException(ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE);
+        }
+    }
+
     @Override
     public void trackMatch(QueryRequest request, StreamObserver<QueryResponse> responseObserver) {
-        ObservationType type = request.getType();
         String pattern = request.getId();
 
         TreeSet<String> matched = new TreeSet<>();
+        TrackMatchComparator comparator = new TrackMatchComparator(pattern);
 
-        pattern = Pattern.quote(pattern);
-        pattern = pattern.replace("*", "\\E.*\\Q");
-        Pattern p = Pattern.compile(pattern);
+        try {
+            Observation typeSample = GRPCToDomainObservation(request.getType(), request.getId());
 
-        for (Report report : silo.getReportsByNew()) {
-            Observation observation = report.getObservation();
-            String id = observation.getId();
+            for (Report report : silo.getReportsByNew()) {
+                Observation observation = report.getObservation();
+                String id = observation.getId();
 
-            try {
-                if (domainObservationToTypeGRPC(observation) == type &&
-                        !matched.contains(id) &&
-                        p.matcher(id).find()) {
+                if (!matched.contains(id) && comparator.matches(typeSample, observation)) {
                     matched.add(id);
-
                     responseObserver.onNext(domainReportToGRPC(report));
                 }
-            } catch (SiloInvalidArgumentException e) {
-                responseObserver.onError(Status.UNIMPLEMENTED.withDescription(
-                        ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE).asRuntimeException());
-                return;
             }
+        } catch (SiloInvalidArgumentException e) {
+            responseObserver.onError(Status.UNIMPLEMENTED.withDescription(
+                    ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE).asRuntimeException());
+            return;
         }
 
         if (matched.isEmpty()) {
