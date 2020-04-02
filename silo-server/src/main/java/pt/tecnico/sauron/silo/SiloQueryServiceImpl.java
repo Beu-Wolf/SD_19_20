@@ -148,6 +148,9 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
     }
 
 
+    // ===================================================
+    // CONVERT BETWEEN DTO AND GRPC
+    // ===================================================
     private QueryResponse domainReportToGRPC(Report report) throws SiloInvalidArgumentException {
         return QueryResponse.newBuilder()
                 .setTimestamp(Timestamp.newBuilder().setSeconds(report.getTimestamp().getEpochSecond()))
