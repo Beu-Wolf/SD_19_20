@@ -142,7 +142,8 @@ public class SiloFrontend {
         try {
             return GRPCToReportDto(queryBlockingStub.track(request));
         } catch(StatusRuntimeException e) {
-            if (e.getStatus() == Status.NOT_FOUND) {
+            Status status = Status.fromThrowable(e);
+            if (status.getCode() == Status.Code.NOT_FOUND) {
                 throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
             }
 
@@ -167,7 +168,8 @@ public class SiloFrontend {
                         }
                     });
         } catch(StatusRuntimeException e) {
-            if (e.getStatus() == Status.NOT_FOUND) {
+            Status status = Status.fromThrowable(e);
+            if (status.getCode() == Status.Code.NOT_FOUND) {
                 throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
             }
 
@@ -192,7 +194,8 @@ public class SiloFrontend {
                         }
                     });
         } catch(StatusRuntimeException e) {
-            if (e.getStatus() == Status.NOT_FOUND) {
+            Status status = Status.fromThrowable(e);
+            if (status.getCode() == Status.Code.NOT_FOUND) {
                 throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
             }
 
