@@ -1,8 +1,11 @@
 package pt.tecnico.sauron.silo.domain;
 
+import pt.tecnico.sauron.silo.domain.exceptions.ObservationNotFoundException;
+import pt.tecnico.sauron.silo.domain.exceptions.DuplicateCameraNameException;
 import pt.tecnico.sauron.silo.domain.exceptions.NoCameraFoundException;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -12,8 +15,15 @@ public class Silo {
 
     public Silo() {}
 
-    public void registerCam(Cam cam) {
-        cams.put(cam.getName(), cam);
+    public synchronized void registerCam(Cam cam) throws DuplicateCameraNameException {
+        String name = cam.getName();
+        if(this.cams.containsKey(name)) {
+            if(cam != this.cams.get(name)) {
+                throw new DuplicateCameraNameException();
+            }
+        } else {
+            cams.put(cam.getName(), cam);
+        }
     }
 
     public synchronized void registerObservation(Report report) {
@@ -27,6 +37,15 @@ public class Silo {
     public void clearObservations() {
         reports.clear();
     }
+    public Report track(Observation observation) throws ObservationNotFoundException {
+        for (Report report : reports) {
+            if (report.getObservation().equals(observation))
+                return report;
+        }
+        throw new ObservationNotFoundException();
+    }
+
+    public List<Report> getReportsByNew() { return this.reports; }
 
     public Cam getCam(String name) throws NoCameraFoundException {
         Cam cam = cams.get(name);

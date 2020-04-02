@@ -12,4 +12,8 @@ public class Person extends Observation {
             throw new InvalidPersonIdException();
         }
     }
+
+    public boolean equals(Object o) {
+        return o instanceof Person && ((Person) o).getId().equals(this.getId());
+    }
 }

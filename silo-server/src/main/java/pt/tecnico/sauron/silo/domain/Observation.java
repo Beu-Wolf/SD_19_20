@@ -6,4 +6,6 @@ public abstract class Observation {
     public Observation(String id) { this.id = id; }
 
     public String getId() { return this.id; }
+
+    public abstract boolean equals(Object o);
 }

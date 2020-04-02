@@ -11,7 +11,7 @@ public class ClearIT extends BaseIT {
 
     @Test //Empty Silo
     public void emptySilo() {
-        Assertions.assertEquals("OK", siloFrontend.ctrlClear());
+       Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear());
     }
 
     //Run after init and report are completed

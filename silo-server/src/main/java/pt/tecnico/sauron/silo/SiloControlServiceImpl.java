@@ -1,17 +1,25 @@
 package pt.tecnico.sauron.silo;
 
+import com.google.protobuf.Timestamp;
+import com.google.type.LatLng;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import static io.grpc.Status.*;
-
+import pt.tecnico.sauron.silo.domain.*;
 import pt.tecnico.sauron.silo.domain.exceptions.ErrorMessages;
+import pt.tecnico.sauron.silo.domain.exceptions.SiloException;
+import pt.tecnico.sauron.silo.domain.exceptions.SiloInvalidArgumentException;
 import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.Silo;
+
+import java.time.Instant;
+
+import static io.grpc.Status.INVALID_ARGUMENT;
 
 public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImplBase {
 
     private pt.tecnico.sauron.silo.domain.Silo silo;
 
-    SiloControlServiceImpl(pt.tecnico.sauron.silo.domain.Silo silo) {
+    public SiloControlServiceImpl(pt.tecnico.sauron.silo.domain.Silo silo) {
         this.silo = silo;
     }
 
@@ -25,8 +33,7 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
         }
 
         String output = "Hello " + input + "!";
-        Silo.PingResponse response = Silo.PingResponse.newBuilder()
-                .setText(output).build();
+        Silo.PingResponse response = createPingResponse(output);
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
@@ -40,4 +47,101 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
         responseObserver.onCompleted();
     }
 
+    @Override
+    public StreamObserver<Silo.InitCamRequest> initCams(StreamObserver<Silo.InitResponse> responseObserver) {
+        return new StreamObserver<>() {
+            @Override
+            public void onNext(Silo.InitCamRequest request) {
+                Cam cam = getCamFromGRPC(request.getCam());
+                try {
+                    silo.registerCam(cam);
+                } catch(SiloException e) {
+                    responseObserver.onError(e);
+                }
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                System.err.println("Error while reporting: " + Status.fromThrowable(throwable).getDescription());
+            }
+
+            @Override
+            public void onCompleted() {
+                responseObserver.onNext(pt.tecnico.sauron.silo.grpc.Silo.InitResponse.getDefaultInstance());
+                responseObserver.onCompleted();
+            }
+        };
+    }
+
+    @Override
+    public StreamObserver<Silo.InitObservationRequest> initObservations(StreamObserver<Silo.InitResponse> responseObserver) {
+        return new StreamObserver<>() {
+            @Override
+            public void onNext(Silo.InitObservationRequest request) {
+                try {
+                    Report report = getReportFromGRPC(request);
+
+                    silo.registerObservation(report);
+                } catch(SiloException e) {
+                    responseObserver.onError(e);
+                }
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                System.err.println("Error while reporting: " + Status.fromThrowable(throwable).getDescription());
+            }
+
+            @Override
+            public void onCompleted() {
+                responseObserver.onNext(pt.tecnico.sauron.silo.grpc.Silo.InitResponse.getDefaultInstance());
+                responseObserver.onCompleted();
+            }
+        };
+    }
+
+
+    private Silo.PingResponse createPingResponse(String output) {
+        return Silo.PingResponse.newBuilder()
+                .setText(output)
+                .build();
+    }
+
+
+
+    private Report getReportFromGRPC(Silo.InitObservationRequest report) throws SiloInvalidArgumentException {
+        Cam cam = getCamFromGRPC(report.getCam());
+        Observation obs = getObservationFromGRPC(report.getObservation());
+        Instant timestamp = getInstantFromGRPC(report.getTimestamp());
+
+        return new Report(cam, obs, timestamp);
+    }
+
+    private Observation getObservationFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) throws SiloInvalidArgumentException {
+        Silo.ObservationType type = observation.getType();
+        String id = observation.getObservationId();
+
+        switch (type) {
+            case PERSON:
+                return new Person(id);
+            case CAR:
+                return new Car(id);
+            default:
+                throw new SiloInvalidArgumentException(ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE);
+        }
+    }
+
+    private Cam getCamFromGRPC(Silo.Cam cam) {
+        String name = cam.getName();
+        Coords coords = getCoordsFromGRPC(cam.getCoords());
+        return new Cam(name, coords);
+    }
+
+    private Coords getCoordsFromGRPC(LatLng coords) {
+        return new Coords(coords.getLatitude(), coords.getLongitude());
+    }
+
+    private Instant getInstantFromGRPC(Timestamp timestamp) {
+        return Instant.ofEpochSecond(timestamp.getSeconds());
+    }
 }
