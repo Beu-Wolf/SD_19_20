@@ -12,4 +12,12 @@ public class ReportDto {
         this.cam = cam;
         this.timestamp = timestamp;
     }
+
+    @Override
+    public String toString() {
+        return this.observation.getType().toString() + ','
+                + this.observation.getId() + ','
+                + this.timestamp.toString() + ','
+                + this.cam.toString();
+    }
 }

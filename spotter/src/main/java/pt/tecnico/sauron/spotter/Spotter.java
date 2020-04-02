@@ -3,6 +3,7 @@ package pt.tecnico.sauron.spotter;
 import io.grpc.StatusRuntimeException;
 import pt.tecnico.sauron.silo.client.SiloFrontend;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
+import pt.tecnico.sauron.silo.client.dto.ReportDto;
 import pt.tecnico.sauron.silo.client.exceptions.QueryException;
 
 import java.util.Scanner;
@@ -46,10 +47,12 @@ public class Spotter {
                     break;
                 } else if (Pattern.matches(SPOT_CAR, command)) {
                     String id = getIdfromPattern(command, spotCar, 1);
-                    siloFrontend.track(ObservationDto.ObservationType.CAR, id);
+                    ReportDto reportDto = siloFrontend.track(ObservationDto.ObservationType.CAR, id);
+                    System.out.println(reportDto.toString());
                 } else if (Pattern.matches(SPOT_PERSON, command)) {
                     String id = getIdfromPattern(command, spotPerson, 1);
-                    siloFrontend.track(ObservationDto.ObservationType.PERSON, id);
+                    ReportDto reportDto = siloFrontend.track(ObservationDto.ObservationType.PERSON, id);
+                    System.out.println(reportDto);
                 } else if (Pattern.matches(SPOT_CAR_PARTIAL, command)) {
                     String id = getIdfromPattern(command, spotCarPartial, 1);
                     //siloFrontend.trackMatch(ObservationDto.ObservationType.Car, id, lambda));
