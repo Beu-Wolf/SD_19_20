@@ -48,45 +48,41 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         }
     }
 
-    private class TrackMatchComparator {
+    private class TrackMatchComparator implements ObservationVisitor {
         Pattern p;
+        ObservationType type;
 
-        TrackMatchComparator(String pattern) {
+        TrackMatchComparator(ObservationType type, String pattern) {
             pattern = Pattern.quote(pattern);
             pattern = pattern.replace("*", "\\E.*\\Q");
-            p = Pattern.compile(pattern);
+            pattern = "^" + pattern + "$";
+            this.p = Pattern.compile(pattern);
+            this.type = type;
         }
 
-        // typeSample - only used to check types
-        boolean matches(Car typeSample, Car toMatch) {
-            return p.matcher(toMatch.getId()).find();
+        public boolean visit(Car car) {
+            return this.type == ObservationType.CAR && this.p.matcher(car.getId()).find();
         }
 
-        boolean matches(Person typeSample, Person toMatch) {
-            return p.matcher(toMatch.getId()).find();
-        }
-
-        boolean matches(Observation typeSample, Observation toMatch)
-            throws SiloInvalidArgumentException {
-            throw new SiloInvalidArgumentException(ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE);
+        public boolean visit(Person person) {
+            return this.type == ObservationType.PERSON && this.p.matcher(person.getId()).find();
         }
     }
 
     @Override
     public void trackMatch(QueryRequest request, StreamObserver<QueryResponse> responseObserver) {
         String pattern = request.getId();
+        ObservationType type = request.getType();
 
         TreeSet<String> matched = new TreeSet<>();
-        TrackMatchComparator comparator = new TrackMatchComparator(pattern);
+        TrackMatchComparator comparator = new TrackMatchComparator(type, pattern);
 
         try {
-            Observation typeSample = GRPCToDomainObservation(request.getType(), request.getId());
-
             for (Report report : silo.getReportsByNew()) {
                 Observation observation = report.getObservation();
                 String id = observation.getId();
 
-                if (!matched.contains(id) && comparator.matches(typeSample, observation)) {
+                if (!matched.contains(id) && observation.accept(comparator)) {
                     matched.add(id);
                     responseObserver.onNext(domainReportToGRPC(report));
                 }
