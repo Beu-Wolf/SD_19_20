@@ -94,7 +94,7 @@ public class TrackMatchIT extends BaseIT {
     @Test
     public void trackMatchNonExistingTypeTest() {
         Assertions.assertThrows(InvalidArgumentException.class, () -> {
-            this.siloFrontend.track(ObservationDto.ObservationType.UNSPEC, "1337_5p34k");
+            this.siloFrontend.trackMatch(ObservationDto.ObservationType.UNSPEC, "1337_5p34k");
         });
     }
 
@@ -102,7 +102,7 @@ public class TrackMatchIT extends BaseIT {
     public void testInvalidPersonID() {
         for(String invalidId : invalidPersonIDs) {
             Assertions.assertThrows(InvalidArgumentException.class, () -> {
-                this.siloFrontend.track(ObservationDto.ObservationType.PERSON, invalidId);
+                this.siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, invalidId);
             });
         }
     }
@@ -111,7 +111,7 @@ public class TrackMatchIT extends BaseIT {
     public void testInvalidCarID() {
         for(String invalidId : invalidCarIDs) {
             Assertions.assertThrows(InvalidArgumentException.class, () -> {
-                this.siloFrontend.track(ObservationDto.ObservationType.CAR, invalidId);
+                this.siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, invalidId);
             });
         }
     }
@@ -127,7 +127,7 @@ public class TrackMatchIT extends BaseIT {
     @Test
     public void trackMatchNonExistingPerson() {
         Assertions.assertThrows(NotFoundException.class, () -> {
-            siloFrontend.track(ObservationDto.ObservationType.PERSON, notSeenPersonId);
+            siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, notSeenPersonId);
         });
     }
 
