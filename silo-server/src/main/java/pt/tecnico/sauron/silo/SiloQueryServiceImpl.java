@@ -50,23 +50,24 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
 
     private class TrackMatchComparator {
         Pattern p;
+        ObservationType type;
 
-        TrackMatchComparator(String pattern) {
+        TrackMatchComparator(ObservationType type, String pattern) {
             pattern = Pattern.quote(pattern);
             pattern = pattern.replace("*", "\\E.*\\Q");
-            p = Pattern.compile(pattern);
+            this.p = Pattern.compile(pattern);
+            this.type = type;
         }
 
-        // typeSample - only used to check types
-        boolean matches(Car typeSample, Car toMatch) {
+        boolean matches(Car toMatch) {
             return p.matcher(toMatch.getId()).find();
         }
 
-        boolean matches(Person typeSample, Person toMatch) {
+        boolean matches(Person toMatch) {
             return p.matcher(toMatch.getId()).find();
         }
 
-        boolean matches(Observation typeSample, Observation toMatch)
+        boolean matches(Observation typeSample)
             throws SiloInvalidArgumentException {
             throw new SiloInvalidArgumentException(ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE);
         }
@@ -75,18 +76,17 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
     @Override
     public void trackMatch(QueryRequest request, StreamObserver<QueryResponse> responseObserver) {
         String pattern = request.getId();
+        ObservationType type = request.getType();
 
         TreeSet<String> matched = new TreeSet<>();
-        TrackMatchComparator comparator = new TrackMatchComparator(pattern);
+        TrackMatchComparator comparator = new TrackMatchComparator(type, pattern);
 
         try {
-            Observation typeSample = GRPCToDomainObservation(request.getType(), request.getId());
-
             for (Report report : silo.getReportsByNew()) {
                 Observation observation = report.getObservation();
                 String id = observation.getId();
 
-                if (!matched.contains(id) && comparator.matches(typeSample, observation)) {
+                if (!matched.contains(id) && comparator.matches(observation)) {
                     matched.add(id);
                     responseObserver.onNext(domainReportToGRPC(report));
                 }
