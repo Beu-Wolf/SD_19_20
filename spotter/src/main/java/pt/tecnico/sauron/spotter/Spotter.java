@@ -38,6 +38,7 @@ public class Spotter {
     public void begin() {
         System.out.println("Spotter started, write 'exit' to quit");
         Scanner scanner = new Scanner(System.in);
+        List<ReportDto> reportList;
         while(true) {
             System.out.print("> ");
             try {
@@ -55,20 +56,20 @@ public class Spotter {
                     System.out.println(reportDto.toString());
                 } else if (Pattern.matches(SPOT_CAR_PARTIAL, command)) {
                     String id = getIdfromPattern(command, spotCarPartial, 1);
-                    List<ReportDto> reportOrderedList = siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, id);
-                    showReports(reportOrderedList, true);
+                    reportList = siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, id);
+                    showReports(reportList, true);
                 } else if (Pattern.matches(SPOT_PERSON_PARTIAL, command)) {
                     String id = getIdfromPattern(command, spotPersonPartial, 1);
-                    List<ReportDto> reportOrderedList = siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, id);
-                    showReports(reportOrderedList, true);
+                    reportList = siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, id);
+                    showReports(reportList, true);
                 } else if (Pattern.matches(TRACE_CAR, command)) {
                     String id = getIdfromPattern(command, traceCar, 1);
-                    List<ReportDto> reportOrderedList = siloFrontend.trace(ObservationDto.ObservationType.CAR, id);
-                    showReports(reportOrderedList, false);
+                    reportList = siloFrontend.trace(ObservationDto.ObservationType.CAR, id);
+                    showReports(reportList, false);
                 } else if (Pattern.matches(TRACE_PERSON, command)) {
                     String id = getIdfromPattern(command, tracePerson, 1);
-                    List<ReportDto> reportOrderedList = siloFrontend.trace(ObservationDto.ObservationType.PERSON, id);
-                    showReports(reportOrderedList, false);
+                    reportList = siloFrontend.trace(ObservationDto.ObservationType.PERSON, id);
+                    showReports(reportList, false);
                 } else {
                     System.out.println("Unrecognized command, try again");
                 }
@@ -89,11 +90,11 @@ public class Spotter {
         return m.group(index);
     }
 
-    private void showReports( List<ReportDto> reportOrderedList, boolean orderId) {
+    private void showReports( List<ReportDto> reportList, boolean orderId) {
         if(orderId) {
-            Collections.sort(reportOrderedList);
+            Collections.sort(reportList);
         }
-        for(ReportDto reportDto: reportOrderedList) {
+        for(ReportDto reportDto: reportList) {
             System.out.println(reportDto.toString());
         }
     }

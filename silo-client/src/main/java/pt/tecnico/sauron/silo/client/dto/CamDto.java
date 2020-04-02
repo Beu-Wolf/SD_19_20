@@ -12,6 +12,9 @@ public class CamDto {
     public String getName() { return this.name; }
     public Double getLat() { return this.coords.getLat(); }
     public Double getLon() { return this.coords.getLon(); }
+    public CoordsDto getCoords() {
+        return coords;
+    }
 
     @Override
     public String toString() {
@@ -22,7 +25,7 @@ public class CamDto {
     public boolean equals(Object o) {
         if (o instanceof CamDto) {
             CamDto c = (CamDto) o;
-            return this.name.equals(c.getName()) && this.getLat().equals(c.getLat()) && this.getLon().equals(c.getLon());
+            return this.name.equals(c.getName()) && this.coords.equals(c.getCoords());
         }
         return false;
     }
