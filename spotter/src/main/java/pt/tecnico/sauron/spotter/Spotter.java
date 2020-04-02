@@ -4,9 +4,13 @@ import io.grpc.StatusRuntimeException;
 import pt.tecnico.sauron.silo.client.SiloFrontend;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
 import pt.tecnico.sauron.silo.client.dto.ReportDto;
+import pt.tecnico.sauron.silo.client.exceptions.InvalidArgumentException;
+import pt.tecnico.sauron.silo.client.exceptions.NotFoundException;
 import pt.tecnico.sauron.silo.client.exceptions.QueryException;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -77,6 +81,8 @@ public class Spotter {
             }catch (StatusRuntimeException e) {
                 System.out.println(e.getStatus().getDescription());
             } catch (QueryException e) {
+                System.out.println(e.getMessage());
+            } catch (InvalidArgumentException | NotFoundException e) {
                 System.out.println(e.getMessage());
             }
 
