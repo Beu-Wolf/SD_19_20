@@ -147,6 +147,9 @@ public class SiloFrontend {
             if (status.getCode() == Status.Code.NOT_FOUND) {
                 throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
             }
+            if(status.getCode() == Status.Code.INVALID_ARGUMENT) {
+                throw new QueryException(status.getDescription());
+            }
 
             throw new QueryException();
         }
@@ -170,6 +173,9 @@ public class SiloFrontend {
             Status status = Status.fromThrowable(e);
             if (status.getCode() == Status.Code.NOT_FOUND) {
                 throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
+            }
+            if (status.getCode() == Status.Code.UNIMPLEMENTED) {
+                throw new QueryException(ErrorMessages.TYPE_NOT_SUPPORTED);
             }
 
             throw new QueryException();
@@ -196,6 +202,9 @@ public class SiloFrontend {
             Status status = Status.fromThrowable(e);
             if (status.getCode() == Status.Code.NOT_FOUND) {
                 throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
+            }
+            if (status.getCode() == Status.Code.UNIMPLEMENTED) {
+                throw new QueryException(ErrorMessages.TYPE_NOT_SUPPORTED);
             }
 
             throw new QueryException();
