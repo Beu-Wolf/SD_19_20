@@ -5,6 +5,8 @@ import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
 import pt.tecnico.sauron.silo.client.dto.ReportDto;
 import pt.tecnico.sauron.silo.client.exceptions.ClearException;
+import pt.tecnico.sauron.silo.client.exceptions.ErrorMessages;
+import pt.tecnico.sauron.silo.client.exceptions.QueryException;
 
 import java.time.Instant;
 import java.util.LinkedList;
@@ -14,7 +16,14 @@ public class ClearIT extends BaseIT {
 
     @Test //Empty Silo
     public void emptySilo() {
-       Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear());
+
+        Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear());
+        Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
+                Assertions.assertThrows(QueryException.class, () -> siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, "*"))
+                        .getMessage());
+        Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
+                Assertions.assertThrows(QueryException.class, () -> siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, "*"))
+                        .getMessage());
     }
 
     @Test //Silo with observations and Cameras
