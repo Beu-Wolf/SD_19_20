@@ -199,7 +199,6 @@ public class SiloFrontend {
                 .build();
 
         try {
-            queryBlockingStub.trace(request);
             Iterator<Silo.QueryResponse> it = queryBlockingStub.trace(request);
             while (it.hasNext()) {
                 results.addLast(GRPCToReportDto(it.next()));
