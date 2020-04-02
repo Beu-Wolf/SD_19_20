@@ -1,7 +1,8 @@
 package pt.tecnico.sauron.silo.client.dto;
 
 import java.time.Instant;
-
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 public class ReportDto implements Comparable<ReportDto> {
     private CamDto cam;
     private ObservationDto observation;
@@ -27,9 +28,9 @@ public class ReportDto implements Comparable<ReportDto> {
 
     @Override
     public String toString() {
-        return this.observation.getType().toString() + ','
+        return this.observation.getType().toString().toLowerCase() + ','
                 + this.observation.getId() + ','
-                + this.timestamp.toString() + ','
+                + LocalDateTime.ofInstant(this.timestamp, ZoneOffset.UTC)  + ','
                 + this.cam.toString();
     }
 
