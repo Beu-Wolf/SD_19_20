@@ -2,10 +2,13 @@ package pt.tecnico.sauron.silo.client;
 
 import org.junit.jupiter.api.*;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
-import pt.tecnico.sauron.silo.client.dto.CoordsDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
+import pt.tecnico.sauron.silo.client.dto.ReportDto;
+import pt.tecnico.sauron.silo.client.exceptions.ClearException;
 
+import java.time.Instant;
 import java.util.LinkedList;
+import java.util.List;
 
 public class ClearIT extends BaseIT {
 
@@ -15,11 +18,19 @@ public class ClearIT extends BaseIT {
     }
 
     //Run after init and report are completed
-   /* @Test //Silo with observations and Cameras
+    @Test //Silo with observations and Cameras
     public void fullSilo() {
-        LinkedList<CamDto> list = createCams(5);
-        populateSilo(list);
-        Assertions.assertEquals("OK", siloFrontend.ctrlClear());
+        try {
+            LinkedList<CamDto> camList = createCams(5);
+            LinkedList<ReportDto> observations = createReports(5, camList);
+            siloFrontend.ctrlInitCams(camList);
+            siloFrontend.ctrlInitObservations(observations);
+            Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear());
+            Assertions.assertDoesNotThrow(()->siloFrontend.camJoin(camList.get(0)));
+            siloFrontend.ctrlClear();
+        } catch (InterruptedException | ClearException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -34,18 +45,17 @@ public class ClearIT extends BaseIT {
         return list;
     }
 
-    public void populateSilo(LinkedList<CamDto> list) {
-        LinkedList<ObservationDto> obsList = new LinkedList<>();
-        for(CamDto cam: list) {
-            String idPerson = cam.getName() + " Person";
-            String idCar = cam.getName() + " Car";
-            ObservationDto obsPerson = new ObservationDto(ObservationDto.ObservationType.PERSON, idPerson);
-            ObservationDto obsCar = new ObservationDto(ObservationDto.ObservationType.CAR, idCar);
-            obsList.add(obsPerson);
-            obsList.add(obsCar);
-            siloFrontend.report(cam.getName(), obsList);
-            obsList.clear();
+    public LinkedList<ReportDto> createReports(int count, List<CamDto> camList) {
+        LinkedList<ReportDto> list =  new LinkedList<>();
+        for(int i = 0; i < count; i++ ) {
+            CamDto at = camList.get(i);
+            ObservationDto personObs =  new ObservationDto(ObservationDto.ObservationType.PERSON, String.valueOf(i));
+            ReportDto personReport = new ReportDto(personObs, at, Instant.now());
+            ObservationDto carObs = new ObservationDto(ObservationDto.ObservationType.CAR, "AAAA00");
+            ReportDto carReport = new ReportDto(carObs, at, Instant.now());
+            list.add(personReport);
+            list.add(carReport);
         }
+        return list;
     }
-*/
 }
