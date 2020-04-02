@@ -21,8 +21,5 @@ public class Report {
         return observation;
     }
 
-    public Instant getTimestamp() {
-        return timestamp;
-    }
-
+    public Instant getTimestamp() { return timestamp; }
 }

@@ -23,6 +23,11 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
         this.silo = silo;
     }
 
+
+
+    // ===================================================
+    // SERVICE IMPLEMENTATION
+    // ===================================================
     @Override
     public void ping(Silo.PingRequest request, StreamObserver<Silo.PingResponse> responseObserver) {
         String input = request.getText();
@@ -43,7 +48,7 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
         return new StreamObserver<>() {
             @Override
             public void onNext(Silo.InitCamRequest request) {
-                Cam cam = getCamFromGRPC(request.getCam());
+                Cam cam = camFromGRPC(request.getCam());
                 try {
                     silo.registerCam(cam);
                 } catch(SiloException e) {
@@ -70,9 +75,9 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
             @Override
             public void onNext(Silo.InitObservationRequest request) {
                 try {
-                    Report report = getReportFromGRPC(request);
+                    Report report = reportFromGRPC(request);
 
-                    silo.registerObservation(report);
+                    silo.recordReport(report);
                 } catch(SiloException e) {
                     responseObserver.onError(e);
                 }
@@ -92,6 +97,10 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
     }
 
 
+
+    // ===================================================
+    // CREATE GRPC RESPONSES
+    // ===================================================
     private Silo.PingResponse createPingResponse(String output) {
         return Silo.PingResponse.newBuilder()
                 .setText(output)
@@ -100,19 +109,21 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
 
 
 
-    private Report getReportFromGRPC(Silo.InitObservationRequest report) throws SiloInvalidArgumentException {
-        Cam cam = getCamFromGRPC(report.getCam());
-        Observation obs = getObservationFromGRPC(report.getObservation());
-        Instant timestamp = getInstantFromGRPC(report.getTimestamp());
+    // ===================================================
+    // CONVERT BETWEEN DTO AND GRPC
+    // ===================================================
+    private Report reportFromGRPC(Silo.InitObservationRequest report) throws SiloInvalidArgumentException {
+        Cam cam = camFromGRPC(report.getCam());
+        Observation obs = observationFromGRPC(report.getObservation());
+        Instant timestamp = instantFromGRPC(report.getTimestamp());
 
         return new Report(cam, obs, timestamp);
     }
 
-    private Observation getObservationFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) throws SiloInvalidArgumentException {
-        Silo.ObservationType type = observation.getType();
+    private Observation observationFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) throws SiloInvalidArgumentException {
         String id = observation.getObservationId();
 
-        switch (type) {
+        switch (observation.getType()) {
             case PERSON:
                 return new Person(id);
             case CAR:
@@ -122,17 +133,17 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
         }
     }
 
-    private Cam getCamFromGRPC(Silo.Cam cam) {
+    private Cam camFromGRPC(Silo.Cam cam) {
         String name = cam.getName();
-        Coords coords = getCoordsFromGRPC(cam.getCoords());
+        Coords coords = coordsFromGRPC(cam.getCoords());
         return new Cam(name, coords);
     }
 
-    private Coords getCoordsFromGRPC(LatLng coords) {
+    private Coords coordsFromGRPC(LatLng coords) {
         return new Coords(coords.getLatitude(), coords.getLongitude());
     }
 
-    private Instant getInstantFromGRPC(Timestamp timestamp) {
+    private Instant instantFromGRPC(Timestamp timestamp) {
         return Instant.ofEpochSecond(timestamp.getSeconds());
     }
 }
