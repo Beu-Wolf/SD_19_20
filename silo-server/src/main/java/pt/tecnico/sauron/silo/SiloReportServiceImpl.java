@@ -21,15 +21,17 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
     public void camJoin(pt.tecnico.sauron.silo.grpc.Silo.JoinRequest request, io.grpc.stub.StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.JoinResponse> responseObserver) {
         String name = request.getCam().getName();
         Coords coords = new Coords(request.getCam().getCoords().getLatitude(), request.getCam().getCoords().getLongitude());
-        Cam cam = new Cam(name, coords);
 
         try {
+            Cam cam = new Cam(name, coords);
             this.silo.registerCam(cam);
             pt.tecnico.sauron.silo.grpc.Silo.JoinResponse response = pt.tecnico.sauron.silo.grpc.Silo.JoinResponse.getDefaultInstance();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch(DuplicateCameraNameException e) {
             responseObserver.onError(Status.ALREADY_EXISTS.asRuntimeException());
+        } catch(EmptyCameraNameException e) {
+            responseObserver.onError(Status.INVALID_ARGUMENT.asRuntimeException());
         }
     }
 

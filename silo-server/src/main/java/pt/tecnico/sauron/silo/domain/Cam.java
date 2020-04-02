@@ -1,10 +1,15 @@
 package pt.tecnico.sauron.silo.domain;
 
+import pt.tecnico.sauron.silo.domain.exceptions.EmptyCameraNameException;
+
 public class Cam {
     private String name;
     private Coords coords;
 
-    public Cam(String name, Coords coords) {
+    public Cam(String name, Coords coords) throws EmptyCameraNameException{
+        if(name.isEmpty()) {
+            throw new EmptyCameraNameException();
+        }
         this.name = name;
         this.coords = coords;
     }
