@@ -139,7 +139,7 @@ public class SiloFrontend {
 
 
 
-    public ReportDto track(ObservationDto.ObservationType type, String id) throws QueryException {
+    public ReportDto track(ObservationDto.ObservationType type, String id) throws QueryException, InvalidArgumentException, NotFoundException {
         Silo.QueryRequest request = Silo.QueryRequest.newBuilder()
                 .setType(observationTypeToGRPC(type))
                 .setId(id).build();
@@ -149,10 +149,10 @@ public class SiloFrontend {
         } catch(StatusRuntimeException e) {
             Status status = Status.fromThrowable(e);
             if (status.getCode() == Status.Code.NOT_FOUND) {
-                throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
+                throw new NotFoundException();
             }
             if(status.getCode() == Status.Code.INVALID_ARGUMENT) {
-                throw new QueryException(status.getDescription());
+                throw new InvalidArgumentException(status.getDescription());
             }
 
             throw new QueryException();
