@@ -18,4 +18,13 @@ public class CamDto {
         return this.name + ',' + this.getLat() + ',' + this.coords.getLon();
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof CamDto) {
+            CamDto c = (CamDto) o;
+            return this.name.equals(c.getName()) && this.getLat().equals(c.getLat()) && this.getLon().equals(c.getLon());
+        }
+        return false;
+    }
+
 }
