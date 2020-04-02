@@ -55,6 +55,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         TrackMatchComparator(ObservationType type, String pattern) {
             pattern = Pattern.quote(pattern);
             pattern = pattern.replace("*", "\\E.*\\Q");
+            pattern = "^" + pattern + "$";
             this.p = Pattern.compile(pattern);
             this.type = type;
         }
