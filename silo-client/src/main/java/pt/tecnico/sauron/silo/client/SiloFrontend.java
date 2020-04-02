@@ -1,8 +1,6 @@
 package pt.tecnico.sauron.silo.client;
 
 import com.google.protobuf.Timestamp;
-import com.google.common.base.Function;
-import com.google.common.collect.Iterators;
 import com.google.type.LatLng;
 import io.grpc.*;
 import io.grpc.stub.MetadataUtils;
@@ -202,7 +200,7 @@ public class SiloFrontend {
         try {
             queryBlockingStub.trace(request);
             for (Iterator<Silo.QueryResponse> it = queryBlockingStub.trace(request); it.hasNext(); ) {
-                results.push(GRPCToReportDto(it.next()));
+                results.addLast(GRPCToReportDto(it.next()));
             }
             return results;
         } catch(StatusRuntimeException e) {

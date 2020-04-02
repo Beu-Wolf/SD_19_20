@@ -61,11 +61,11 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         }
 
         public boolean visit(Car car) {
-            return type == ObservationType.CAR && p.matcher(car.getId()).find();
+            return this.type == ObservationType.CAR && this.p.matcher(car.getId()).find();
         }
 
         public boolean visit(Person person) {
-            return type == ObservationType.PERSON && p.matcher(person.getId()).find();
+            return this.type == ObservationType.PERSON && this.p.matcher(person.getId()).find();
         }
     }
 
