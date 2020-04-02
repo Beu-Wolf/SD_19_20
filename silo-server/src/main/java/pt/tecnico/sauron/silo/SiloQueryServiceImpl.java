@@ -105,19 +105,21 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         String queryId = request.getId();
         boolean found = false;
 
-        for (Report report : silo.getReportsByNew()) {
-            Observation observation = report.getObservation();
-            try {
-                if (domainObservationToTypeGRPC(observation) == type &&
-                        observation.getId() == queryId) {
+        try {
+            Observation queryObservation = GRPCToDomainObservation(type, queryId);
+
+            for (Report report : silo.getReportsByNew()) {
+                Observation observation = report.getObservation();
+
+                if (observation.equals(queryObservation)) {
                     found = true;
                     responseObserver.onNext(domainReportToGRPC(report));
                 }
-            } catch (SiloInvalidArgumentException e) {
-                responseObserver.onError(Status.UNIMPLEMENTED.withDescription(
-                        ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE).asRuntimeException());
-                return;
             }
+        } catch (SiloInvalidArgumentException e) {
+            responseObserver.onError(Status.UNIMPLEMENTED.withDescription(
+                    ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE).asRuntimeException());
+            return;
         }
 
         if (!found) {
@@ -160,11 +162,9 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
                 .setName(cam.getName()).build();
     }
 
-    private Observation GRPCtoDomainObservation(pt.tecnico.sauron.silo.grpc.Silo.Observation observation)
+    private Observation GRPCToDomainObservation(ObservationType type, String id)
         throws SiloInvalidArgumentException {
-        String id = observation.getObservationId();
-
-        switch (observation.getType()) {
+        switch (type) {
             case PERSON:
                 return new Person(id);
             case CAR:
@@ -172,5 +172,11 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
             default:
                 throw new SiloInvalidArgumentException(ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE);
         }
+    }
+
+    private Observation GRPCToDomainObservation(pt.tecnico.sauron.silo.grpc.Silo.Observation observation)
+        throws SiloInvalidArgumentException {
+
+        return GRPCToDomainObservation(observation.getType(), observation.getObservationId());
     }
 }
