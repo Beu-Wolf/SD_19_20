@@ -78,7 +78,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
             String id = observation.getId();
 
             try {
-                if (domainObservationToTypeGRPC(observation) == request.getType() &&
+                if (domainObservationToTypeGRPC(observation) == type &&
                         !matched.contains(id) &&
                         p.matcher(id).find()) {
                     matched.add(id);
