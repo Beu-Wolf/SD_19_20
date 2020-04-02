@@ -82,8 +82,9 @@ public class SiloFrontend {
 
     public void report(String name, List<ObservationDto> observations) throws ReportException {
         Metadata header = new Metadata();
+
         header.put(METADATA_CAM_NAME, name);
-        this.reportStub = MetadataUtils.attachHeaders(this.reportStub, header);
+        ReportServiceGrpc.ReportServiceStub reportStubWithHeaders = MetadataUtils.attachHeaders(this.reportStub, header);
         final CountDownLatch latch = new CountDownLatch(1);
 
         StreamObserver<Silo.ReportResponse> responseObserver =  new StreamObserver<>() {
@@ -104,7 +105,7 @@ public class SiloFrontend {
                 latch.countDown();
             }
         };
-        StreamObserver<Silo.Observation> requestObserver = this.reportStub.report(responseObserver);
+        StreamObserver<Silo.Observation> requestObserver = reportStubWithHeaders.report(responseObserver);
         try {
             for (ObservationDto observationDto : observations) {
                 Silo.ObservationType observationType = getObservationType(observationDto);
