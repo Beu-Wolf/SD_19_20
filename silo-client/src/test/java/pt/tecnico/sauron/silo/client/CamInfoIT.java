@@ -12,11 +12,6 @@ public class CamInfoIT extends BaseIT {
     public static double lat = 12.985744;
     public static double lon = 8.987345;
 
-    @BeforeEach
-    public void init() {
-        siloFrontend.ctrlInit();
-    }
-
     @Test
     public void camInfoOKTest() {
         try {
@@ -24,7 +19,6 @@ public class CamInfoIT extends BaseIT {
             siloFrontend.camJoin(cam);
             CamDto received = siloFrontend.camInfo(name);
             Assertions.assertEquals(cam, received);
-            //remove from Silo
         } catch (FrontendException e) {
             e.printStackTrace();
         }
@@ -33,7 +27,7 @@ public class CamInfoIT extends BaseIT {
     @Test
     public void camInfoNotExistsTest() {
         Assertions.assertEquals(ErrorMessages.CAMERA_NOT_FOUND, Assertions.assertThrows(
-                CameraNotFoundException.class, ()->siloFrontend.camInfo(name))
+                CameraNotFoundException.class, ()->siloFrontend.camInfo("name"))
                         .getMessage());
 
     }
