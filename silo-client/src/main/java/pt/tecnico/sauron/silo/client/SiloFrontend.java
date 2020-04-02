@@ -1,5 +1,6 @@
 package pt.tecnico.sauron.silo.client;
 
+import com.google.protobuf.Timestamp;
 import com.google.type.LatLng;
 import io.grpc.*;
 import io.grpc.stub.MetadataUtils;
@@ -8,19 +9,25 @@ import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
 import pt.tecnico.sauron.silo.client.dto.ReportDto;
 import pt.tecnico.sauron.silo.client.exceptions.*;
+import pt.tecnico.sauron.silo.client.exceptions.ErrorMessages;
+import pt.tecnico.sauron.silo.client.exceptions.PingException;
+import pt.tecnico.sauron.silo.client.exceptions.ReportException;
 import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.QueryServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.Silo;
 
 import java.time.Instant;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class SiloFrontend {
     private ManagedChannel channel;
-    private ControlServiceGrpc.ControlServiceBlockingStub ctrlStub;
+    private ControlServiceGrpc.ControlServiceBlockingStub ctrlBlockingStub;
+    private ControlServiceGrpc.ControlServiceStub ctrlStub;
     private ReportServiceGrpc.ReportServiceStub reportStub;
     private QueryServiceGrpc.QueryServiceStub queryStub;
     private QueryServiceGrpc.QueryServiceBlockingStub queryBlockingStub;
@@ -30,23 +37,19 @@ public class SiloFrontend {
     public SiloFrontend(String host, int port) {
         String target = host + ":" + port;
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-        this.ctrlStub = ControlServiceGrpc.newBlockingStub(this.channel);
-        this.reportStub = ReportServiceGrpc.newStub(this.channel);
+
+        this.ctrlStub = ControlServiceGrpc.newStub(this.channel);
+        this.ctrlBlockingStub = ControlServiceGrpc.newBlockingStub(this.channel);
+
         this.queryStub = QueryServiceGrpc.newStub(this.channel);
         this.queryBlockingStub = QueryServiceGrpc.newBlockingStub(this.channel);
+
+        this.reportStub = ReportServiceGrpc.newStub(this.channel);
         this.reportBlockingStub = ReportServiceGrpc.newBlockingStub(this.channel);
     }
 
     public void camJoin(CamDto cam) throws CameraAlreadyExistsException, CameraRegisterException {
-        Silo.JoinRequest request = Silo.JoinRequest.newBuilder()
-                .setCam(Silo.Cam.newBuilder()
-                        .setName(cam.getName())
-                        .setCoords(LatLng.newBuilder()
-                                .setLatitude(cam.getLat())
-                                .setLongitude(cam.getLon())
-                                .build())
-                        .build())
-                .build();
+        Silo.JoinRequest request = camToGRPC(cam);
 
         try {
             this.reportBlockingStub.camJoin(request);
@@ -78,13 +81,14 @@ public class SiloFrontend {
 
     public void report(String name, List<ObservationDto> observations) throws ReportException {
         Metadata header = new Metadata();
+
         header.put(METADATA_CAM_NAME, name);
-        this.reportStub = MetadataUtils.attachHeaders(this.reportStub, header);
+        ReportServiceGrpc.ReportServiceStub reportStubWithHeaders = MetadataUtils.attachHeaders(this.reportStub, header);
         final CountDownLatch latch = new CountDownLatch(1);
 
         StreamObserver<Silo.ReportResponse> responseObserver =  new StreamObserver<>() {
             @Override
-            public void onNext(Silo.ReportResponse reportResponse) { }
+            public void onNext(Silo.ReportResponse reportResponse) {}
 
             @Override
             public void onError(Throwable throwable) {
@@ -100,61 +104,126 @@ public class SiloFrontend {
                 latch.countDown();
             }
         };
-        StreamObserver<Silo.Observation> requestObserver = this.reportStub.report(responseObserver);
+
+        StreamObserver<Silo.Observation> requestObserver = reportStubWithHeaders.report(responseObserver);
         try {
             for (ObservationDto observationDto : observations) {
                 Silo.ObservationType observationType = getObservationType(observationDto);
-                Silo.Observation observation = Silo.Observation.newBuilder().setObservationId(observationDto.getId())
-                        .setType(observationType).build();
+                Silo.Observation observation = Silo.Observation.newBuilder()
+                        .setObservationId(observationDto.getId())
+                        .setType(observationType)
+                        .build();
                 requestObserver.onNext(observation);
+
+                // As per the documentation for client side streaming in gRPC,
+                // we should sleep for an amount of time between each call
+                // to allow for the server to send an error if it happens
+                Thread.sleep(10);
+
                 if(latch.getCount() == 0) {
                     return;
                 }
-                try {
-                    Thread.sleep(10);                                           // As per the documentation for client side streaming in gRPC, we should sleep for an amount of time between each call
-                } catch (InterruptedException e) {                                 // to allow for the server to send an error if it happens
-                    Thread.currentThread().interrupt();
-                    throw new ReportException(ErrorMessages.WAITING_THREAD_INTERRUPT);
-                }
             }
+
+            requestObserver.onCompleted();
+            latch.await(10, TimeUnit.SECONDS);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ReportException(ErrorMessages.WAITING_THREAD_INTERRUPT);
         } catch (RuntimeException e) {
             requestObserver.onError(e);
             throw new ReportException(e.toString());
         }
-        requestObserver.onCompleted();
-        try {
-            latch.await(10, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new ReportException(ErrorMessages.WAITING_THREAD_INTERRUPT);
-        }
     }
 
-    public ReportDto track(ObservationDto.ObservationType type, String id)
-        throws QueryException {
+
+
+    public ReportDto track(ObservationDto.ObservationType type, String id) throws QueryException {
         Silo.QueryRequest request = Silo.QueryRequest.newBuilder()
-                .setType(ObservationTypeToGRPC(type))
+                .setType(observationTypeToGRPC(type))
                 .setId(id).build();
 
         try {
             return GRPCToReportDto(queryBlockingStub.track(request));
         } catch(StatusRuntimeException e) {
-            if (e.getStatus() == Status.NOT_FOUND) {
+            Status status = Status.fromThrowable(e);
+            if (status.getCode() == Status.Code.NOT_FOUND) {
                 throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
+            }
+            if(status.getCode() == Status.Code.INVALID_ARGUMENT) {
+                throw new QueryException(status.getDescription());
             }
 
             throw new QueryException();
         }
     }
 
-    // public void trackMatch(ObservationDto.ObservationType type, String query, Lambda)
+    public List<ReportDto> trackMatch(ObservationDto.ObservationType type, String query)
+        throws QueryException {
+        LinkedList<ReportDto> results = new LinkedList<>();
 
-    // public void trace(ObservationDto.ObservationType type, String id, Lambda)
 
-    public String ctrlPing(String sentence) throws PingException{
+        Silo.QueryRequest request = Silo.QueryRequest.newBuilder()
+                .setType(observationTypeToGRPC(type))
+                .setId(query)
+                .build();
+
+        try {
+            Iterator<Silo.QueryResponse> it = queryBlockingStub.trackMatch(request);
+            while (it.hasNext()) {
+                results.push(GRPCToReportDto(it.next()));
+            }
+            return results;
+        } catch(StatusRuntimeException e) {
+            Status status = Status.fromThrowable(e);
+            if (status.getCode() == Status.Code.NOT_FOUND) {
+                throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
+            }
+            if (status.getCode() == Status.Code.UNIMPLEMENTED) {
+                throw new QueryException(ErrorMessages.TYPE_NOT_SUPPORTED);
+            }
+
+            throw new QueryException();
+        }
+    }
+
+    public List<ReportDto> trace(ObservationDto.ObservationType type, String id)
+        throws QueryException {
+        LinkedList<ReportDto> results = new LinkedList<>();
+
+
+        Silo.QueryRequest request = Silo.QueryRequest.newBuilder()
+                .setType(observationTypeToGRPC(type))
+                .setId(id)
+                .build();
+
+        try {
+            queryBlockingStub.trace(request);
+            Iterator<Silo.QueryResponse> it = queryBlockingStub.trace(request);
+            while (it.hasNext()) {
+                results.addLast(GRPCToReportDto(it.next()));
+            }
+            return results;
+        } catch(StatusRuntimeException e) {
+            Status status = Status.fromThrowable(e);
+            if (status.getCode() == Status.Code.NOT_FOUND) {
+                throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
+            }
+            if (status.getCode() == Status.Code.UNIMPLEMENTED) {
+                throw new QueryException(ErrorMessages.TYPE_NOT_SUPPORTED);
+            }
+
+            throw new QueryException();
+        }
+    }
+
+
+
+    public String ctrlPing(String sentence) throws PingException {
         Silo.PingRequest request = Silo.PingRequest.newBuilder().setText(sentence).build();
         try {
-            Silo.PingResponse response = this.ctrlStub.ping(request);
+            Silo.PingResponse response = this.ctrlBlockingStub.ping(request);
             return response.getText();
         } catch (StatusRuntimeException e) {
             throw new PingException(e.getStatus().getDescription());
@@ -163,13 +232,113 @@ public class SiloFrontend {
 
     public void ctrlClear() {}
 
-    public void ctrlInit() {}
+    public void ctrlInitCams(List<CamDto> cams) throws RuntimeException, InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        StreamObserver<Silo.InitResponse> responseObserver = new StreamObserver<>() {
+            @Override
+            public void onNext(Silo.InitResponse response) {}
+
+            @Override
+            public void onError(Throwable throwable) {
+                System.out.println("Could not register cameras");
+                latch.countDown();
+            }
+            @Override
+            public void onCompleted() {
+                System.out.println("Successfully registered cameras!");
+                latch.countDown();
+            }
+        };
+
+        StreamObserver<Silo.InitCamRequest> requestObserver = this.ctrlStub.initCams(responseObserver);
+        try {
+            for(CamDto cam : cams) {
+                Silo.InitCamRequest request = Silo.InitCamRequest.newBuilder()
+                        .setCam(Silo.Cam.newBuilder()
+                                .setName(cam.getName())
+                                .setCoords(LatLng.newBuilder()
+                                        .setLatitude(cam.getLat())
+                                        .setLongitude(cam.getLon())
+                                        .build())
+                                .build())
+                        .build();
+                requestObserver.onNext(request);
+
+                // As per the documentation for client side streaming in gRPC,
+                // we should sleep for an amount of time between each call
+                // to allow for the server to send an error if it happens
+                Thread.sleep(10);
+
+                if (latch.getCount() == 0) {
+                    return;
+                }
+            }
+        } catch (RuntimeException | InterruptedException e) {
+            requestObserver.onError(e);
+            throw e;
+        }
+    }
+
+    public void ctrlInitObservations(List<ReportDto> registers) throws RuntimeException, InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        StreamObserver<Silo.InitResponse> responseObserver = new StreamObserver<Silo.InitResponse>() {
+            @Override
+            public void onNext(Silo.InitResponse response) {}
+
+            @Override
+            public void onError(Throwable throwable) {
+                System.out.println("Could not register observation");
+                latch.countDown();
+            }
+            @Override
+            public void onCompleted() {
+                System.out.println("Successfully registered observations!");
+                latch.countDown();
+            }
+        };
+
+        StreamObserver<Silo.InitObservationRequest> requestObserver = this.ctrlStub.initObservations(responseObserver);
+        try {
+            for(ReportDto register : registers) {
+                Silo.ObservationType observationType = getObservationType(register.getObservation());
+                Silo.InitObservationRequest request = Silo.InitObservationRequest.newBuilder()
+                        .setObservation(Silo.Observation.newBuilder()
+                                .setType(observationType)
+                                .setObservationId(register.getId())
+                                .build())
+                        .setCam(Silo.Cam.newBuilder()
+                                .setName(register.getCamName())
+                                .setCoords(LatLng.newBuilder()
+                                        .setLatitude(register.getLat())
+                                        .setLongitude(register.getLon())
+                                        .build())
+                                .build())
+                        .setTimestamp(Timestamp.newBuilder()
+                                .setSeconds(register.getEpochSeconds())
+                                .build())
+                        .build();
+
+                requestObserver.onNext(request);
+
+                // As per the documentation for client side streaming in gRPC,
+                // we should sleep for an amount of time between each call
+                // to allow for the server to send an error if it happens
+                Thread.sleep(10);
+
+                if (latch.getCount() == 0) {
+                    return;
+                }
+            }
+        } catch (RuntimeException | InterruptedException e) {
+            requestObserver.onError(e);
+            throw e;
+        }
+    }
 
 
     public Silo.ObservationType getObservationType(ObservationDto observationDto) {
         Silo.ObservationType observationType;
         ObservationDto.ObservationType type = observationDto.getType();
-
 
         switch (type) {
             case CAR:
@@ -216,7 +385,7 @@ public class SiloFrontend {
         }
     }
 
-    private Silo.ObservationType ObservationTypeToGRPC(ObservationDto.ObservationType type) {
+    private Silo.ObservationType observationTypeToGRPC(ObservationDto.ObservationType type) {
         switch(type) {
             case CAR:
                 return Silo.ObservationType.CAR;
@@ -225,5 +394,17 @@ public class SiloFrontend {
             default:
                 return Silo.ObservationType.UNSPEC;
         }
+    }
+
+    private Silo.JoinRequest camToGRPC(CamDto cam) {
+        return Silo.JoinRequest.newBuilder()
+                .setCam(Silo.Cam.newBuilder()
+                        .setName(cam.getName())
+                        .setCoords(LatLng.newBuilder()
+                                .setLatitude(cam.getLat())
+                                .setLongitude(cam.getLon())
+                                .build())
+                        .build())
+                .build();
     }
 }

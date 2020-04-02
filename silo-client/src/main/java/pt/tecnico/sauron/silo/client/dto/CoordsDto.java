@@ -16,4 +16,13 @@ public class CoordsDto {
     public double getLon() {
         return lon;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof  CoordsDto) {
+            CoordsDto c = (CoordsDto) o;
+            return getLat() == c.getLat() && getLon() == c.getLon();
+        }
+        return false;
+    }
 }

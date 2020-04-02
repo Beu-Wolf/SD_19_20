@@ -8,4 +8,6 @@ public abstract class Observation {
     public String getId() { return this.id; }
 
     public abstract boolean equals(Object o);
+
+    public abstract boolean accept(ObservationVisitor o);
 }

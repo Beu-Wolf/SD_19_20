@@ -43,4 +43,8 @@ public class Car extends Observation {
 
         if (!valid) throw new InvalidCarIdException();
     }
+
+    public boolean accept(ObservationVisitor o) {
+        return o.visit(this);
+    }
 }

@@ -83,16 +83,23 @@ message ClearResponse {
     // empty
 }
 
-message InitRequest {
-    // TODO ???
+message InitCamRequest {
+    Cam cam = 1;
+}
+
+message InitObservationRequest {
+    Observation observation = 1;
+    google.protobuf.Timestamp timestamp = 2;
+    Cam cam = 3;
 }
 
 message InitResponse {
-    // TODO ???
+    // empty
 }
 
 service ControlService {
     rpc Ping(PingRequest) returns (PingResponse);
     rpc Clear(ClearRequest) returns (ClearResponse);
-    rpc Init(InitRequest) returns (InitResponse);
+    rpc InitCams(stream InitCamRequest) returns (InitResponse);
+    rpc InitObservations(stream InitObservationRequest) returns (InitResponse);
 }

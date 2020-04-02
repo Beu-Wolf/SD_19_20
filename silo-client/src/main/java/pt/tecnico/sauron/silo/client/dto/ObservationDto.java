@@ -1,6 +1,6 @@
 package pt.tecnico.sauron.silo.client.dto;
 
-public class ObservationDto {
+public class ObservationDto implements Comparable<ObservationDto>{
     public enum ObservationType { UNSPEC, CAR, PERSON }
 
     private ObservationType type;
@@ -17,6 +17,16 @@ public class ObservationDto {
     @Override
     public String toString() {
         return this.type.toString() + " with id " + this.id + ";";
+    }
+
+    @Override
+    public int compareTo(ObservationDto obs) {
+        return this.id.compareTo(obs.getId());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof ObservationDto && ((ObservationDto) o).getId().equals(this.id);
     }
 
 }
