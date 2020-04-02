@@ -176,8 +176,9 @@ public class SiloFrontend {
         }
     }
 
-    public Iterator<ReportDto> trace(ObservationDto.ObservationType type, String id)
+    public List<ReportDto> trace(ObservationDto.ObservationType type, String id)
         throws QueryException {
+        LinkedList<ReportDto> results = new LinkedList<>();
 
         Silo.QueryRequest request = Silo.QueryRequest.newBuilder()
                 .setType(ObservationTypeToGRPC(type))
@@ -185,13 +186,11 @@ public class SiloFrontend {
                 .build();
 
         try {
-            return Iterators.transform(queryBlockingStub.trace(request),
-                    new Function<Silo.QueryResponse, ReportDto>() {
-                        @Override
-                        public ReportDto apply(Silo.QueryResponse queryResponse) {
-                            return GRPCToReportDto(queryResponse);
-                        }
-                    });
+            queryBlockingStub.trace(request);
+            for (Iterator<Silo.QueryResponse> it = queryBlockingStub.trace(request); it.hasNext(); ) {
+                results.push(GRPCToReportDto(it.next()));
+            }
+            return results;
         } catch(StatusRuntimeException e) {
             Status status = Status.fromThrowable(e);
             if (status.getCode() == Status.Code.NOT_FOUND) {
