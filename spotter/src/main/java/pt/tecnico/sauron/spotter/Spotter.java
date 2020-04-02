@@ -65,12 +65,14 @@ public class Spotter {
                     // showReports(it, true);
                 } else if (Pattern.matches(TRACE_CAR, command)) {
                     String id = getIdfromPattern(command, traceCar, 1);
-                    Iterator<ReportDto> it = siloFrontend.trace(ObservationDto.ObservationType.CAR, id);
-                    showReports(it, false);
+                    //Iterator<ReportDto> it =
+                            siloFrontend.trace(ObservationDto.ObservationType.CAR, id);
+                    // showReports(it, false);
                 } else if (Pattern.matches(TRACE_PERSON, command)) {
                     String id = getIdfromPattern(command, tracePerson, 1);
-                    Iterator<ReportDto> it = siloFrontend.trace(ObservationDto.ObservationType.PERSON, id);
-                    showReports(it, false);
+                    // Iterator<ReportDto> it =
+                    siloFrontend.trace(ObservationDto.ObservationType.PERSON, id);
+                    // showReports(it, false);
                 } else {
                     System.out.println("Unrecognized command, try again");
                 }
