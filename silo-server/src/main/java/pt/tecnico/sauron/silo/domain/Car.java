@@ -12,6 +12,10 @@ public class Car extends Observation {
         checkLicense(id);
     }
 
+    public boolean equals(Object o) {
+        return o instanceof Car && ((Car) o).getId().equals(this.getId());
+    }
+
     private void checkLicense(String id) throws InvalidCarIdException {
         int charGroupCount = 0;
         int numGroupCount = 0;

@@ -1,21 +1,26 @@
 package pt.tecnico.sauron.silo.client;
 
 import com.google.protobuf.Timestamp;
+import com.google.common.base.Function;
+import com.google.common.collect.Iterators;
 import com.google.type.LatLng;
 import io.grpc.*;
 import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
-import pt.tecnico.sauron.silo.client.exceptions.*;
 import pt.tecnico.sauron.silo.client.dto.ReportDto;
+import pt.tecnico.sauron.silo.client.exceptions.*;
 import pt.tecnico.sauron.silo.client.exceptions.ErrorMessages;
 import pt.tecnico.sauron.silo.client.exceptions.PingException;
 import pt.tecnico.sauron.silo.client.exceptions.ReportException;
 import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
+import pt.tecnico.sauron.silo.grpc.QueryServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.Silo;
 
+import java.time.Instant;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -25,28 +30,27 @@ public class SiloFrontend {
     private ControlServiceGrpc.ControlServiceBlockingStub ctrlBlockingStub;
     private ControlServiceGrpc.ControlServiceStub ctrlStub;
     private ReportServiceGrpc.ReportServiceStub reportStub;
+    private QueryServiceGrpc.QueryServiceStub queryStub;
+    private QueryServiceGrpc.QueryServiceBlockingStub queryBlockingStub;
     private ReportServiceGrpc.ReportServiceBlockingStub reportBlockingStub;
     public static final Metadata.Key<String> METADATA_CAM_NAME = Metadata.Key.of("name", Metadata.ASCII_STRING_MARSHALLER);
 
     public SiloFrontend(String host, int port) {
         String target = host + ":" + port;
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-        this.ctrlBlockingStub = ControlServiceGrpc.newBlockingStub(this.channel);
+
         this.ctrlStub = ControlServiceGrpc.newStub(this.channel);
+        this.ctrlBlockingStub = ControlServiceGrpc.newBlockingStub(this.channel);
+
+        this.queryStub = QueryServiceGrpc.newStub(this.channel);
+        this.queryBlockingStub = QueryServiceGrpc.newBlockingStub(this.channel);
+
         this.reportStub = ReportServiceGrpc.newStub(this.channel);
         this.reportBlockingStub = ReportServiceGrpc.newBlockingStub(this.channel);
     }
 
     public void camJoin(CamDto cam) throws CameraAlreadyExistsException, CameraRegisterException {
-        Silo.JoinRequest request = Silo.JoinRequest.newBuilder()
-                .setCam(Silo.Cam.newBuilder()
-                        .setName(cam.getName())
-                        .setCoords(LatLng.newBuilder()
-                                .setLatitude(cam.getLat())
-                                .setLongitude(cam.getLon())
-                                .build())
-                        .build())
-                .build();
+        Silo.JoinRequest request = camToGRPC(cam);
 
         try {
             this.reportBlockingStub.camJoin(request);
@@ -84,7 +88,7 @@ public class SiloFrontend {
 
         StreamObserver<Silo.ReportResponse> responseObserver =  new StreamObserver<>() {
             @Override
-            public void onNext(Silo.ReportResponse reportResponse) { }
+            public void onNext(Silo.ReportResponse reportResponse) {}
 
             @Override
             public void onError(Throwable throwable) {
@@ -100,6 +104,7 @@ public class SiloFrontend {
                 latch.countDown();
             }
         };
+
         StreamObserver<Silo.Observation> requestObserver = this.reportStub.report(responseObserver);
         try {
             for (ObservationDto observationDto : observations) {
@@ -132,13 +137,78 @@ public class SiloFrontend {
         }
     }
 
-    public ObservationDto track(ObservationDto.ObservationType type, String id) { return null; }
 
-    // public void trackMatch(ObservationDto.ObservationType type, String query, Lambda)
 
-    // public void trace(ObservationDto.ObservationType type, String id, Lambda)
+    public ReportDto track(ObservationDto.ObservationType type, String id) throws QueryException {
+        Silo.QueryRequest request = Silo.QueryRequest.newBuilder()
+                .setType(observationTypeToGRPC(type))
+                .setId(id).build();
 
-    public String ctrlPing(String sentence) throws PingException{
+        try {
+            return GRPCToReportDto(queryBlockingStub.track(request));
+        } catch(StatusRuntimeException e) {
+            Status status = Status.fromThrowable(e);
+            if (status.getCode() == Status.Code.NOT_FOUND) {
+                throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
+            }
+
+            throw new QueryException();
+        }
+    }
+
+    public Iterator<ReportDto> trackMatch(ObservationDto.ObservationType type, String query) throws QueryException {
+
+        Silo.QueryRequest request = Silo.QueryRequest.newBuilder()
+                .setType(observationTypeToGRPC(type))
+                .setId(query)
+                .build();
+
+        try {
+            return Iterators.transform(queryBlockingStub.trackMatch(request),
+                    new Function<Silo.QueryResponse, ReportDto>() {
+                        @Override
+                        public ReportDto apply(Silo.QueryResponse queryResponse) {
+                            return GRPCToReportDto(queryResponse);
+                        }
+                    });
+        } catch(StatusRuntimeException e) {
+            Status status = Status.fromThrowable(e);
+            if (status.getCode() == Status.Code.NOT_FOUND) {
+                throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
+            }
+
+            throw new QueryException();
+        }
+    }
+
+    public Iterator<ReportDto> trace(ObservationDto.ObservationType type, String id) throws QueryException {
+
+        Silo.QueryRequest request = Silo.QueryRequest.newBuilder()
+                .setType(observationTypeToGRPC(type))
+                .setId(id)
+                .build();
+
+        try {
+            return Iterators.transform(queryBlockingStub.trace(request),
+                    new Function<Silo.QueryResponse, ReportDto>() {
+                        @Override
+                        public ReportDto apply(Silo.QueryResponse queryResponse) {
+                            return GRPCToReportDto(queryResponse);
+                        }
+                    });
+        } catch(StatusRuntimeException e) {
+            Status status = Status.fromThrowable(e);
+            if (status.getCode() == Status.Code.NOT_FOUND) {
+                throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
+            }
+
+            throw new QueryException();
+        }
+    }
+
+
+
+    public String ctrlPing(String sentence) throws PingException {
         Silo.PingRequest request = Silo.PingRequest.newBuilder().setText(sentence).build();
         try {
             Silo.PingResponse response = this.ctrlBlockingStub.ping(request);
@@ -152,7 +222,7 @@ public class SiloFrontend {
 
     public void ctrlInitCams(List<CamDto> cams) throws RuntimeException, InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
-        StreamObserver<Silo.InitResponse> responseObserver = new StreamObserver<Silo.InitResponse>() {
+        StreamObserver<Silo.InitResponse> responseObserver = new StreamObserver<>() {
             @Override
             public void onNext(Silo.InitResponse response) {}
 
@@ -258,7 +328,6 @@ public class SiloFrontend {
         Silo.ObservationType observationType;
         ObservationDto.ObservationType type = observationDto.getType();
 
-
         switch (type) {
             case CAR:
                 observationType = Silo.ObservationType.CAR;
@@ -274,5 +343,56 @@ public class SiloFrontend {
 
     public void shutdown() {
         this.channel.shutdown();
+    }
+
+    private ObservationDto GRPCToObservationDto(Silo.Observation observation) {
+        return new ObservationDto(GRPCToObservationType(observation.getType()),
+                observation.getObservationId());
+    }
+
+    private CamDto GRPCToCamDto(Silo.Cam cam) {
+        return new CamDto(cam.getName(), cam.getCoords().getLatitude(), cam.getCoords().getLongitude());
+    }
+
+    private ReportDto GRPCToReportDto(Silo.QueryResponse response) {
+        ObservationDto observationDto = GRPCToObservationDto(response.getObservation());
+        CamDto camDto = GRPCToCamDto(response.getCam());
+        Instant timestamp = Instant.ofEpochSecond(response.getTimestamp().getSeconds());
+
+        return new ReportDto(observationDto, camDto, timestamp);
+    }
+
+    private ObservationDto.ObservationType GRPCToObservationType(Silo.ObservationType type) {
+        switch(type) {
+            case CAR:
+                return ObservationDto.ObservationType.CAR;
+            case PERSON:
+                return ObservationDto.ObservationType.PERSON;
+            default:
+                return ObservationDto.ObservationType.UNSPEC;
+        }
+    }
+
+    private Silo.ObservationType observationTypeToGRPC(ObservationDto.ObservationType type) {
+        switch(type) {
+            case CAR:
+                return Silo.ObservationType.CAR;
+            case PERSON:
+                return Silo.ObservationType.PERSON;
+            default:
+                return Silo.ObservationType.UNSPEC;
+        }
+    }
+
+    private Silo.JoinRequest camToGRPC(CamDto cam) {
+        return Silo.JoinRequest.newBuilder()
+                .setCam(Silo.Cam.newBuilder()
+                        .setName(cam.getName())
+                        .setCoords(LatLng.newBuilder()
+                                .setLatitude(cam.getLat())
+                                .setLongitude(cam.getLon())
+                                .build())
+                        .build())
+                .build();
     }
 }
