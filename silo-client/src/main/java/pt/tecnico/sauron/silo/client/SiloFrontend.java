@@ -170,7 +170,8 @@ public class SiloFrontend {
                 .build();
 
         try {
-            for (Iterator<Silo.QueryResponse> it = queryBlockingStub.trackMatch(request); it.hasNext(); ) {
+            Iterator<Silo.QueryResponse> it = queryBlockingStub.trackMatch(request);
+            while (it.hasNext()) {
                 results.push(GRPCToReportDto(it.next()));
             }
             return results;
@@ -199,7 +200,8 @@ public class SiloFrontend {
 
         try {
             queryBlockingStub.trace(request);
-            for (Iterator<Silo.QueryResponse> it = queryBlockingStub.trace(request); it.hasNext(); ) {
+            Iterator<Silo.QueryResponse> it = queryBlockingStub.trace(request);
+            while (it.hasNext()) {
                 results.addLast(GRPCToReportDto(it.next()));
             }
             return results;
