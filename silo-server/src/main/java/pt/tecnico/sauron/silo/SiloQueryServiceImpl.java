@@ -48,7 +48,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         }
     }
 
-    private class TrackMatchComparator {
+    private class TrackMatchComparator implements ObservationVisitor {
         Pattern p;
         ObservationType type;
 
@@ -59,17 +59,12 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
             this.type = type;
         }
 
-        boolean matches(Car toMatch) {
-            return type == ObservationType.CAR && p.matcher(toMatch.getId()).find();
+        public boolean visit(Car car) {
+            return type == ObservationType.CAR && p.matcher(car.getId()).find();
         }
 
-        boolean matches(Person toMatch) {
-            return type == ObservationType.PERSON && p.matcher(toMatch.getId()).find();
-        }
-
-        boolean matches(Observation toMatch)
-            throws SiloInvalidArgumentException {
-            throw new SiloInvalidArgumentException(ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE);
+        public boolean visit(Person person) {
+            return type == ObservationType.PERSON && p.matcher(person.getId()).find();
         }
     }
 
@@ -86,7 +81,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
                 Observation observation = report.getObservation();
                 String id = observation.getId();
 
-                if (!matched.contains(id) && comparator.matches(observation)) {
+                if (!matched.contains(id) && observation.accept(comparator)) {
                     matched.add(id);
                     responseObserver.onNext(domainReportToGRPC(report));
                 }
