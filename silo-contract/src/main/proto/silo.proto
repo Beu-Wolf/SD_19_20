@@ -88,8 +88,9 @@ message InitCamRequest {
 }
 
 message InitObservationRequest {
-    string camera = 1;
-    Observation observation = 2;
+    Observation observation = 1;
+    google.protobuf.Timestamp timestamp = 2;
+    Cam cam = 3;
 }
 
 message InitResponse {
