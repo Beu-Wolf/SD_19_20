@@ -34,9 +34,13 @@ public class ClearIT extends BaseIT {
             siloFrontend.ctrlInitCams(camList);
             siloFrontend.ctrlInitObservations(observations);
             Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear());
-            Assertions.assertDoesNotThrow(()->siloFrontend.camJoin(camList.get(0)));
-            siloFrontend.ctrlClear();
-        } catch (InterruptedException | ClearException e) {
+            Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
+                    Assertions.assertThrows(QueryException.class, () -> siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, "*"))
+                            .getMessage());
+            Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
+                    Assertions.assertThrows(QueryException.class, () -> siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, "*"))
+                            .getMessage());
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
