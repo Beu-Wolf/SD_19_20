@@ -30,7 +30,7 @@ public class Silo {
         reports.addFirst(report);
     }
 
-    public Report track(Observation observation) throws ObservationNotFoundException {
+    public synchronized Report track(Observation observation) throws ObservationNotFoundException {
         for (Report report : reports) {
             if (report.getObservation().equals(observation))
                 return report;
@@ -38,7 +38,7 @@ public class Silo {
         throw new ObservationNotFoundException();
     }
 
-    public List<Report> getReportsByNew() { return this.reports; }
+    public synchronized List<Report> getReportsByNew() { return this.reports; }
 
     public Cam getCam(String name) throws NoCameraFoundException {
         Cam cam = cams.get(name);

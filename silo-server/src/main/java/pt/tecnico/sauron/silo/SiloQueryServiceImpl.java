@@ -70,7 +70,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
     }
 
     @Override
-    public void trackMatch(QueryRequest request, StreamObserver<QueryResponse> responseObserver) {
+    public synchronized void trackMatch(QueryRequest request, StreamObserver<QueryResponse> responseObserver) {
         String pattern = request.getId();
         ObservationType type = request.getType();
 
