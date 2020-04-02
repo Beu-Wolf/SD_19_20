@@ -12,7 +12,6 @@ import java.util.regex.Pattern;
 
 public class Spotter {
     private SiloFrontend siloFrontend;
-    List<ReportDto> reportOrderedList;
 
     // commands
     private static final String SPOT_CAR = "^spot car (\\w+)$";
@@ -53,24 +52,23 @@ public class Spotter {
                 } else if (Pattern.matches(SPOT_PERSON, command)) {
                     String id = getIdfromPattern(command, spotPerson, 1);
                     ReportDto reportDto = siloFrontend.track(ObservationDto.ObservationType.PERSON, id);
-                    System.out.println(reportDto);
+                    System.out.println(reportDto.toString());
                 } else if (Pattern.matches(SPOT_CAR_PARTIAL, command)) {
                     String id = getIdfromPattern(command, spotCarPartial, 1);
-                    reportOrderedList = siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, id);
-                    showReports(true);
+                    List<ReportDto> reportOrderedList = siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, id);
+                    showReports(reportOrderedList, true);
                 } else if (Pattern.matches(SPOT_PERSON_PARTIAL, command)) {
                     String id = getIdfromPattern(command, spotPersonPartial, 1);
-                    reportOrderedList = siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, id);
-                    showReports(true);
+                    List<ReportDto> reportOrderedList = siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, id);
+                    showReports(reportOrderedList, true);
                 } else if (Pattern.matches(TRACE_CAR, command)) {
                     String id = getIdfromPattern(command, traceCar, 1);
-                    //Iterator<ReportDto> it =
-                    reportOrderedList = siloFrontend.trace(ObservationDto.ObservationType.CAR, id);
-                    showReports(false);
+                    List<ReportDto> reportOrderedList = siloFrontend.trace(ObservationDto.ObservationType.CAR, id);
+                    showReports(reportOrderedList, false);
                 } else if (Pattern.matches(TRACE_PERSON, command)) {
                     String id = getIdfromPattern(command, tracePerson, 1);
-                    reportOrderedList = siloFrontend.trace(ObservationDto.ObservationType.PERSON, id);
-                    showReports(false);
+                    List<ReportDto> reportOrderedList = siloFrontend.trace(ObservationDto.ObservationType.PERSON, id);
+                    showReports(reportOrderedList, false);
                 } else {
                     System.out.println("Unrecognized command, try again");
                 }
@@ -91,7 +89,7 @@ public class Spotter {
         return m.group(index);
     }
 
-    private void showReports( boolean orderId) {
+    private void showReports( List<ReportDto> reportOrderedList, boolean orderId) {
         if(orderId) {
             Collections.sort(reportOrderedList);
         }
