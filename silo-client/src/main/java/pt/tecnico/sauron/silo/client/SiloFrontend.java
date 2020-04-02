@@ -270,7 +270,9 @@ public class SiloFrontend {
                     return;
                 }
             }
+            requestObserver.onCompleted();
         } catch (RuntimeException | InterruptedException e) {
+            e.printStackTrace();
             requestObserver.onError(e);
             throw e;
         }
@@ -326,6 +328,7 @@ public class SiloFrontend {
                     return;
                 }
             }
+            requestObserver.onCompleted();
         } catch (RuntimeException | InterruptedException e) {
             requestObserver.onError(e);
             throw e;
