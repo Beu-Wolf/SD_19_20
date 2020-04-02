@@ -14,17 +14,15 @@ public class ReportDto implements Comparable<ReportDto> {
         this.timestamp = timestamp;
     }
 
-    public ObservationDto getObservation() {
-        return observation;
-    }
 
-    public CamDto getCam() {
-        return cam;
-    }
-
-    public Instant getTimestamp() {
-        return timestamp;
-    }
+    public ObservationDto getObservation() { return this.observation; }
+    public CamDto getCam() {return this.cam; }
+    public String getId() { return this.observation.getId(); }
+    public String getCamName() { return this.cam.getName(); }
+    public Double getLat() { return this.cam.getLat(); }
+    public Double getLon() { return this.cam.getLon(); }
+    public Instant getTimestamp() { return this.timestamp; }
+    public long getEpochSeconds() { return this.timestamp.getEpochSecond(); }
 
     @Override
     public String toString() {
