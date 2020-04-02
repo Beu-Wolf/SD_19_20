@@ -28,22 +28,8 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         String id = request.getId();
         ObservationType type = request.getType();
 
-        Observation observation;
         try {
-            switch (type) {
-                case CAR:
-                    observation = new Car(id);
-                    break;
-                case PERSON:
-                    observation = new Person(id);
-                    break;
-                case UNSPEC:
-                    // TODO
-                default:
-                    responseObserver.onError(Status.UNIMPLEMENTED.withDescription(
-                            ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE).asRuntimeException());
-                    return;
-            }
+            Observation observation = GRPCToDomainObservation(type, id);
 
             Report report = silo.track(observation);
 
