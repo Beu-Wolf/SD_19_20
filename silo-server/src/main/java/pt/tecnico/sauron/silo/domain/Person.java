@@ -16,4 +16,8 @@ public class Person extends Observation {
     public boolean equals(Object o) {
         return o instanceof Person && ((Person) o).getId().equals(this.getId());
     }
+
+    public boolean accept(ObservationVisitor o) {
+        return o.visit(this);
+    }
 }

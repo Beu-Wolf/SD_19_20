@@ -1,8 +1,6 @@
 package pt.tecnico.sauron.silo.client;
 
 import com.google.protobuf.Timestamp;
-import com.google.common.base.Function;
-import com.google.common.collect.Iterators;
 import com.google.type.LatLng;
 import io.grpc.*;
 import io.grpc.stub.MetadataUtils;
@@ -21,6 +19,7 @@ import pt.tecnico.sauron.silo.grpc.Silo;
 
 import java.time.Instant;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -152,12 +151,18 @@ public class SiloFrontend {
             if (status.getCode() == Status.Code.NOT_FOUND) {
                 throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
             }
+            if(status.getCode() == Status.Code.INVALID_ARGUMENT) {
+                throw new QueryException(status.getDescription());
+            }
 
             throw new QueryException();
         }
     }
 
-    public Iterator<ReportDto> trackMatch(ObservationDto.ObservationType type, String query) throws QueryException {
+    public List<ReportDto> trackMatch(ObservationDto.ObservationType type, String query)
+        throws QueryException {
+        LinkedList<ReportDto> results = new LinkedList<>();
+
 
         Silo.QueryRequest request = Silo.QueryRequest.newBuilder()
                 .setType(observationTypeToGRPC(type))
@@ -165,24 +170,28 @@ public class SiloFrontend {
                 .build();
 
         try {
-            return Iterators.transform(queryBlockingStub.trackMatch(request),
-                    new Function<Silo.QueryResponse, ReportDto>() {
-                        @Override
-                        public ReportDto apply(Silo.QueryResponse queryResponse) {
-                            return GRPCToReportDto(queryResponse);
-                        }
-                    });
+            Iterator<Silo.QueryResponse> it = queryBlockingStub.trackMatch(request);
+            while (it.hasNext()) {
+                results.push(GRPCToReportDto(it.next()));
+            }
+            return results;
         } catch(StatusRuntimeException e) {
             Status status = Status.fromThrowable(e);
             if (status.getCode() == Status.Code.NOT_FOUND) {
                 throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
+            }
+            if (status.getCode() == Status.Code.UNIMPLEMENTED) {
+                throw new QueryException(ErrorMessages.TYPE_NOT_SUPPORTED);
             }
 
             throw new QueryException();
         }
     }
 
-    public Iterator<ReportDto> trace(ObservationDto.ObservationType type, String id) throws QueryException {
+    public List<ReportDto> trace(ObservationDto.ObservationType type, String id)
+        throws QueryException {
+        LinkedList<ReportDto> results = new LinkedList<>();
+
 
         Silo.QueryRequest request = Silo.QueryRequest.newBuilder()
                 .setType(observationTypeToGRPC(type))
@@ -190,17 +199,19 @@ public class SiloFrontend {
                 .build();
 
         try {
-            return Iterators.transform(queryBlockingStub.trace(request),
-                    new Function<Silo.QueryResponse, ReportDto>() {
-                        @Override
-                        public ReportDto apply(Silo.QueryResponse queryResponse) {
-                            return GRPCToReportDto(queryResponse);
-                        }
-                    });
+            queryBlockingStub.trace(request);
+            Iterator<Silo.QueryResponse> it = queryBlockingStub.trace(request);
+            while (it.hasNext()) {
+                results.addLast(GRPCToReportDto(it.next()));
+            }
+            return results;
         } catch(StatusRuntimeException e) {
             Status status = Status.fromThrowable(e);
             if (status.getCode() == Status.Code.NOT_FOUND) {
                 throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
+            }
+            if (status.getCode() == Status.Code.UNIMPLEMENTED) {
+                throw new QueryException(ErrorMessages.TYPE_NOT_SUPPORTED);
             }
 
             throw new QueryException();
