@@ -87,11 +87,13 @@ public class Eye {
     }
 
     private void sendObservations() {
-        try {
-            this.siloFrontend.report(this.cam.getName(), observationBuffer);
-        } catch (FrontendException e) {
+        if(observationBuffer.size() > 0) {
+            try {
+                this.siloFrontend.report(this.cam.getName(), observationBuffer);
+            } catch (FrontendException e) {
                 System.err.println("Got error message: " + e.getMessage());
 
+            }
         }
     }
 }
