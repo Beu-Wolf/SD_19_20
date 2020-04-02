@@ -272,7 +272,6 @@ public class SiloFrontend {
             }
             requestObserver.onCompleted();
         } catch (RuntimeException | InterruptedException e) {
-            e.printStackTrace();
             requestObserver.onError(e);
             throw e;
         }
