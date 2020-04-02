@@ -1,5 +1,7 @@
 package pt.tecnico.sauron.silo;
 
+import com.google.protobuf.Timestamp;
+import com.google.type.LatLng;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.sauron.silo.domain.*;
@@ -31,19 +33,17 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
         }
 
         String output = "Hello " + input + "!";
-        Silo.PingResponse response = Silo.PingResponse.newBuilder()
-                .setText(output).build();
+        Silo.PingResponse response = createPingResponse(output);
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
 
+    @Override
     public StreamObserver<Silo.InitCamRequest> initCams(StreamObserver<Silo.InitResponse> responseObserver) {
         return new StreamObserver<>() {
             @Override
             public void onNext(Silo.InitCamRequest request) {
-                String name = request.getCam().getName();
-                Coords coords = new Coords(request.getCam().getCoords().getLatitude(), request.getCam().getCoords().getLongitude());
-                Cam cam = new Cam(name, coords);
+                Cam cam = getCamFromGRPC(request.getCam());
                 try {
                     silo.registerCam(cam);
                 } catch(SiloException e) {
@@ -70,11 +70,9 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
             @Override
             public void onNext(Silo.InitObservationRequest request) {
                 try {
-                    Cam cam = silo.getCam(request.getCam().getName());
-                    Observation obs = GRPCToDomainObservation(request.getObservation());
-                    Instant timestamp = Instant.ofEpochSecond(request.getTimestamp().getSeconds());
+                    Report report = getReportFromGRPC(request);
 
-                    silo.registerObservation(new Report(cam, obs, timestamp));
+                    silo.registerObservation(report);
                 } catch(SiloException e) {
                     responseObserver.onError(e);
                 }
@@ -93,7 +91,27 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
         };
     }
 
-    private Observation GRPCToDomainObservation(Silo.ObservationType type, String id) throws SiloInvalidArgumentException {
+
+    private Silo.PingResponse createPingResponse(String output) {
+        return Silo.PingResponse.newBuilder()
+                .setText(output)
+                .build();
+    }
+
+
+
+    private Report getReportFromGRPC(Silo.InitObservationRequest report) throws SiloInvalidArgumentException {
+        Cam cam = getCamFromGRPC(report.getCam());
+        Observation obs = getObservationFromGRPC(report.getObservation());
+        Instant timestamp = getInstantFromGRPC(report.getTimestamp());
+
+        return new Report(cam, obs, timestamp);
+    }
+
+    private Observation getObservationFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) throws SiloInvalidArgumentException {
+        Silo.ObservationType type = observation.getType();
+        String id = observation.getObservationId();
+
         switch (type) {
             case PERSON:
                 return new Person(id);
@@ -104,7 +122,17 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
         }
     }
 
-    private Observation GRPCToDomainObservation(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) throws SiloInvalidArgumentException {
-        return GRPCToDomainObservation(observation.getType(), observation.getObservationId());
+    private Cam getCamFromGRPC(Silo.Cam cam) {
+        String name = cam.getName();
+        Coords coords = getCoordsFromGRPC(cam.getCoords());
+        return new Cam(name, coords);
+    }
+
+    private Coords getCoordsFromGRPC(LatLng coords) {
+        return new Coords(coords.getLatitude(), coords.getLongitude());
+    }
+
+    private Instant getInstantFromGRPC(Timestamp timestamp) {
+        return Instant.ofEpochSecond(timestamp.getSeconds());
     }
 }
