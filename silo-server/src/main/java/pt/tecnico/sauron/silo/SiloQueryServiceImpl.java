@@ -60,14 +60,14 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         }
 
         boolean matches(Car toMatch) {
-            return p.matcher(toMatch.getId()).find();
+            return type == ObservationType.CAR && p.matcher(toMatch.getId()).find();
         }
 
         boolean matches(Person toMatch) {
-            return p.matcher(toMatch.getId()).find();
+            return type == ObservationType.PERSON && p.matcher(toMatch.getId()).find();
         }
 
-        boolean matches(Observation typeSample)
+        boolean matches(Observation toMatch)
             throws SiloInvalidArgumentException {
             throw new SiloInvalidArgumentException(ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE);
         }
