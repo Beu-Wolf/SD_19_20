@@ -17,7 +17,6 @@ public class ClearIT extends BaseIT {
        Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear());
     }
 
-    //Run after init and report are completed
     @Test //Silo with observations and Cameras
     public void fullSilo() {
         try {
