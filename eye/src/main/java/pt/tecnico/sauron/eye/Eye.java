@@ -47,7 +47,7 @@ public class Eye {
 
                 if(line.isEmpty()) {
                     sendObservations();
-
+                    observationBuffer.clear();
                 } else if(Pattern.matches(CAR_OBSERVATION, line)) {
                     Matcher m = carObservationPattern.matcher(line);
                     m.find();
