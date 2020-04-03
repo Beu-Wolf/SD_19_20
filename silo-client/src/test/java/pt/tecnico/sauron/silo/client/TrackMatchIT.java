@@ -92,42 +92,57 @@ public class TrackMatchIT extends BaseIT {
 
     @Test
     public void trackMatchNonExistingTypeTest() {
-        Assertions.assertThrows(InvalidArgumentException.class, () -> {
-            this.siloFrontend.trackMatch(ObservationDto.ObservationType.UNSPEC, "1337_5p34k");
-        });
+        Assertions.assertEquals(
+                "Can't handle observation type!",
+                Assertions.assertThrows(InvalidArgumentException.class, () -> {
+                    this.siloFrontend.track(ObservationDto.ObservationType.UNSPEC, "1337_5p34k");
+                }).getMessage()
+        );
     }
 
     @Test
     public void testInvalidPersonID() {
         for(String invalidId : invalidPersonIDs) {
-            Assertions.assertThrows(NotFoundException.class, () -> {
-                this.siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, invalidId);
-            });
+            Assertions.assertEquals(
+                ErrorMessages.OBSERVATION_NOT_FOUND,
+                Assertions.assertThrows(NotFoundException.class, () -> {
+                    this.siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, invalidId);
+                }).getMessage()
+            );
         }
     }
 
     @Test
     public void testInvalidCarID() {
         for(String invalidId : invalidCarIDs) {
-            Assertions.assertThrows(NotFoundException.class, () -> {
-                this.siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, invalidId);
-            });
+            Assertions.assertEquals(
+                ErrorMessages.OBSERVATION_NOT_FOUND,
+                Assertions.assertThrows(NotFoundException.class, () -> {
+                    this.siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, invalidId);
+                }).getMessage()
+            );
         }
     }
 
 
     @Test
     public void trackMatchNonExistingCar() {
-        Assertions.assertThrows(NotFoundException.class, () -> {
-            siloFrontend.track(ObservationDto.ObservationType.CAR, notSeenCarId);
-        });
+        Assertions.assertEquals(
+            ErrorMessages.OBSERVATION_NOT_FOUND,
+            Assertions.assertThrows(NotFoundException.class, () -> {
+                siloFrontend.track(ObservationDto.ObservationType.CAR, notSeenCarId);
+            }).getMessage()
+        );
     }
 
     @Test
     public void trackMatchNonExistingPerson() {
-        Assertions.assertThrows(NotFoundException.class, () -> {
-            siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, notSeenPersonId);
-        });
+        Assertions.assertEquals(
+            ErrorMessages.OBSERVATION_NOT_FOUND,
+            Assertions.assertThrows(NotFoundException.class, () -> {
+                siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, notSeenPersonId);
+            }).getMessage()
+        );
     }
 
     @Test
