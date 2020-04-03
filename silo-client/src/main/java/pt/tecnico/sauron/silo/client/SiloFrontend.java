@@ -281,7 +281,6 @@ public class SiloFrontend {
             }
             return results;
         } catch(StatusRuntimeException e) {
-            System.out.println("GOT ERROR: " + e);
             Status status = Status.fromThrowable(e);
             if (status.getCode() == Status.Code.NOT_FOUND) {
                 throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);

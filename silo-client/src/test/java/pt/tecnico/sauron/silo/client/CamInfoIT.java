@@ -19,7 +19,7 @@ public class CamInfoIT extends BaseIT {
             CamDto cam = new CamDto(name, lat, lon);
             siloFrontend.camJoin(cam);
             CamDto received = siloFrontend.camInfo(name);
-            Assertions.assertEquals(cam, received);
+            Assertions.assertEquals(cam.toString(), received.toString());
         } catch (FrontendException e) {
             e.printStackTrace();
         }

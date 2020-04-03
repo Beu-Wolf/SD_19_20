@@ -14,7 +14,7 @@ public class CamJoinIT extends BaseIT {
         CamDto cam = new CamDto(name, lat, lon);
         try {
             siloFrontend.camJoin(cam);
-            Assertions.assertEquals(siloFrontend.camInfo(name), cam);
+            Assertions.assertEquals(cam.toString(), siloFrontend.camInfo(cam.getName()).toString());
         } catch (FrontendException e) {
             e.printStackTrace();
         }
@@ -37,14 +37,9 @@ public class CamJoinIT extends BaseIT {
     @Test
     public void camJoinWithBlankName() {
         CamDto cam = new CamDto("", lat, lon);
-        try {
-            siloFrontend.camJoin(cam);
-            Assertions.assertEquals(ErrorMessages.FAILED_TO_REGISTER_CAMERA, Assertions.assertThrows(
-                    CameraRegisterException.class, ()->siloFrontend.camJoin(cam))
-                    .getMessage() );
-        } catch (FrontendException e) {
-            e.printStackTrace();
-        }
+        Assertions.assertEquals(ErrorMessages.FAILED_TO_REGISTER_CAMERA, Assertions.assertThrows(
+                CameraRegisterException.class, ()->siloFrontend.camJoin(cam))
+                .getMessage() );
     }
 
 
