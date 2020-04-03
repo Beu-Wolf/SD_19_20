@@ -21,7 +21,11 @@ public class ReportIT extends BaseIT {
         CamDto camDto = new CamDto(cameraName, 10, 10);
         try {
             siloFrontend.camJoin(camDto);
-        } catch(CameraAlreadyExistsException| CameraRegisterException e) {}
+        } catch(CameraAlreadyExistsException e) {
+            // ignore
+        } catch(CameraRegisterException e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
