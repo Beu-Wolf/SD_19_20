@@ -282,9 +282,13 @@ public class SiloFrontend {
                 }
             }
             requestObserver.onCompleted();
-        } catch (RuntimeException | InterruptedException e) {
+            latch.await(10, TimeUnit.SECONDS);
+        } catch (RuntimeException e) {
             requestObserver.onError(e);
             throw e;
+        } catch (InterruptedException e) {
+            requestObserver.onError(e);
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -339,9 +343,13 @@ public class SiloFrontend {
                 }
             }
             requestObserver.onCompleted();
-        } catch (RuntimeException | InterruptedException e) {
+            latch.await(10, TimeUnit.SECONDS);
+        } catch (RuntimeException e) {
             requestObserver.onError(e);
             throw e;
+        } catch (InterruptedException e) {
+            requestObserver.onError(e);
+            Thread.currentThread().interrupt();
         }
     }
 
