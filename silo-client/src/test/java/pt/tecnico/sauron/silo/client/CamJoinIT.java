@@ -6,6 +6,8 @@ import pt.tecnico.sauron.silo.client.exceptions.*;
 
 public class CamJoinIT extends BaseIT {
     public static String name = "testCamera";
+    public static String shortName = "ct";
+    public static String longName = "VeryBigCameraNameAbove15";
     public static double lat = 12.983456;
     public static double lon = 8.678456;
     public static double newLat = 11.123456;
@@ -51,9 +53,25 @@ public class CamJoinIT extends BaseIT {
     @Test
     public void camJoinWithBlankName() {
         CamDto cam = new CamDto("", lat, lon);
-        Assertions.assertEquals(ErrorMessages.FAILED_TO_REGISTER_CAMERA, Assertions.assertThrows(
+        Assertions.assertEquals("Camera name is empty!", Assertions.assertThrows(
                 CameraRegisterException.class, ()->siloFrontend.camJoin(cam))
                 .getMessage() );
+    }
+
+    @Test
+    public void camJoinWithShortName() {
+        CamDto shortCam = new CamDto(shortName, lat, lon);
+        Assertions.assertEquals("Camera names must be between 3 and 15 characters long!", Assertions.assertThrows(
+        CameraRegisterException.class,()->siloFrontend.camJoin(shortCam))
+         .getMessage());
+    }
+
+    @Test
+    public void camJoinWithLongName() {
+        CamDto longCam = new CamDto(longName, lat, lon);
+        Assertions.assertEquals("Camera names must be between 3 and 15 characters long!", Assertions.assertThrows(
+        CameraRegisterException.class,()->siloFrontend.camJoin(longCam))
+        .getMessage());
     }
 
 
