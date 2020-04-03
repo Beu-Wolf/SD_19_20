@@ -111,7 +111,7 @@ Verificar que
 exit 
 ```
 
-# Caso 5: Uso do spotter para operações de controlo
+## Caso 5: Uso do spotter para operações de controlo
 
 Executar novo spotter
 ```
