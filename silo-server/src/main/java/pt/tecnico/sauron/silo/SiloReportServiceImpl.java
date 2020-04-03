@@ -28,7 +28,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
             responseObserver.onCompleted();
         } catch(DuplicateCameraNameException e) {
             responseObserver.onError(Status.ALREADY_EXISTS.asRuntimeException());
-        } catch(EmptyCameraNameException e) {
+        } catch(EmptyCameraNameException | InvalidCameraNameException e) {
             responseObserver.onError(Status.INVALID_ARGUMENT.asRuntimeException());
         }
     }
@@ -130,7 +130,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
                 .setCoords(coordsToGRPC(cam.getCoords()))
                 .build();
     }
-    private Cam camFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.Cam cam) throws EmptyCameraNameException {
+    private Cam camFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.Cam cam) throws EmptyCameraNameException, InvalidCameraNameException {
         String name = cam.getName();
         Coords coords = coordsFromGRPC(cam.getCoords());
         return new Cam(name, coords);

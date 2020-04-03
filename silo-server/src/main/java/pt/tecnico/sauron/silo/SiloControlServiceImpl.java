@@ -5,10 +5,7 @@ import com.google.type.LatLng;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.sauron.silo.domain.*;
-import pt.tecnico.sauron.silo.domain.exceptions.EmptyCameraNameException;
-import pt.tecnico.sauron.silo.domain.exceptions.ErrorMessages;
-import pt.tecnico.sauron.silo.domain.exceptions.SiloException;
-import pt.tecnico.sauron.silo.domain.exceptions.SiloInvalidArgumentException;
+import pt.tecnico.sauron.silo.domain.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.Silo;
 
@@ -122,7 +119,7 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
     // ===================================================
     // CONVERT BETWEEN DOMAIN AND GRPC
     // ===================================================
-    private Report reportFromGRPC(Silo.InitObservationRequest report) throws SiloInvalidArgumentException, EmptyCameraNameException {
+    private Report reportFromGRPC(Silo.InitObservationRequest report) throws SiloInvalidArgumentException, EmptyCameraNameException, InvalidCameraNameException {
         Cam cam = camFromGRPC(report.getCam());
         Observation obs = observationFromGRPC(report.getObservation());
         Instant timestamp = instantFromGRPC(report.getTimestamp());
@@ -143,7 +140,7 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
         }
     }
 
-    private Cam camFromGRPC(Silo.Cam cam) throws EmptyCameraNameException {
+    private Cam camFromGRPC(Silo.Cam cam) throws EmptyCameraNameException, InvalidCameraNameException {
         String name = cam.getName();
         Coords coords = coordsFromGRPC(cam.getCoords());
         return new Cam(name, coords);
