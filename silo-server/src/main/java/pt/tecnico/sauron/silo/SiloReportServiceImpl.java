@@ -69,6 +69,9 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
         }
 
         return new StreamObserver<>() {
+            boolean error = false;
+            SiloException e;
+
             @Override
             public void onNext(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) {
                 try {
@@ -76,7 +79,8 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
                     Report report = new Report(cam, obs, Instant.now());
                     silo.registerObservation(report);
                 } catch (SiloException e) {
-                    responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
+                    this.error = true;
+                    this.e = e;
                 }
             }
 
@@ -87,8 +91,12 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
 
             @Override
             public void onCompleted() {
-                responseObserver.onNext(pt.tecnico.sauron.silo.grpc.Silo.ReportResponse.getDefaultInstance());
-                responseObserver.onCompleted();
+                if (this.error) {
+                    responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(this.e.getMessage()).asRuntimeException());
+                } else {
+                    responseObserver.onNext(pt.tecnico.sauron.silo.grpc.Silo.ReportResponse.getDefaultInstance());
+                    responseObserver.onCompleted();
+                }
             }
         };
     }
