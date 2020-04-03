@@ -265,7 +265,7 @@ public class SiloFrontend {
         }
     }
 
-    public List<ReportDto> trackMatch(ObservationDto.ObservationType type, String query) throws QueryException {
+    public List<ReportDto> trackMatch(ObservationDto.ObservationType type, String query) throws QueryException, NotFoundException, InvalidArgumentException {
         LinkedList<ReportDto> results = new LinkedList<>();
 
 
@@ -278,13 +278,12 @@ public class SiloFrontend {
             }
             return results;
         } catch(StatusRuntimeException e) {
-            System.out.println("GOT ERROR: " + e);
             Status status = Status.fromThrowable(e);
             if (status.getCode() == Status.Code.NOT_FOUND) {
-                throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);
+                throw new NotFoundException();
             }
-            if (status.getCode() == Status.Code.UNIMPLEMENTED) {
-                throw new QueryException(ErrorMessages.TYPE_NOT_SUPPORTED);
+            if (status.getCode() == Status.Code.INVALID_ARGUMENT) {
+                throw new InvalidArgumentException(status.getDescription());
             }
 
             throw new QueryException();
