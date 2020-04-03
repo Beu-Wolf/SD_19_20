@@ -31,7 +31,7 @@ public class Spotter {
     private static final String DONE = "^[Dd]one$";
 
     //init commands
-    private static final String CAMS_TO_LOAD = "^(\\w+),([\\d.]+),([\\d.]+)$";
+    private static final String CAMS_TO_LOAD = "^(\\w+),([\\d.]+),([\\d.-]+)$";
     private static final String OBS_TO_LOAD_CAR = "^(\\w+),car,(\\w+)$";
     private static final String OBS_TO_LOAD_PERSON = "^(\\w+),person,(\\w+)$";
 
@@ -69,7 +69,6 @@ public class Spotter {
                     showHelp();
                 }else if (Pattern.matches(CLEAR, command)) {
                     siloFrontend.ctrlClear();
-                    //After merge dont forget to catch exception
                 }else if (Pattern.matches(PING, command)) {
                     String message = getGroupFromPattern(command, pingPattern, 1);
                     System.out.println(siloFrontend.ctrlPing(message));
