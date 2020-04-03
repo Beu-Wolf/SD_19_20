@@ -71,10 +71,11 @@ spot person 0101
 spot car 7T_Ea2
 ```
 Verificar que
-    * Pessoa 1234 foi observada
-    * Carro 20SD20 foi observado
-    * Pessoa 0101 não foi observada
-    * Pesquisa de carro 7T_Ea2 é inválida
+
+* Pessoa 1234 foi observada
+* Carro 20SD20 foi observado
+* Pessoa 0101 não foi observada
+* Pesquisa de carro 7T_Ea2 é inválida
 
 ```
 spot person *
@@ -84,11 +85,12 @@ spot car 20*
 spot car NE*
 ```
 Verificar que
-    * todas as pessoas aparecem ordenadas pelo seu id
-    * todas as pessoas com id começado por 123 aparecem, ordenadas pelo seu id
-    * todas as pessoas acabadas em 7 aparecem ordenadas pelo seu id
-    * todos os carros começados por 20 aparecem ordenados pelo seu id
-    * Não existem observações de carros começados por NE
+
+* todas as pessoas aparecem ordenadas pelo seu id
+* todas as pessoas com id começado por 123 aparecem, ordenadas pelo seu id
+* todas as pessoas acabadas em 7 aparecem ordenadas pelo seu id
+* todos os carros começados por 20 aparecem ordenados pelo seu id
+* Não existem observações de carros começados por NE
 
 
 ```
@@ -99,10 +101,11 @@ trail car 7T_Ea2
 ```
 
 Verificar que
-    * a pessoa 89427 foi identificada nas cameras testCam2, camera2, camera1
-    * o carro 20SD20 foi identificado nas cameras testCam2, camera4, camera3
-    * a pessoa com id 01010 nunca foi identificada
-    * o carro pedido tem id inválido
+
+* a pessoa 89427 foi identificada nas cameras testCam2, camera2, camera1
+* o carro 20SD20 foi identificado nas cameras testCam2, camera4, camera3
+* a pessoa com id 01010 nunca foi identificada
+* o carro pedido tem id inválido
 
 ```
 exit 
