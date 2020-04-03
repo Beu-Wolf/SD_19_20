@@ -37,8 +37,16 @@ public class ReportIT extends BaseIT {
     }
 
     @Test
-    public void invalidId() {
+    public void invalidPersonId() {
         ObservationDto observationDto = new ObservationDto(ObservationDto.ObservationType.PERSON, "asdf");
+        LinkedList<ObservationDto> list = new LinkedList<>();
+        list.add(observationDto);
+        assertThrows(InvalidArgumentException.class, () -> siloFrontend.report(this.cameraName, list));
+    }
+
+    @Test
+    public void invalidCarId() {
+        ObservationDto observationDto = new ObservationDto(ObservationDto.ObservationType.CAR, "asdf");
         LinkedList<ObservationDto> list = new LinkedList<>();
         list.add(observationDto);
         assertThrows(InvalidArgumentException.class, () -> siloFrontend.report(this.cameraName, list));
