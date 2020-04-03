@@ -141,7 +141,7 @@ public class TraceIT extends BaseIT {
 
     @Test
     public void traceExistingPerson() {
-        try {
+        Assertions.assertDoesNotThrow(() -> {
             List<ReportDto> response = siloFrontend.trace(ObservationDto.ObservationType.PERSON, validPersonIds[0]);
             Assertions.assertEquals(response.size(), cams.length);
             for(int i = 0; i < cams.length; i++) {
@@ -149,15 +149,12 @@ public class TraceIT extends BaseIT {
                 Assertions.assertEquals(response.get(i).getCam(), cams[cams.length-i-1]);
                 Assertions.assertEquals(response.get(i).getId(), validPersonIds[0]);
             }
-
-        } catch(FrontendException e) {
-            Assertions.fail(e);
-        }
+        });
     }
 
     @Test
     public void traceExistingCar() {
-        try {
+        Assertions.assertDoesNotThrow(() -> {
             List<ReportDto> response = siloFrontend.trace(ObservationDto.ObservationType.CAR, validCarIds[0]);
             Assertions.assertEquals(response.size(), cams.length);
             for(int i = 0; i < cams.length; i++) {
@@ -165,10 +162,7 @@ public class TraceIT extends BaseIT {
                 Assertions.assertEquals(response.get(i).getCam(), cams[cams.length-i-1]);
                 Assertions.assertEquals(response.get(i).getId(), validCarIds[0]);
             }
-
-        } catch(FrontendException e) {
-            Assertions.fail(e);
-        }
+        });
     }
 
     @AfterAll
