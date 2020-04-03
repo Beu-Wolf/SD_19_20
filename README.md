@@ -68,6 +68,7 @@ To begin the server
 ```
 cd silo-server/
 mvn exec:java
+cd ..
 ```
 
 To begin the eye client
