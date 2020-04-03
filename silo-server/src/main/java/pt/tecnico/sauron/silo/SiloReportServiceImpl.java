@@ -29,7 +29,9 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
         } catch(DuplicateCameraNameException e) {
             responseObserver.onError(Status.ALREADY_EXISTS.asRuntimeException());
         } catch(EmptyCameraNameException | InvalidCameraNameException e) {
-            responseObserver.onError(Status.INVALID_ARGUMENT.asRuntimeException());
+            responseObserver.onError(Status.INVALID_ARGUMENT
+                    .withDescription(e.getMessage())
+                    .asRuntimeException());
         }
     }
 

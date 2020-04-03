@@ -169,7 +169,7 @@ public class SiloFrontend {
                 throw new CameraAlreadyExistsException();
             }
             if(status.getCode() == Status.Code.INVALID_ARGUMENT) {
-                throw new CameraRegisterException();
+                throw new CameraRegisterException(status.getDescription());
             }
             throw new CameraRegisterException();
         }

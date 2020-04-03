@@ -65,7 +65,6 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
 
             @Override
             public void onError(Throwable throwable) {
-                System.err.println("Error while reporting: " + Status.fromThrowable(throwable).getDescription());
             }
 
             @Override
