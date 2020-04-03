@@ -1,11 +1,14 @@
 package pt.tecnico.sauron.silo.client;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
 import pt.tecnico.sauron.silo.client.dto.ReportDto;
+import pt.tecnico.sauron.silo.client.exceptions.ClearException;
+import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 import pt.tecnico.sauron.silo.client.exceptions.InvalidArgumentException;
 import pt.tecnico.sauron.silo.client.exceptions.NotFoundException;
 
@@ -18,13 +21,13 @@ import static java.time.temporal.ChronoUnit.DAYS;
 
 public class TraceIT extends BaseIT {
 
-    private static final String[] invalidPersonIDs = {
+    private static final String[] invalidPersonIds = {
             "-4982374",
             "20SD20",
             "324*343"
     };
 
-    private static final String[] invalidCarIDs = {
+    private static final String[] invalidCarIds = {
             "AABBCC",
             "112233",
             "AA11BB22",
@@ -32,7 +35,7 @@ public class TraceIT extends BaseIT {
             "A1*B2"
     };
 
-    private static final String getNotSeenPeronId = "222222";
+    private static final String notSeenPeronId = "222222";
     private static final String[] validPersonIds = {
             "111111",
     };
@@ -42,20 +45,13 @@ public class TraceIT extends BaseIT {
             "AA00AA",
     };
 
-    private static final String[] camNames = {
-            "First",
-            "Second",
-            "Third",
-            "Fourth",
-            "Fifth",
-    };
 
     private static final CamDto[] cams = {
-            new CamDto(camNames[0], 0, 0),
-            new CamDto(camNames[1], 1, 1),
-            new CamDto(camNames[2], 2, 2),
-            new CamDto(camNames[3], 3, 3),
-            new CamDto(camNames[4], 4, 4)
+            new CamDto("First", 0, 0),
+            new CamDto("Second", 1, 1),
+            new CamDto("Third", 2, 2),
+            new CamDto("Fourth", 3, 3),
+            new CamDto("Fifth", 4, 4)
     };
 
     @BeforeAll
@@ -78,7 +74,7 @@ public class TraceIT extends BaseIT {
                     cams[i],
                     instants[i]));
             reports.add(new ReportDto(
-                    new ObservationDto(ObservationDto.ObservationType.CAR, validPersonIds[0]),
+                    new ObservationDto(ObservationDto.ObservationType.PERSON, validPersonIds[0]),
                     cams[i],
                     instants[i]));
         }
@@ -100,7 +96,7 @@ public class TraceIT extends BaseIT {
 
     @Test
     public void testInvalidPersonID() {
-        for(String invalidId : invalidPersonIDs) {
+        for(String invalidId : invalidPersonIds) {
             Assertions.assertThrows(InvalidArgumentException.class, () -> {
                 this.siloFrontend.trace(ObservationDto.ObservationType.PERSON, invalidId);
             });
@@ -109,7 +105,7 @@ public class TraceIT extends BaseIT {
 
     @Test
     public void testInvalidCarID() {
-        for(String invalidId : invalidCarIDs) {
+        for(String invalidId : invalidCarIds) {
             Assertions.assertThrows(InvalidArgumentException.class, () -> {
                 this.siloFrontend.trace(ObservationDto.ObservationType.CAR, invalidId);
             });
@@ -127,7 +123,7 @@ public class TraceIT extends BaseIT {
     @Test
     public void traceNonExistingPerson() {
         Assertions.assertThrows(NotFoundException.class, () -> {
-            siloFrontend.trace(ObservationDto.ObservationType.PERSON, getNotSeenPeronId);
+            siloFrontend.trace(ObservationDto.ObservationType.PERSON, notSeenPeronId);
         });
     }
 
@@ -139,10 +135,10 @@ public class TraceIT extends BaseIT {
             for(int i = 0; i < cams.length; i++) {
                 // sorted by new
                 Assertions.assertEquals(response.get(i).getCam(), cams[cams.length-i-1]);
-                Assertions.assertEquals(response.get(i).getId(), invalidPersonIDs[0]);
+                Assertions.assertEquals(response.get(i).getId(), validPersonIds[0]);
             }
 
-        } catch(Exception e) {
+        } catch(FrontendException e) {
             Assertions.fail(e);
         }
     }
@@ -155,11 +151,20 @@ public class TraceIT extends BaseIT {
             for(int i = 0; i < cams.length; i++) {
                 // sorted by new
                 Assertions.assertEquals(response.get(i).getCam(), cams[cams.length-i-1]);
-                Assertions.assertEquals(response.get(i).getId(), invalidCarIDs[0]);
+                Assertions.assertEquals(response.get(i).getId(), validCarIds[0]);
             }
 
-        } catch(Exception e) {
+        } catch(FrontendException e) {
             Assertions.fail(e);
+        }
+    }
+
+    @AfterAll
+    public static void tearDown() {
+        try {
+            siloFrontend.ctrlClear();
+        } catch(ClearException e) {
+            e.printStackTrace();
         }
     }
 }
