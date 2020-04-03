@@ -1,9 +1,6 @@
 package pt.tecnico.sauron.silo.client;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
 import pt.tecnico.sauron.silo.client.dto.ReportDto;
@@ -152,8 +149,8 @@ public class TrackIT extends BaseIT {
         }
     }
 
-    @AfterEach
-    public void tearDown() {
+    @AfterAll
+    public static void tearDown() {
         try {
             siloFrontend.ctrlClear();
         } catch(ClearException e) {
