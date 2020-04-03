@@ -6,6 +6,7 @@ camera4,14.456798,-9.123456
 done
 init obs
 camera1,person,89427
+camera1,person,1234
 camera2,person,89427
 camera3,car,20SD20
 camera4,car,20SD20
