@@ -33,10 +33,20 @@ public class Silo {
         reports.addFirst(report);
     }
 
+
     public synchronized  void registerObservation(Cam cam, Observation observation) {
         // let the server register the time
         Report report = new Report(cam, observation, Instant.now());
         recordReport(report);
+    }
+
+
+    public void clearCams() {
+        cams.clear();
+    }
+
+    public void clearObservations() {
+        reports.clear();
     }
 
     public Report track(Observation observation) throws ObservationNotFoundException {

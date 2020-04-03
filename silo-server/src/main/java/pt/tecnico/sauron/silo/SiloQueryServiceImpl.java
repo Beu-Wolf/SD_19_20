@@ -18,30 +18,6 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase {
-    private class TrackMatchComparator {
-        Pattern p;
-
-        TrackMatchComparator(String pattern) {
-            pattern = Pattern.quote(pattern);
-            pattern = pattern.replace("*", "\\E.*\\Q");
-            p = Pattern.compile(pattern);
-        }
-
-        // typeSample - only used to check types
-        boolean matches(Car typeSample, Car toMatch) {
-            return p.matcher(toMatch.getId()).find();
-        }
-
-        boolean matches(Person typeSample, Person toMatch) {
-            return p.matcher(toMatch.getId()).find();
-        }
-
-        boolean matches(Observation typeSample, Observation toMatch)
-                throws SiloInvalidArgumentException {
-            throw new SiloInvalidArgumentException(ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE);
-        }
-    }
-
     private Silo silo;
 
     public SiloQueryServiceImpl(Silo silo) {
@@ -76,23 +52,25 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
     @Override
     public void trackMatch(QueryRequest request, StreamObserver<QueryResponse> responseObserver) {
         String pattern = request.getId();
+        ObservationType type = request.getType();
 
         TreeSet<String> matched = new TreeSet<>();
-        TrackMatchComparator comparator = new TrackMatchComparator(pattern);
+        TrackMatchComparator comparator = new TrackMatchComparator(type, pattern);
 
         try {
-            Observation typeSample = observationFromGRPC(request.getType(), request.getId());
-
             for (Report report : silo.getReportsByNew()) {
                 Observation observation = report.getObservation();
                 String id = observation.getId();
 
-                if (!matched.contains(id) && comparator.matches(typeSample, observation)) {
+                if (!matched.contains(id) && observation.matches(comparator)) {
                     matched.add(id);
-                    responseObserver.onNext(domainReportToGRPC(report));
+
+                    QueryResponse response = createQueryResponse(report);
+                    responseObserver.onNext(response);
                 }
             }
         } catch (SiloInvalidArgumentException e) {
+            e.printStackTrace();
             responseObserver.onError(Status.UNIMPLEMENTED.withDescription(
                     ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE).asRuntimeException());
             return;
@@ -119,7 +97,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
 
                 if (observation.equals(queryObservation)) {
                     found = true;
-                    responseObserver.onNext(domainReportToGRPC(report));
+                    responseObserver.onNext(createQueryResponse(report));
                 }
             }
         } catch (SiloInvalidArgumentException e) {
@@ -136,26 +114,25 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
     }
 
 
+
     // ===================================================
     // CREATE GRPC RESPONSES
     // ===================================================
     private QueryResponse createQueryResponse(Report report) throws SiloInvalidArgumentException {
-        return QueryResponse.newBuilder()
-                .setCam(camFromGRPC(report.getCam()))
-                .setObservation(observationToGRPC(report.getObservation()))
-                .setTimestamp(timestampToGRPC(report.getTimestamp()))
-                .build();
+        return reportToGRPC(report);
     }
+
 
 
     // ===================================================
     // CONVERT BETWEEN DTO AND GRPC
     // ===================================================
-    private QueryResponse domainReportToGRPC(Report report) throws SiloInvalidArgumentException {
+    private QueryResponse reportToGRPC(Report report) throws SiloInvalidArgumentException {
         return QueryResponse.newBuilder()
-                .setTimestamp(Timestamp.newBuilder().setSeconds(report.getTimestamp().getEpochSecond()))
+                .setCam(camFromGRPC(report.getCam()))
                 .setObservation(observationToGRPC(report.getObservation()))
-                .setCam(camFromGRPC(report.getCam())).build();
+                .setTimestamp(timestampToGRPC(report.getTimestamp()))
+                .build();
     }
 
     private pt.tecnico.sauron.silo.grpc.Silo.Observation observationToGRPC(Observation observation) throws SiloInvalidArgumentException {
@@ -203,5 +180,32 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
     }
     private Instant timestampFromGRPC(Timestamp timestamp) {
         return Instant.ofEpochSecond(timestamp.getSeconds());
+    }
+
+
+
+    // ===================================================
+    // HELPER CLASS
+    // ===================================================
+    private class TrackMatchComparator implements ObservationVisitor {
+        Pattern p;
+        ObservationType type;
+
+        TrackMatchComparator(ObservationType type, String pattern) {
+            pattern = Pattern.quote(pattern);
+            pattern = pattern.replace("*", "\\E.*\\Q");
+            pattern = "^" + pattern + "$";
+            this.p = Pattern.compile(pattern);
+            this.type = type;
+        }
+
+        public boolean visit(Car car) {
+            return this.type == ObservationType.CAR && this.p.matcher(car.getId()).find();
+        }
+
+
+        public boolean visit(Person person) {
+            return this.type == ObservationType.PERSON && this.p.matcher(person.getId()).find();
+        }
     }
 }

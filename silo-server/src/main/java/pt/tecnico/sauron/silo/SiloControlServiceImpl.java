@@ -44,6 +44,15 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
     }
 
     @Override
+    public void clear( Silo.ClearRequest request, StreamObserver<Silo.ClearResponse> responseObserver) {
+        silo.clearObservations();
+        silo.clearCams();
+
+        responseObserver.onNext(Silo.ClearResponse.getDefaultInstance());
+        responseObserver.onCompleted();
+    }
+
+    @Override
     public StreamObserver<Silo.InitCamRequest> initCams(StreamObserver<Silo.InitResponse> responseObserver) {
         return new StreamObserver<>() {
             @Override
