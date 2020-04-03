@@ -115,12 +115,10 @@ public class SiloFrontend {
 
             @Override
             public void onError(Throwable throwable) {
-                System.out.println("Could not register observation");
                 latch.countDown();
             }
             @Override
             public void onCompleted() {
-                System.out.println("Successfully registered observations!");
                 latch.countDown();
             }
         };
