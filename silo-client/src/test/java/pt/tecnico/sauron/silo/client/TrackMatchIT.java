@@ -147,56 +147,48 @@ public class TrackMatchIT extends BaseIT {
 
     @Test
     public void trackMatchPeople() {
-        try {
+        Assertions.assertDoesNotThrow(() -> {
             List<ReportDto> results = siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, seenPeoplePatternId);
             Assertions.assertEquals(results.size(), 2);
             for(ReportDto report : results) {
                 Assertions.assertEquals(report.getCam(), cams[1]);
                 Assertions.assertTrue(Arrays.asList(seenPersonIds).contains(report.getId()));
             }
-        } catch(FrontendException e) {
-            Assertions.fail(e);
-        }
+        });
     }
 
     @Test
     public void trackMatchCars() {
-        try {
+        Assertions.assertDoesNotThrow(() -> {
             List<ReportDto> results = siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, seenCarsPatternId);
             Assertions.assertEquals(results.size(), 2);
             for(ReportDto report : results) {
                 Assertions.assertEquals(report.getCam(), cams[1]);
                 Assertions.assertTrue(Arrays.asList(seenCarIds).contains(report.getId()));
             }
-        } catch(FrontendException e) {
-            Assertions.fail(e);
-        }
+        });
     }
 
     @Test
     public void trackMatchPersonNoPattern() {
-        try {
+        Assertions.assertDoesNotThrow(() -> {
             List<ReportDto> results = siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, seenPersonIds[0]);
             Assertions.assertEquals(results.size(), 1);
             ReportDto report = results.get(0);
             Assertions.assertEquals(report.getCam(), cams[1]);
             Assertions.assertTrue(report.getId().equals(seenPersonIds[0]));
-        } catch(FrontendException e) {
-            Assertions.fail(e);
-        }
+        });
     }
 
     @Test
     public void trackMatchCarNoPattern() {
-        try {
+        Assertions.assertDoesNotThrow(() -> {
             List<ReportDto> results = siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, seenCarIds[0]);
             Assertions.assertEquals(results.size(), 1);
             ReportDto report = results.get(0);
             Assertions.assertEquals(report.getCam(), cams[1]);
             Assertions.assertTrue(report.getId().equals(seenCarIds[0]));
-        } catch(FrontendException e) {
-            Assertions.fail(e);
-        }
+        });
     }
 
     @AfterAll
