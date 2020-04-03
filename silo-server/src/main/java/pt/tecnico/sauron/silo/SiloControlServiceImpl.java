@@ -5,6 +5,7 @@ import com.google.type.LatLng;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.sauron.silo.domain.*;
+import pt.tecnico.sauron.silo.domain.exceptions.EmptyCameraNameException;
 import pt.tecnico.sauron.silo.domain.exceptions.ErrorMessages;
 import pt.tecnico.sauron.silo.domain.exceptions.SiloException;
 import pt.tecnico.sauron.silo.domain.exceptions.SiloInvalidArgumentException;
@@ -57,8 +58,8 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
         return new StreamObserver<>() {
             @Override
             public void onNext(Silo.InitCamRequest request) {
-                Cam cam = camFromGRPC(request.getCam());
                 try {
+                    Cam cam = camFromGRPC(request.getCam());
                     silo.registerCam(cam);
                 } catch(SiloException e) {
                     responseObserver.onError(e);
@@ -121,7 +122,7 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
     // ===================================================
     // CONVERT BETWEEN DOMAIN AND GRPC
     // ===================================================
-    private Report reportFromGRPC(Silo.InitObservationRequest report) throws SiloInvalidArgumentException {
+    private Report reportFromGRPC(Silo.InitObservationRequest report) throws SiloInvalidArgumentException, EmptyCameraNameException {
         Cam cam = camFromGRPC(report.getCam());
         Observation obs = observationFromGRPC(report.getObservation());
         Instant timestamp = instantFromGRPC(report.getTimestamp());
@@ -142,7 +143,7 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
         }
     }
 
-    private Cam camFromGRPC(Silo.Cam cam) {
+    private Cam camFromGRPC(Silo.Cam cam) throws EmptyCameraNameException {
         String name = cam.getName();
         Coords coords = coordsFromGRPC(cam.getCoords());
         return new Cam(name, coords);
