@@ -9,5 +9,5 @@ public abstract class Observation {
 
     public abstract boolean equals(Object o);
 
-    public abstract boolean accept(ObservationVisitor o);
+    public abstract boolean matches(ObservationVisitor o);
 }

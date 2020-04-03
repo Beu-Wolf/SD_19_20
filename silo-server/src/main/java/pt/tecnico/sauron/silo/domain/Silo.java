@@ -4,6 +4,7 @@ import pt.tecnico.sauron.silo.domain.exceptions.ObservationNotFoundException;
 import pt.tecnico.sauron.silo.domain.exceptions.DuplicateCameraNameException;
 import pt.tecnico.sauron.silo.domain.exceptions.NoCameraFoundException;
 
+import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -26,9 +27,19 @@ public class Silo {
         }
     }
 
-    public synchronized void registerObservation(Report report) {
+
+
+    public synchronized void recordReport(Report report) {
         reports.addFirst(report);
     }
+
+
+    public synchronized  void registerObservation(Cam cam, Observation observation) {
+        // let the server register the time
+        Report report = new Report(cam, observation, Instant.now());
+        recordReport(report);
+    }
+
 
     public void clearCams() {
         cams.clear();
@@ -37,6 +48,7 @@ public class Silo {
     public void clearObservations() {
         reports.clear();
     }
+
     public Report track(Observation observation) throws ObservationNotFoundException {
         for (Report report : reports) {
             if (report.getObservation().equals(observation))
