@@ -1,14 +1,13 @@
 package pt.tecnico.sauron.silo.client;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
 import pt.tecnico.sauron.silo.client.dto.ReportDto;
-import pt.tecnico.sauron.silo.client.exceptions.InvalidArgumentException;
-import pt.tecnico.sauron.silo.client.exceptions.NotFoundException;
-import pt.tecnico.sauron.silo.client.exceptions.QueryException;
+import pt.tecnico.sauron.silo.client.exceptions.*;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -101,7 +100,7 @@ public class TrackMatchIT extends BaseIT {
     @Test
     public void testInvalidPersonID() {
         for(String invalidId : invalidPersonIDs) {
-            Assertions.assertThrows(InvalidArgumentException.class, () -> {
+            Assertions.assertThrows(NotFoundException.class, () -> {
                 this.siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, invalidId);
             });
         }
@@ -110,7 +109,7 @@ public class TrackMatchIT extends BaseIT {
     @Test
     public void testInvalidCarID() {
         for(String invalidId : invalidCarIDs) {
-            Assertions.assertThrows(InvalidArgumentException.class, () -> {
+            Assertions.assertThrows(NotFoundException.class, () -> {
                 this.siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, invalidId);
             });
         }
@@ -140,7 +139,7 @@ public class TrackMatchIT extends BaseIT {
                 Assertions.assertEquals(report.getCam(), cams[1]);
                 Assertions.assertTrue(Arrays.asList(seenPersonIds).contains(report.getId()));
             }
-        } catch(QueryException e) {
+        } catch(FrontendException e) {
             Assertions.fail(e);
         }
     }
@@ -154,7 +153,7 @@ public class TrackMatchIT extends BaseIT {
                 Assertions.assertEquals(report.getCam(), cams[1]);
                 Assertions.assertTrue(Arrays.asList(seenCarIds).contains(report.getId()));
             }
-        } catch(QueryException e) {
+        } catch(FrontendException e) {
             Assertions.fail(e);
         }
     }
@@ -166,8 +165,8 @@ public class TrackMatchIT extends BaseIT {
             Assertions.assertEquals(results.size(), 1);
             ReportDto report = results.get(0);
             Assertions.assertEquals(report.getCam(), cams[1]);
-            Assertions.assertTrue(report.getId() == seenPersonIds[0]);
-        } catch(QueryException e) {
+            Assertions.assertTrue(report.getId().equals(seenPersonIds[0]));
+        } catch(FrontendException e) {
             Assertions.fail(e);
         }
     }
@@ -175,13 +174,22 @@ public class TrackMatchIT extends BaseIT {
     @Test
     public void trackMatchCarNoPattern() {
         try {
-            List<ReportDto> results = siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, seenCarIds[0]);
+            List<ReportDto> results = siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, seenCarIds[0]);
             Assertions.assertEquals(results.size(), 1);
             ReportDto report = results.get(0);
             Assertions.assertEquals(report.getCam(), cams[1]);
-            Assertions.assertTrue(report.getId() == seenPersonIds[0]);
-        } catch(QueryException e) {
+            Assertions.assertTrue(report.getId().equals(seenCarIds[0]));
+        } catch(FrontendException e) {
             Assertions.fail(e);
+        }
+    }
+
+    @AfterAll
+    public static void tearDown() {
+        try {
+            siloFrontend.ctrlClear();
+        } catch(ClearException e) {
+            e.printStackTrace();
         }
     }
 }
