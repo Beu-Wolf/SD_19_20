@@ -1,13 +1,12 @@
 package pt.tecnico.sauron.silo.client;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
-import pt.tecnico.sauron.silo.client.exceptions.CameraAlreadyExistsException;
-import pt.tecnico.sauron.silo.client.exceptions.CameraNotFoundException;
-import pt.tecnico.sauron.silo.client.exceptions.CameraRegisterException;
-import pt.tecnico.sauron.silo.client.exceptions.InvalidArgumentException;
+import pt.tecnico.sauron.silo.client.exceptions.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -81,6 +80,15 @@ public class ReportIT extends BaseIT {
         list.add(observationDto);
         assertEquals("Camera not found",
                 assertThrows(CameraNotFoundException.class, () -> siloFrontend.report(camName, list)).getMessage());
+    }
+
+    @AfterAll
+    public static void clear() {
+        try {
+            siloFrontend.ctrlClear();
+        } catch (ClearException e) {
+            e.printStackTrace();
+        }
     }
 
 }
