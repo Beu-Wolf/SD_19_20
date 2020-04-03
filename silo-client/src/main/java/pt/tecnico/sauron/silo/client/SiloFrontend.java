@@ -233,6 +233,10 @@ public class SiloFrontend {
                 // to allow for the server to send an error if it happens
                 Thread.sleep(10);
 
+                if (latch.getCount() == 0) {
+                    break;
+                }
+
             }
 
             requestObserver.onCompleted();
