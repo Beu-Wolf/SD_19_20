@@ -4,10 +4,7 @@ import org.junit.jupiter.api.*;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
 import pt.tecnico.sauron.silo.client.dto.ReportDto;
-import pt.tecnico.sauron.silo.client.exceptions.ClearException;
-import pt.tecnico.sauron.silo.client.exceptions.InvalidArgumentException;
-import pt.tecnico.sauron.silo.client.exceptions.NotFoundException;
-import pt.tecnico.sauron.silo.client.exceptions.QueryException;
+import pt.tecnico.sauron.silo.client.exceptions.*;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -86,67 +83,75 @@ public class TrackIT extends BaseIT {
 
     @Test
     public void trackNonExistingTypeTest() {
-        Assertions.assertThrows(InvalidArgumentException.class, () -> {
-            this.siloFrontend.track(ObservationDto.ObservationType.UNSPEC, "1337_5p34k");
-        });
+        Assertions.assertEquals(
+                "Can't handle observation type!",
+                Assertions.assertThrows(InvalidArgumentException.class, () -> {
+                    this.siloFrontend.track(ObservationDto.ObservationType.UNSPEC, "1337_5p34k");
+                }).getMessage()
+        );
     }
 
     @Test
     public void testInvalidPersonID() {
         for(String invalidId : invalidPersonIDs) {
-            Assertions.assertThrows(InvalidArgumentException.class, () -> {
-                this.siloFrontend.track(ObservationDto.ObservationType.PERSON, invalidId);
-            });
+            Assertions.assertEquals(
+                    "Person ID must be an unsigned long!",
+                    Assertions.assertThrows(InvalidArgumentException.class, () -> {
+                        this.siloFrontend.track(ObservationDto.ObservationType.PERSON, invalidId);
+                    }).getMessage()
+            );
         }
     }
 
     @Test
     public void testInvalidCarID() {
         for(String invalidId : invalidCarIDs) {
-            Assertions.assertThrows(InvalidArgumentException.class, () -> {
-                this.siloFrontend.track(ObservationDto.ObservationType.CAR, invalidId);
-            });
+            Assertions.assertEquals(
+                    "Car ID must be a valid portuguese license plate!",
+                    Assertions.assertThrows(InvalidArgumentException.class, () -> {
+                        this.siloFrontend.track(ObservationDto.ObservationType.CAR, invalidId);
+                    }).getMessage()
+            );
         }
     }
 
 
     @Test
     public void trackNonExistingCar() {
-        Assertions.assertThrows(NotFoundException.class, () -> {
-            siloFrontend.track(ObservationDto.ObservationType.CAR, validCarIds[1]);
-        });
+        Assertions.assertEquals(
+                ErrorMessages.OBSERVATION_NOT_FOUND,
+                Assertions.assertThrows(NotFoundException.class, () -> {
+                    siloFrontend.track(ObservationDto.ObservationType.CAR, validCarIds[1]);
+                }).getMessage()
+        );
     }
 
     @Test
     public void trackNonExistingPerson() {
-        Assertions.assertThrows(NotFoundException.class, () -> {
-            siloFrontend.track(ObservationDto.ObservationType.PERSON, validPersonIds[1]);
-        });
+        Assertions.assertEquals(
+                ErrorMessages.OBSERVATION_NOT_FOUND,
+                Assertions.assertThrows(NotFoundException.class, () -> {
+                    siloFrontend.track(ObservationDto.ObservationType.PERSON, validPersonIds[1]);
+                }).getMessage()
+        );
     }
 
     @Test
     public void trackExistingPerson() {
-        try {
+        Assertions.assertDoesNotThrow(() -> {
             ReportDto response = siloFrontend.track(ObservationDto.ObservationType.PERSON, validPersonIds[0]);
             Assertions.assertEquals(response.getCam(), cams[0]);
             Assertions.assertEquals(response.getId(), validPersonIds[0]);
-
-        } catch(NotFoundException | InvalidArgumentException | QueryException e) {
-            e.printStackTrace();
-            Assertions.fail(e);
-        }
+        });
     }
 
     @Test
     public void trackExistingCar() {
-        try {
+        Assertions.assertDoesNotThrow(() -> {
             ReportDto response = siloFrontend.track(ObservationDto.ObservationType.CAR, validCarIds[0]);
             Assertions.assertEquals(response.getCam(), cams[0]);
             Assertions.assertEquals(response.getId(), validCarIds[0]);
-
-        } catch(Exception e) {
-            Assertions.fail(e);
-        }
+        });
     }
 
     @AfterAll
