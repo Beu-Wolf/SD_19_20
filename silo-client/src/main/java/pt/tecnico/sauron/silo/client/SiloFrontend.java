@@ -229,7 +229,15 @@ public class SiloFrontend {
         }
     }
 
-    public void ctrlClear() {}
+    public void ctrlClear() throws ClearException{
+        try {
+            Silo.ClearResponse response =  this.ctrlBlockingStub.clear(Silo.ClearRequest.getDefaultInstance());
+        } catch (StatusRuntimeException e) {
+            throw new ClearException(e.getStatus().getDescription());
+        }
+
+
+    }
 
     public void ctrlInitCams(List<CamDto> cams) throws RuntimeException, InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
@@ -272,9 +280,14 @@ public class SiloFrontend {
                     return;
                 }
             }
-        } catch (RuntimeException | InterruptedException e) {
+            requestObserver.onCompleted();
+            latch.await(10, TimeUnit.SECONDS);
+        } catch (RuntimeException e) {
             requestObserver.onError(e);
             throw e;
+        } catch (InterruptedException e) {
+            requestObserver.onError(e);
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -328,9 +341,14 @@ public class SiloFrontend {
                     return;
                 }
             }
-        } catch (RuntimeException | InterruptedException e) {
+            requestObserver.onCompleted();
+            latch.await(10, TimeUnit.SECONDS);
+        } catch (RuntimeException e) {
             requestObserver.onError(e);
             throw e;
+        } catch (InterruptedException e) {
+            requestObserver.onError(e);
+            Thread.currentThread().interrupt();
         }
     }
 

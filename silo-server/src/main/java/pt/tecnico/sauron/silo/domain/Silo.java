@@ -30,6 +30,13 @@ public class Silo {
         reports.addFirst(report);
     }
 
+    public void clearCams() {
+        cams.clear();
+    }
+
+    public void clearObservations() {
+        reports.clear();
+    }
     public Report track(Observation observation) throws ObservationNotFoundException {
         for (Report report : reports) {
             if (report.getObservation().equals(observation))
