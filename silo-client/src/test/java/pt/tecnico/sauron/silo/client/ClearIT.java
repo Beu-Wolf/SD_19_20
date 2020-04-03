@@ -6,7 +6,7 @@ import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
 import pt.tecnico.sauron.silo.client.dto.ReportDto;
 import pt.tecnico.sauron.silo.client.exceptions.ErrorMessages;
-import pt.tecnico.sauron.silo.client.exceptions.QueryException;
+import pt.tecnico.sauron.silo.client.exceptions.NotFoundException;
 
 import java.time.Instant;
 import java.util.LinkedList;
@@ -19,10 +19,10 @@ public class ClearIT extends BaseIT {
 
         Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear());
         Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
-                Assertions.assertThrows(QueryException.class, () -> siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, "*"))
+                Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, "*"))
                         .getMessage());
         Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
-                Assertions.assertThrows(QueryException.class, () -> siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, "*"))
+                Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, "*"))
                         .getMessage());
     }
 
@@ -35,10 +35,10 @@ public class ClearIT extends BaseIT {
             siloFrontend.ctrlInitObservations(observations);
             Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear());
             Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
-                    Assertions.assertThrows(QueryException.class, () -> siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, "*"))
+                    Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, "*"))
                             .getMessage());
             Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
-                    Assertions.assertThrows(QueryException.class, () -> siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, "*"))
+                    Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, "*"))
                             .getMessage());
         } catch (InterruptedException e) {
             e.printStackTrace();

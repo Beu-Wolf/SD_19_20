@@ -5,6 +5,10 @@ import pt.tecnico.sauron.silo.client.SiloFrontend;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
 import pt.tecnico.sauron.silo.client.dto.ReportDto;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Scanner;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 
 import java.time.Instant;

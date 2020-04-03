@@ -41,4 +41,6 @@ public class ReportDto implements Comparable<ReportDto> {
         }
         return false;
     }
+
+    public String getId() { return this.observation.getId(); }
 }
