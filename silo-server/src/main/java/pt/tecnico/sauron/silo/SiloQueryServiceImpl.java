@@ -54,10 +54,10 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         String pattern = request.getId();
         ObservationType type = request.getType();
 
-        TreeSet<String> matched = new TreeSet<>();
-        TrackMatchComparator comparator = new TrackMatchComparator(type, pattern);
-
         try {
+            TreeSet<String> matched = new TreeSet<>();
+            TrackMatchComparator comparator = new TrackMatchComparator(type, pattern);
+
             for (Report report : silo.getReportsByNew()) {
                 Observation observation = report.getObservation();
                 String id = observation.getId();
@@ -69,17 +69,17 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
                     responseObserver.onNext(response);
                 }
             }
-        } catch (SiloInvalidArgumentException e) {
-            e.printStackTrace();
-            responseObserver.onError(Status.UNIMPLEMENTED.withDescription(
-                    ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE).asRuntimeException());
-            return;
-        }
 
-        if (matched.isEmpty()) {
-            responseObserver.onError(Status.NOT_FOUND.asRuntimeException());
-        } else {
-            responseObserver.onCompleted();
+            if (matched.isEmpty()) {
+                responseObserver.onError(Status.NOT_FOUND.asRuntimeException());
+            } else {
+                responseObserver.onCompleted();
+            }
+        } catch (SiloInvalidArgumentException e) {
+            responseObserver.onError(Status.INVALID_ARGUMENT
+                    .withDescription(e.getMessage())
+                    .asRuntimeException());
+            return;
         }
     }
 
@@ -191,7 +191,10 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         Pattern p;
         ObservationType type;
 
-        TrackMatchComparator(ObservationType type, String pattern) {
+        TrackMatchComparator(ObservationType type, String pattern) throws SiloInvalidArgumentException {
+            if(type == ObservationType.UNSPEC) {
+                throw new SiloInvalidArgumentException(ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE);
+            }
             pattern = Pattern.quote(pattern);
             pattern = pattern.replace("*", "\\E.*\\Q");
             pattern = "^" + pattern + "$";
