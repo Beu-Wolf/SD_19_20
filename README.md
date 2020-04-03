@@ -81,6 +81,13 @@ To begin the spotter client
 ./spotter/target/appassembler/bin/spotter host port [<file.txt]
 ```
 
+##Concurrency
+
+Regarding the concurrent model, we decided to use thread-safe data structures for reading and writing. 
+Declaring the functions as `synchronized` was worse because they wouldn't be fine-grained and could
+introduce concurrency bottlenecks. It was used a `concurrentLinkedDeque` 
+to store the reports and a `concurrentHashMap` to register the cameras.
+
 ## Built With
 
 * [Maven](https://maven.apache.org/) - Build Tool and Dependency Management
