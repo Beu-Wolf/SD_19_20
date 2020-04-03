@@ -1,20 +1,20 @@
 # Sauron demonstration guide
 
-Já com o projeto instalado:
+With the project already installed,
 
-Instanciar o servidor:
+Instantiate the server:
 ```
 cd silo-server
 mvn exec:java
 ```
 
-## Caso 1: Carregar Dados de teste usando o spotter
+## Case 1: Load test data using Spotter
 
 ```
 ./spotter/target/appassembler/bin/spotter localhost 8080 < demo/initSilo.txt
 ```
 
-## Caso 2: Usar eye para carregar mais observações, com e sem erros
+## Caso 2: Use Eye to load more observations, with and without errors
 
 ```
 ./eye/target/appassembler/bin/eye localhost 8080 testCam2 12.456789 -8.987654
@@ -23,30 +23,30 @@ person,89399
 person,89496
 \n
 ```
-Verificar resposta de sucesso
+Verify success in reporting
 
 ```
 person,R4a_
 \n
 ```
-Verificar resposta de id de pessoa inválido
+Verify invalid person ID response
 
 ```
 car,20SD20
 car,AA00AA
 \n
 ```
-Verificar resposta de sucesso
+Verify success in reporting
 
 ```
 car,124_87
 \n
 ```
-Verificar resposta de id de carro inválido
+Verify invalid car ID response
 
-Premir `^C` para sair do cliente Eye
+Press `^C` to exit client Eye
 
-## Caso 3: Verificar operação sleep do Eye
+## Case 3: Verify Eye's sleep operations
 
 ```
 ./eye/target/appassembler/bin/eye localhost 8080 testCam3 12.987654 -8.123456
@@ -54,17 +54,17 @@ zzz,10000
 person,7777
 \n
 ```
-Verificar pausa de 10 segundo até reportar observação
+Verify 10 second pause until observation reported
 
-Premir `^C` para sair do cliente Eye
+Press `^C` to exit client Eye
 
-## Caso 4: Uso do Spotter para executar pesquisas
+## Case 4: Uso do Spotter para execute some queries
 
 ```
 ./spotter/target/appassembler/bin/spotter localhost 8080
 help
 ```
-Verificar que aparece ecrã de ajuda com comandos suportados
+Verify help screen is displayed
 
 ```
 spot person 1234
@@ -72,12 +72,12 @@ spot car 20SD20
 spot person 0101
 spot car 7T_Ea2
 ```
-Verificar que
+Verify that:
 
-* Pessoa 1234 foi observada
-* Carro 20SD20 foi observado
-* Pessoa 0101 não foi observada
-* Pesquisa de carro 7T_Ea2 é inválida
+* Person 1234 was observed
+* Car 20SD20 was observed
+* Person 0101 was not observed
+* Spotting car 7T_Ea2 is invalid
 
 ```
 spot person *
@@ -86,13 +86,13 @@ spot person *7
 spot car 20*
 spot car NE*
 ```
-Verificar que
+Verify that
 
-* todas as pessoas aparecem ordenadas pelo seu id
-* todas as pessoas com id começado por 89 aparecem, ordenadas pelo seu id
-* todas as pessoas acabadas em 7 aparecem ordenadas pelo seu id
-* todos os carros começados por 20 aparecem ordenados pelo seu id
-* Não existem observações de carros começados por NE
+* all people shown are ordered by their id
+* all people whose id starts with 89 are shown, ordered by their id
+* all people whose id ends in 7 are shown, ordered by their id
+* all cars whose license plate starts with 20 are shown, ordered by their id
+* There are no observations of cars with license plate starting with NE
 
 
 ```
@@ -102,20 +102,20 @@ trail person 0101
 trail car 7T_Ea2
 ```
 
-Verificar que
+Verify that:
 
-* a pessoa 89427 foi identificada nas cameras testCam2, camera2, camera1
-* o carro 20SD20 foi identificado nas cameras testCam2, camera4, camera3
-* a pessoa com id 01010 nunca foi identificada
-* o carro pedido tem id inválido
+* person 89427 was spotted by cameras testCam2, camera2, camera1
+* car 20SD20 was spotted by cameras testCam2, camera4, camera3
+* person with id 0101 was never spotted
+* car to spot as invalid license plate
 
 ```
 exit 
 ```
 
-##   Caso 5: Uso do spotter para operações de controlo
+##   Caso 5: Usage of Spotter for operation controls
 
-Executar novo spotter
+Execute new Spotter
 ```
 ./spotter/target/appassembler/bin/spotter localhost 8080
 help
@@ -124,14 +124,14 @@ help
 ```
 ping friend
 ```
-Verificar que servidor responde com "Hello friend!"
+Verify that the server answers with "Hello friend!"
 
 ```
 clear
 spot person *
 spot car *
 ```
-Verificar que já não existe qualquer pessoa ou carro no servidor
+Verify there is no longer any car or person in the server
 
 ```
 init cams
@@ -139,7 +139,7 @@ $ mockCamera1,14.645678,8.534568
 $ mockCamera2,19.994536,7.789765
 $ done
 ```
-Verificar sucesso no registo das cameras
+Verify success in registering cameras
 
 ```
 init obs
@@ -150,16 +150,16 @@ $ mockCamera2,person 89399
 $ done
 ```
 
-Verificar sucesso no registo das operações
+Verify success in registering observations
 
 ```
 spot person 89399
 trail car 20SD21
 ```
-Verificar que
+Verify that
 
-* a pessoa 89399 tem a observação mais recente na camera mockCamera2
-* o carro 20SD21 aparece em 2 observações nas cameras MockCamera1 e MockCamera2
+* person 89399 as it's most recent observation at the camera mockCamera2
+* car 20SD21 appears in 2 observations at the cameras MockCamera1 and MockCamera2
 
 
 ```
