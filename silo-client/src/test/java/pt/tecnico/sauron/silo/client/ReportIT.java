@@ -45,7 +45,8 @@ public class ReportIT extends BaseIT {
         ObservationDto observationDto = new ObservationDto(ObservationDto.ObservationType.PERSON, "asdf");
         LinkedList<ObservationDto> list = new LinkedList<>();
         list.add(observationDto);
-        assertThrows(InvalidArgumentException.class, () -> siloFrontend.report(this.cameraName, list));
+        assertEquals("Person ID must be an unsigned long!",
+                assertThrows(InvalidArgumentException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
     }
 
     @Test
@@ -53,7 +54,8 @@ public class ReportIT extends BaseIT {
         ObservationDto observationDto = new ObservationDto(ObservationDto.ObservationType.CAR, "asdf");
         LinkedList<ObservationDto> list = new LinkedList<>();
         list.add(observationDto);
-        assertThrows(InvalidArgumentException.class, () -> siloFrontend.report(this.cameraName, list));
+        assertEquals("Car ID must be a valid portuguese license plate!",
+                assertThrows(InvalidArgumentException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
     }
 
     @Test
@@ -61,7 +63,8 @@ public class ReportIT extends BaseIT {
         ObservationDto observationDto = new ObservationDto(ObservationDto.ObservationType.UNSPEC, "asdf");
         LinkedList<ObservationDto> list = new LinkedList<>();
         list.add(observationDto);
-        assertThrows(InvalidArgumentException.class, () -> siloFrontend.report(this.cameraName, list));
+        assertEquals("Type to observe not supported!",
+                assertThrows(InvalidArgumentException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
     }
 
     @Test
@@ -76,7 +79,8 @@ public class ReportIT extends BaseIT {
         ObservationDto observationDto = new ObservationDto(ObservationDto.ObservationType.PERSON, "asdf");
         LinkedList<ObservationDto> list = new LinkedList<>();
         list.add(observationDto);
-        assertThrows(CameraNotFoundException.class, () -> siloFrontend.report(camName, list));
+        assertEquals("Camera not found",
+                assertThrows(CameraNotFoundException.class, () -> siloFrontend.report(camName, list)).getMessage());
     }
 
 }
