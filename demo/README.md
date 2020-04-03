@@ -59,7 +59,7 @@ person,7777
 
 Press `^C` to exit client Eye
 
-## Case 4: Uso do Spotter para execute some queries
+## Case 4: Usage of Spotter to execute some queries
 
 Verify that the help screen is displayed:
 
