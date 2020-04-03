@@ -7,8 +7,6 @@ import pt.tecnico.sauron.silo.domain.*;
 import pt.tecnico.sauron.silo.domain.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
 
-import java.time.Instant;
-
 public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBase {
 
     private pt.tecnico.sauron.silo.domain.Silo silo;
@@ -17,15 +15,15 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
         this.silo = silo;
     }
 
+    // ===================================================
+    // SERVICE IMPLEMENTATION
+    // ===================================================
     @Override
     public void camJoin(pt.tecnico.sauron.silo.grpc.Silo.JoinRequest request, io.grpc.stub.StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.JoinResponse> responseObserver) {
-        String name = request.getCam().getName();
-        Coords coords = new Coords(request.getCam().getCoords().getLatitude(), request.getCam().getCoords().getLongitude());
-
         try {
-            Cam cam = new Cam(name, coords);
+            Cam cam = camFromGRPC(request.getCam());
             this.silo.registerCam(cam);
-            pt.tecnico.sauron.silo.grpc.Silo.JoinResponse response = pt.tecnico.sauron.silo.grpc.Silo.JoinResponse.getDefaultInstance();
+            pt.tecnico.sauron.silo.grpc.Silo.JoinResponse response = createJoinResponse();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch(DuplicateCameraNameException e) {
@@ -41,15 +39,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
 
         try {
             Cam cam = this.silo.getCam(name);
-            Double lat = cam.getLat();
-            Double lon = cam.getLon();
-            pt.tecnico.sauron.silo.grpc.Silo.InfoResponse response = pt.tecnico.sauron.silo.grpc.Silo.InfoResponse.newBuilder().
-                    setCoords(
-                            LatLng.newBuilder()
-                                    .setLatitude(lat)
-                                    .setLongitude(lon)
-                                    .build()
-                    ).build();
+            pt.tecnico.sauron.silo.grpc.Silo.InfoResponse response = createInfoResponse(cam);
 
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -57,7 +47,6 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
             responseObserver.onError(Status.NOT_FOUND.asRuntimeException());
         }
     }
-
 
     @Override
     public StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.Observation> report(StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.ReportResponse> responseObserver) {
@@ -74,9 +63,8 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
             @Override
             public void onNext(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) {
                 try {
-                    Observation obs = createReport(observation.getType(), observation.getObservationId());
-                    Report report = new Report(cam, obs, Instant.now());
-                    silo.registerObservation(report);
+                    Observation obs = observationFromGRPC(observation);
+                    silo.registerObservation(cam, obs);
                 } catch (SiloException e) {
                     responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
                 }
@@ -95,7 +83,29 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
         };
     }
 
-    private Observation createReport(pt.tecnico.sauron.silo.grpc.Silo.ObservationType type, String id) throws InvalidCarIdException, InvalidPersonIdException, TypeNotSupportedException {
+
+
+    // ===================================================
+    // CREATE GRPC RESPONSES
+    // ===================================================
+    private pt.tecnico.sauron.silo.grpc.Silo.JoinResponse createJoinResponse() {
+        return pt.tecnico.sauron.silo.grpc.Silo.JoinResponse.getDefaultInstance();
+    }
+
+    private pt.tecnico.sauron.silo.grpc.Silo.InfoResponse createInfoResponse(Cam cam) {
+        return pt.tecnico.sauron.silo.grpc.Silo.InfoResponse.newBuilder()
+                .setCam(camToGRPC(cam))
+                .build();
+    }
+
+
+
+    // ===================================================
+    // CONVERT BETWEEN DOMAIN AND GRPC
+    // ===================================================
+    private Observation observationFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) throws InvalidCarIdException, InvalidPersonIdException, TypeNotSupportedException {
+        pt.tecnico.sauron.silo.grpc.Silo.ObservationType type = observation.getType();
+        String id = observation.getObservationId();
         switch (type) {
             case CAR:
                 return new Car(id);
@@ -104,5 +114,27 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
             default:
                 throw new TypeNotSupportedException();
         }
+    }
+
+    private pt.tecnico.sauron.silo.grpc.Silo.Cam camToGRPC(Cam cam) {
+        return pt.tecnico.sauron.silo.grpc.Silo.Cam.newBuilder()
+                .setName(cam.getName())
+                .setCoords(coordsToGRPC(cam.getCoords()))
+                .build();
+    }
+    private Cam camFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.Cam cam) throws EmptyCameraNameException {
+        String name = cam.getName();
+        Coords coords = coordsFromGRPC(cam.getCoords());
+        return new Cam(name, coords);
+    }
+
+    private LatLng coordsToGRPC(Coords coords) {
+        return LatLng.newBuilder()
+                .setLatitude(coords.getLat())
+                .setLongitude(coords.getLon())
+                .build();
+    }
+    private Coords coordsFromGRPC(LatLng coords) {
+        return new Coords(coords.getLatitude(), coords.getLongitude());
     }
 }
