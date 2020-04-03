@@ -5,14 +5,13 @@ import pt.tecnico.sauron.silo.client.SiloFrontend;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
 import pt.tecnico.sauron.silo.client.dto.ReportDto;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Scanner;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -59,7 +58,7 @@ public class Spotter {
     }
 
     public void begin() {
-        System.out.println("Spotter started, write 'exit' to quit");
+        System.out.println("Spotter started, write 'exit' to quit and 'help' for a list of commands");
         Scanner scanner = new Scanner(System.in);
         List<ReportDto> reportList;
         while(true) {
@@ -106,7 +105,7 @@ public class Spotter {
                     reportList = siloFrontend.trace(ObservationDto.ObservationType.PERSON, id);
                     showReports(reportList, false);
                 } else {
-                    System.out.println("Unrecognized command, try again");
+                    System.out.println("Unrecognized command. Type help for a list of commands");
                 }
 
             }catch (StatusRuntimeException e) {
