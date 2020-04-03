@@ -1,13 +1,16 @@
 package pt.tecnico.sauron.silo.client;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
 import pt.tecnico.sauron.silo.client.dto.ReportDto;
+import pt.tecnico.sauron.silo.client.exceptions.ClearException;
 import pt.tecnico.sauron.silo.client.exceptions.InvalidArgumentException;
 import pt.tecnico.sauron.silo.client.exceptions.NotFoundException;
+import pt.tecnico.sauron.silo.client.exceptions.QueryException;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -131,7 +134,8 @@ public class TrackIT extends BaseIT {
             Assertions.assertEquals(response.getCam(), cams[0]);
             Assertions.assertEquals(response.getId(), validPersonIds[0]);
 
-        } catch(Exception e) {
+        } catch(NotFoundException | InvalidArgumentException | QueryException e) {
+            e.printStackTrace();
             Assertions.fail(e);
         }
     }
@@ -145,6 +149,15 @@ public class TrackIT extends BaseIT {
 
         } catch(Exception e) {
             Assertions.fail(e);
+        }
+    }
+
+    @AfterEach
+    public void tearDown() {
+        try {
+            siloFrontend.ctrlClear();
+        } catch(ClearException e) {
+            e.printStackTrace();
         }
     }
 }
