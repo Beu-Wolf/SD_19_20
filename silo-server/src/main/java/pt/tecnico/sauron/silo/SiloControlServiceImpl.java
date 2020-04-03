@@ -119,7 +119,7 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
 
 
     // ===================================================
-    // CONVERT BETWEEN DTO AND GRPC
+    // CONVERT BETWEEN DOMAIN AND GRPC
     // ===================================================
     private Report reportFromGRPC(Silo.InitObservationRequest report) throws SiloInvalidArgumentException {
         Cam cam = camFromGRPC(report.getCam());

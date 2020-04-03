@@ -125,7 +125,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
 
 
     // ===================================================
-    // CONVERT BETWEEN DTO AND GRPC
+    // CONVERT BETWEEN DOMAIN AND GRPC
     // ===================================================
     private QueryResponse reportToGRPC(Report report) throws SiloInvalidArgumentException {
         return QueryResponse.newBuilder()

@@ -102,7 +102,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
 
 
     // ===================================================
-    // CONVERT BETWEEN DTO AND GRPC
+    // CONVERT BETWEEN DOMAIN AND GRPC
     // ===================================================
     private Observation observationFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) throws InvalidCarIdException, InvalidPersonIdException, TypeNotSupportedException {
         pt.tecnico.sauron.silo.grpc.Silo.ObservationType type = observation.getType();
