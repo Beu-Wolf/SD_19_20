@@ -170,8 +170,11 @@ public class SiloFrontend {
             System.out.println("Registered Successfully!");
         } catch(RuntimeException e) {
             Status status = Status.fromThrowable(e);
-            if(status == Status.ALREADY_EXISTS) {
+            if(status.getCode() == Status.Code.ALREADY_EXISTS) {
                 throw new CameraAlreadyExistsException();
+            }
+            if(status.getCode() == Status.Code.INVALID_ARGUMENT) {
+                throw new CameraRegisterException();
             }
             throw new CameraRegisterException();
         }

@@ -20,18 +20,17 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
     // ===================================================
     @Override
     public void camJoin(pt.tecnico.sauron.silo.grpc.Silo.JoinRequest request, io.grpc.stub.StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.JoinResponse> responseObserver) {
-        Cam cam = camFromGRPC(request.getCam());
-
         try {
+            Cam cam = camFromGRPC(request.getCam());
             this.silo.registerCam(cam);
+            pt.tecnico.sauron.silo.grpc.Silo.JoinResponse response = createJoinResponse();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
         } catch(DuplicateCameraNameException e) {
             responseObserver.onError(Status.ALREADY_EXISTS.asRuntimeException());
-            return;
+        } catch(EmptyCameraNameException e) {
+            responseObserver.onError(Status.INVALID_ARGUMENT.asRuntimeException());
         }
-
-        pt.tecnico.sauron.silo.grpc.Silo.JoinResponse response = createJoinResponse();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
     }
 
     @Override
@@ -119,10 +118,11 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
 
     private pt.tecnico.sauron.silo.grpc.Silo.Cam camToGRPC(Cam cam) {
         return pt.tecnico.sauron.silo.grpc.Silo.Cam.newBuilder()
+                .setName(cam.getName())
                 .setCoords(coordsToGRPC(cam.getCoords()))
                 .build();
     }
-    private Cam camFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.Cam cam) {
+    private Cam camFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.Cam cam) throws EmptyCameraNameException {
         String name = cam.getName();
         Coords coords = coordsFromGRPC(cam.getCoords());
         return new Cam(name, coords);
