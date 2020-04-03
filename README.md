@@ -62,6 +62,24 @@ mvn clean install -DskipTests
 
 The integration tests are skipped because they require the servers to be running.
 
+### Running the program
+
+To begin the server
+```
+cd silo-server/
+mvn exec:java
+cd ..
+```
+
+To begin the eye client
+```
+./eye/target/appassembler/bin/eye host port cameraName latitude longitude [< file.txt]
+```
+
+To begin the spotter client
+```
+./spotter/target/appassembler/bin/spotter host port [<file.txt]
+```
 
 ## Built With
 

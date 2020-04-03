@@ -73,7 +73,6 @@ public class Spotter {
                     showHelp();
                 }else if (Pattern.matches(CLEAR, command)) {
                     siloFrontend.ctrlClear();
-                    //After merge dont forget to catch exception
                 }else if (Pattern.matches(PING, command)) {
                     String message = getGroupFromPattern(command, pingPattern, 1);
                     System.out.println(siloFrontend.ctrlPing(message));
