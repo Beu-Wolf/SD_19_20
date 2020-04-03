@@ -31,7 +31,7 @@ public class Spotter {
     private static final String DONE = "^[Dd]one$";
 
     //init commands
-    private static final String CAMS_TO_LOAD = "^(\\w+),([\\d.]+),([\\d.]+)$";
+    private static final String CAMS_TO_LOAD = "^(\\w+),([\\d.]+),([\\d.-]+)$";
     private static final String OBS_TO_LOAD_CAR = "^(\\w+),car,(\\w+)$";
     private static final String OBS_TO_LOAD_PERSON = "^(\\w+),person,(\\w+)$";
 
