@@ -2,10 +2,7 @@ package pt.tecnico.sauron.silo.client;
 
 import org.junit.jupiter.api.*;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
-import pt.tecnico.sauron.silo.client.exceptions.CameraAlreadyExistsException;
-import pt.tecnico.sauron.silo.client.exceptions.CameraRegisterException;
-import pt.tecnico.sauron.silo.client.exceptions.ErrorMessages;
-import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
+import pt.tecnico.sauron.silo.client.exceptions.*;
 
 public class CamJoinIT extends BaseIT {
     public static String name = "testCamera";
@@ -53,7 +50,11 @@ public class CamJoinIT extends BaseIT {
 
     @AfterEach
     public void clear() {
-        siloFrontend.ctrlClear();
+        try {
+            siloFrontend.ctrlClear();
+        } catch (ClearException e) {
+            e.printStackTrace();
+        }
     }
 
 }

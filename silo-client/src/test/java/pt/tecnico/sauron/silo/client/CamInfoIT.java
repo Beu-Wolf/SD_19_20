@@ -3,6 +3,7 @@ package pt.tecnico.sauron.silo.client;
 import org.junit.jupiter.api.*;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.exceptions.CameraNotFoundException;
+import pt.tecnico.sauron.silo.client.exceptions.ClearException;
 import pt.tecnico.sauron.silo.client.exceptions.ErrorMessages;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 
@@ -34,6 +35,10 @@ public class CamInfoIT extends BaseIT {
 
     @AfterEach
     public void clear() {
-        siloFrontend.ctrlClear();
+        try {
+            siloFrontend.ctrlClear();
+        } catch (ClearException e) {
+            e.printStackTrace();
+        }
     }
 }
