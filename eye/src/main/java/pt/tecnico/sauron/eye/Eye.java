@@ -37,6 +37,7 @@ public class Eye {
         this.cam = new CamDto(name, lat, lon);
 
         this.siloFrontend.camJoin(this.cam);
+        System.out.println("Registered Successfully!");
     }
 
     public void interactive() {
@@ -90,9 +91,9 @@ public class Eye {
         if(observationBuffer.size() > 0) {
             try {
                 this.siloFrontend.report(this.cam.getName(), observationBuffer);
+                System.out.println("Successfully reported observations!");
             } catch (FrontendException e) {
-                System.err.println("Got error message: " + e.getMessage());
-
+                System.err.println("Could not add observations: " + e.getMessage());
             }
         }
     }
