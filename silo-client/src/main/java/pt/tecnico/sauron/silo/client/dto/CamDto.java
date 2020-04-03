@@ -29,5 +29,4 @@ public class CamDto {
         }
         return false;
     }
-
 }

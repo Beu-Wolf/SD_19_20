@@ -170,8 +170,11 @@ public class SiloFrontend {
             System.out.println("Registered Successfully!");
         } catch(RuntimeException e) {
             Status status = Status.fromThrowable(e);
-            if(status == Status.ALREADY_EXISTS) {
+            if(status.getCode() == Status.Code.ALREADY_EXISTS) {
                 throw new CameraAlreadyExistsException();
+            }
+            if(status.getCode() == Status.Code.INVALID_ARGUMENT) {
+                throw new CameraRegisterException();
             }
             throw new CameraRegisterException();
         }
@@ -278,7 +281,6 @@ public class SiloFrontend {
             }
             return results;
         } catch(StatusRuntimeException e) {
-            System.out.println("GOT ERROR: " + e);
             Status status = Status.fromThrowable(e);
             if (status.getCode() == Status.Code.NOT_FOUND) {
                 throw new QueryException(ErrorMessages.OBSERVATION_NOT_FOUND);

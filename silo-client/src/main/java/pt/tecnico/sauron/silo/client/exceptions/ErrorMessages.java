@@ -2,7 +2,7 @@ package pt.tecnico.sauron.silo.client.exceptions;
 
 public class ErrorMessages {
     public static final String BLANK_PING_INPUT = "Input cannot be blank!";
-    public static final String CAMERA_ALREADY_EXISTS = "Camera name already exists in other location";
+    public static final String CAMERA_ALREADY_EXISTS = "Camera name already exists in a different location";
     public static final String CAMERA_NOT_FOUND = "Camera not found";
     public static final String FAILED_TO_REGISTER_CAMERA = "Could not register camera";
     public static final String FAILED_TO_RETRIEVE_CAMERA_INFO = "Could not retrieve camera info";
