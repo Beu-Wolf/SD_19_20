@@ -73,12 +73,10 @@ public class SiloFrontend {
 
             @Override
             public void onError(Throwable throwable) {
-                System.out.println("Could not register cameras");
                 latch.countDown();
             }
             @Override
             public void onCompleted() {
-                System.out.println("Successfully registered cameras!");
                 latch.countDown();
             }
         };
@@ -167,7 +165,6 @@ public class SiloFrontend {
 
         try {
             this.reportBlockingStub.camJoin(request);
-            System.out.println("Registered Successfully!");
         } catch(RuntimeException e) {
             Status status = Status.fromThrowable(e);
             if(status.getCode() == Status.Code.ALREADY_EXISTS) {
@@ -220,7 +217,6 @@ public class SiloFrontend {
             }
             @Override
             public void onCompleted() {
-                System.out.println("Successfully reported observations!");
                 latch.countDown();
             }
         };
