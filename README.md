@@ -76,7 +76,7 @@ To begin the eye client
 ./eye/target/appassembler/bin/eye host port cameraName latitude longitude [< file.txt]
 ```
 
-to begin the spotter client
+To begin the spotter client
 ```
 ./spotter/target/appassembler/bin/spotter host port [<file.txt]
 ```

@@ -6,13 +6,12 @@ Instanciar o servidor:
 ```
 cd silo-server
 mvn exec:java
-cd ..
 ```
 
 ## Caso 1: Carregar Dados de teste usando o spotter
 
 ```
-./spotter/target/appassembler/bin/spotter localhost 8080 < initSilo.txt
+./spotter/target/appassembler/bin/spotter localhost 8080 < demo/initSilo.txt
 ```
 
 ## Caso 2: Usar eye para carregar mais observações, com e sem erros
@@ -27,7 +26,7 @@ person,89496
 Verificar resposta de sucesso
 
 ```
-person R4a_
+person,R4a_
 \n
 ```
 Verificar resposta de id de pessoa inválido
@@ -40,7 +39,7 @@ car,AA00AA
 Verificar resposta de sucesso
 
 ```
-car, 124_87
+car,124_87
 \n
 ```
 Verificar resposta de id de carro inválido
@@ -50,11 +49,14 @@ Premir `^C` para sair do cliente Eye
 ## Caso 3: Verificar operação sleep do Eye
 
 ```
-./eye/target/appassembler/bin/eye localhost 8080 testCam2 12.456789 -8.987654
-zzz,1000
+./eye/target/appassembler/bin/eye localhost 8080 testCam3 12.987654 -8.123456
+zzz,10000
+person,7777
 \n
 ```
-Verificar pausa de 1 segundo
+Verificar pausa de 10 segundo até reportar observação
+
+Premir `^C` para sair do cliente Eye
 
 ## Caso 4: Uso do Spotter para executar pesquisas
 
@@ -79,7 +81,7 @@ Verificar que
 
 ```
 spot person *
-spot person 123*
+spot person 89*
 spot person *7
 spot car 20*
 spot car NE*
@@ -87,7 +89,7 @@ spot car NE*
 Verificar que
 
 * todas as pessoas aparecem ordenadas pelo seu id
-* todas as pessoas com id começado por 123 aparecem, ordenadas pelo seu id
+* todas as pessoas com id começado por 89 aparecem, ordenadas pelo seu id
 * todas as pessoas acabadas em 7 aparecem ordenadas pelo seu id
 * todos os carros começados por 20 aparecem ordenados pelo seu id
 * Não existem observações de carros começados por NE
@@ -111,7 +113,7 @@ Verificar que
 exit 
 ```
 
-## Caso 5: Uso do spotter para operações de controlo
+##   Caso 5: Uso do spotter para operações de controlo
 
 Executar novo spotter
 ```
@@ -141,14 +143,24 @@ Verificar sucesso no registo das cameras
 
 ```
 init obs
-$ mockCamera1, person, 89399
-$ mockCamera2, car, 20SD21
-$ mockCamera1, car, 20SD21
-$ mockCamera2, person 89399
+$ mockCamera1,person,89399
+$ mockCamera2,car,20SD21
+$ mockCamera1,car,20SD21
+$ mockCamera2,person 89399
 $ done
 ```
 
 Verificar sucesso no registo das operações
+
+```
+spot person 89399
+trail car 20SD21
+```
+Verificar que
+
+* a pessoa 89399 tem a observação mais recente na camera mockCamera2
+* o carro 20SD21 aparece em 2 observações nas cameras MockCamera1 e MockCamera2
+
 
 ```
 exit 
