@@ -29,7 +29,7 @@ public class Cam {
     public boolean equals(Object o) {
         if(o instanceof Cam) {
             Cam c = (Cam)o;
-            return c.getName() == this.name && this.coords.equals(c.getCoords());
+            return c.getName().equals(this.name) && this.coords.equals(c.getCoords());
         }
         return false;
     }
