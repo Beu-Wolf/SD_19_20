@@ -43,7 +43,9 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
             responseObserver.onCompleted();
 
         } catch (SiloInvalidArgumentException e) {
-            responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
+            responseObserver.onError(Status.INVALID_ARGUMENT
+                    .withDescription(e.getMessage())
+                    .asRuntimeException());
         } catch (ObservationNotFoundException e) {
             responseObserver.onError(Status.NOT_FOUND.withDescription(e.getMessage()).asRuntimeException());
         }
@@ -101,8 +103,9 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
                 }
             }
         } catch (SiloInvalidArgumentException e) {
-            responseObserver.onError(Status.UNIMPLEMENTED.withDescription(
-                    ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE).asRuntimeException());
+            responseObserver.onError(Status.INVALID_ARGUMENT
+                    .withDescription(e.getMessage())
+                    .asRuntimeException());
             return;
         }
 
