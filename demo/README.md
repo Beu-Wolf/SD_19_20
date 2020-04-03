@@ -165,3 +165,5 @@ trail car 20SD21
 ```
 exit 
 ```
+
+Exit server by pressing `Enter` 
