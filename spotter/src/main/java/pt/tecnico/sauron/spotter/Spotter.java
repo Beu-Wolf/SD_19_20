@@ -8,10 +8,7 @@ import pt.tecnico.sauron.silo.client.dto.ReportDto;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -61,64 +58,68 @@ public class Spotter {
         System.out.println("Spotter started, write 'exit' to quit and 'help' for a list of commands");
         Scanner scanner = new Scanner(System.in);
         List<ReportDto> reportList;
-        while(true) {
-            System.out.print("> ");
-            try {
-                String command = scanner.nextLine().trim();
+         try {
+             while (true) {
+                 System.out.print("> ");
+                 try {
+                     String command = scanner.nextLine().trim();
 
-                if (Pattern.matches(EXIT, command)) {
-                    break;
-                }else if (Pattern.matches(HELP, command)) {
-                    showHelp();
-                }else if (Pattern.matches(CLEAR, command)) {
-                    siloFrontend.ctrlClear();
-                }else if (Pattern.matches(PING, command)) {
-                    String message = getGroupFromPattern(command, pingPattern, 1);
-                    System.out.println(siloFrontend.ctrlPing(message));
+                     if (Pattern.matches(EXIT, command)) {
+                         break;
+                     } else if (Pattern.matches(HELP, command)) {
+                         showHelp();
+                     } else if (Pattern.matches(CLEAR, command)) {
+                         siloFrontend.ctrlClear();
+                     } else if (Pattern.matches(PING, command)) {
+                         String message = getGroupFromPattern(command, pingPattern, 1);
+                         System.out.println(siloFrontend.ctrlPing(message));
 
-                } else if (Pattern.matches(INIT_CAMS, command)) {
-                    initCameras(scanner);
-                } else if (Pattern.matches(INIT_OBS, command)) {
-                    initObs(scanner);
-                } else if (Pattern.matches(SPOT_CAR, command)) {
-                    String id = getGroupFromPattern(command, spotCar, 1);
-                    ReportDto reportDto = siloFrontend.track(ObservationDto.ObservationType.CAR, id);
-                    System.out.println(reportDto.toString());
-                } else if (Pattern.matches(SPOT_PERSON, command)) {
-                    String id = getGroupFromPattern(command, spotPerson, 1);
-                    ReportDto reportDto = siloFrontend.track(ObservationDto.ObservationType.PERSON, id);
-                    System.out.println(reportDto.toString());
-                } else if (Pattern.matches(SPOT_CAR_PARTIAL, command)) {
-                    String id = getGroupFromPattern(command, spotCarPartial, 1);
-                    reportList = siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, id);
-                    showReports(reportList, true);
-                } else if (Pattern.matches(SPOT_PERSON_PARTIAL, command)) {
-                    String id = getGroupFromPattern(command, spotPersonPartial, 1);
-                    reportList = siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, id);
-                    showReports(reportList, true);
-                } else if (Pattern.matches(TRACE_CAR, command)) {
-                    String id = getGroupFromPattern(command, traceCar, 1);
-                    reportList = siloFrontend.trace(ObservationDto.ObservationType.CAR, id);
-                    showReports(reportList, false);
-                } else if (Pattern.matches(TRACE_PERSON, command)) {
-                    String id = getGroupFromPattern(command, tracePerson, 1);
-                    reportList = siloFrontend.trace(ObservationDto.ObservationType.PERSON, id);
-                    showReports(reportList, false);
-                } else {
-                    System.out.println("Unrecognized command. Type help for a list of commands");
-                }
+                     } else if (Pattern.matches(INIT_CAMS, command)) {
+                         initCameras(scanner);
+                     } else if (Pattern.matches(INIT_OBS, command)) {
+                         initObs(scanner);
+                     } else if (Pattern.matches(SPOT_CAR, command)) {
+                         String id = getGroupFromPattern(command, spotCar, 1);
+                         ReportDto reportDto = siloFrontend.track(ObservationDto.ObservationType.CAR, id);
+                         System.out.println(reportDto.toString());
+                     } else if (Pattern.matches(SPOT_PERSON, command)) {
+                         String id = getGroupFromPattern(command, spotPerson, 1);
+                         ReportDto reportDto = siloFrontend.track(ObservationDto.ObservationType.PERSON, id);
+                         System.out.println(reportDto.toString());
+                     } else if (Pattern.matches(SPOT_CAR_PARTIAL, command)) {
+                         String id = getGroupFromPattern(command, spotCarPartial, 1);
+                         reportList = siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, id);
+                         showReports(reportList, true);
+                     } else if (Pattern.matches(SPOT_PERSON_PARTIAL, command)) {
+                         String id = getGroupFromPattern(command, spotPersonPartial, 1);
+                         reportList = siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, id);
+                         showReports(reportList, true);
+                     } else if (Pattern.matches(TRACE_CAR, command)) {
+                         String id = getGroupFromPattern(command, traceCar, 1);
+                         reportList = siloFrontend.trace(ObservationDto.ObservationType.CAR, id);
+                         showReports(reportList, false);
+                     } else if (Pattern.matches(TRACE_PERSON, command)) {
+                         String id = getGroupFromPattern(command, tracePerson, 1);
+                         reportList = siloFrontend.trace(ObservationDto.ObservationType.PERSON, id);
+                         showReports(reportList, false);
+                     } else {
+                         System.out.println("Unrecognized command, try again");
+                     }
 
-            }catch (StatusRuntimeException e) {
-                System.err.println(e.getStatus().getDescription());
-            } catch (FrontendException e) {
-                System.err.println(e.getMessage());
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                System.err.println(e.getMessage());
-            }
+                 } catch (StatusRuntimeException e) {
+                     System.err.println(e.getStatus().getDescription());
+                 } catch (FrontendException e) {
+                     System.err.println(e.getMessage());
+                 } catch (InterruptedException e) {
+                     Thread.currentThread().interrupt();
+                     System.err.println(e.getMessage());
+                 }
 
-        }
-        scanner.close();
+             }
+             scanner.close();
+         } catch (NoSuchElementException e) {
+             System.err.println("Exiting...");
+         }
     }
 
     private String getGroupFromPattern(String command, Pattern pattern, int index) {

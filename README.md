@@ -68,18 +68,28 @@ To begin the server
 ```
 cd silo-server/
 mvn exec:java
-cd ..
 ```
 
-To begin the eye client
+To begin the eye client, open a new terminal and navigate to the project's root directory
 ```
 ./eye/target/appassembler/bin/eye host port cameraName latitude longitude [< file.txt]
 ```
+where:
+   * host = hostname of machine running the server (example: localhost)
+   * port = port where the server is listening (example: 8080)
+   * cameraName = name of camera to register 
+   * latitude = camera valid latitude in decimal notation (ex: 12.123456)
+   * longitude = camera valid longitude in decimal notation (ex:8.980657)
+   * file.txt = optional path to file with commands to execute
 
-To begin the spotter client
+To begin the spotter client, open a new terminal and navigate to the project's root directory
 ```
-./spotter/target/appassembler/bin/spotter host port [<file.txt]
+./spotter/target/appassembler/bin/spotter host port [< file.txt]
 ```
+where:
+   * host = hostname of machine running the server (example: localhost)
+   * port = port where the server is listening (example: 8080)
+   * file.txt = optional path to file with commands to execute
 
 ##Concurrency
 
