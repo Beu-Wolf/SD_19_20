@@ -15,13 +15,13 @@ import static java.time.temporal.ChronoUnit.DAYS;
 
 public class TrackIT extends BaseIT {
 
-    private static final String[] invalidPersonIDs = {
+    private static final String[] invalidPersonIds = {
             "-4982374",
             "20SD20",
             "324*343"
     };
 
-    private static final String[] invalidCarIDs = {
+    private static final String[] invalidCarIds = {
             "AABBCC",
             "112233",
             "AA11BB22",
@@ -84,33 +84,33 @@ public class TrackIT extends BaseIT {
     @Test
     public void trackNonExistingTypeTest() {
         Assertions.assertEquals(
-                "Can't handle observation type!",
-                Assertions.assertThrows(InvalidArgumentException.class, () -> {
-                    this.siloFrontend.track(ObservationDto.ObservationType.UNSPEC, "1337_5p34k");
-                }).getMessage()
+            "Can't handle observation type!",
+            Assertions.assertThrows(InvalidArgumentException.class, () -> {
+                this.siloFrontend.track(ObservationDto.ObservationType.UNSPEC, "1337_5p34k");
+            }).getMessage()
         );
     }
 
     @Test
     public void testInvalidPersonID() {
-        for(String invalidId : invalidPersonIDs) {
+        for(String invalidId : invalidPersonIds) {
             Assertions.assertEquals(
-                    "Person ID must be an unsigned long!",
-                    Assertions.assertThrows(InvalidArgumentException.class, () -> {
-                        this.siloFrontend.track(ObservationDto.ObservationType.PERSON, invalidId);
-                    }).getMessage()
+                "Person ID must be an unsigned long!",
+                Assertions.assertThrows(InvalidArgumentException.class, () -> {
+                    this.siloFrontend.track(ObservationDto.ObservationType.PERSON, invalidId);
+                }).getMessage()
             );
         }
     }
 
     @Test
     public void testInvalidCarID() {
-        for(String invalidId : invalidCarIDs) {
+        for(String invalidId : invalidCarIds) {
             Assertions.assertEquals(
-                    "Car ID must be a valid portuguese license plate!",
-                    Assertions.assertThrows(InvalidArgumentException.class, () -> {
-                        this.siloFrontend.track(ObservationDto.ObservationType.CAR, invalidId);
-                    }).getMessage()
+                "Car ID must be a valid portuguese license plate!",
+                Assertions.assertThrows(InvalidArgumentException.class, () -> {
+                    this.siloFrontend.track(ObservationDto.ObservationType.CAR, invalidId);
+                }).getMessage()
             );
         }
     }
