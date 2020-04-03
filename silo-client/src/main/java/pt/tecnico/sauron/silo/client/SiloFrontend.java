@@ -192,12 +192,17 @@ public class SiloFrontend {
         }
     }
 
-    public void report(String name, List<ObservationDto> observations) throws ReportException {
+    public void report(String name, List<ObservationDto> observations)
+            throws ReportException, CameraNotFoundException, InvalidArgumentException {
         Metadata header = new Metadata();
 
         header.put(METADATA_CAM_NAME, name);
         ReportServiceGrpc.ReportServiceStub reportStubWithHeaders = MetadataUtils.attachHeaders(this.reportStub, header);
         final CountDownLatch latch = new CountDownLatch(1);
+
+        // Arrays must be used to allow changes from the inner class
+        final boolean[] error = new boolean[1];
+        final Status[] errorStatus = new Status[1];
 
         StreamObserver<Silo.ReportResponse> responseObserver =  new StreamObserver<>() {
             @Override
@@ -206,10 +211,9 @@ public class SiloFrontend {
             @Override
             public void onError(Throwable throwable) {
                 Status status = Status.fromThrowable(throwable);
-                if(status.getCode() == Status.Code.NOT_FOUND || status.getCode() == Status.Code.INVALID_ARGUMENT) {
-                    System.err.println(status.getDescription());
+                    error[0] = true;
+                    errorStatus[0] = status;
                     latch.countDown();
-                }
             }
             @Override
             public void onCompleted() {
@@ -229,13 +233,21 @@ public class SiloFrontend {
                 // to allow for the server to send an error if it happens
                 Thread.sleep(10);
 
-                if(latch.getCount() == 0) {
-                    return;
-                }
             }
 
             requestObserver.onCompleted();
             latch.await(10, TimeUnit.SECONDS);
+
+            if (error[0]) {
+                switch(errorStatus[0].getCode()) {
+                    case NOT_FOUND:
+                        throw new CameraNotFoundException();
+                    case INVALID_ARGUMENT:
+                        throw new InvalidArgumentException(errorStatus[0].getDescription());
+                    default:
+                        throw new ReportException(errorStatus[0].getDescription());
+                }
+            }
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -244,6 +256,7 @@ public class SiloFrontend {
             requestObserver.onError(e);
             throw new ReportException(e.toString());
         }
+
     }
 
 
