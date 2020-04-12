@@ -2,6 +2,7 @@ package pt.tecnico.sauron.silo.client;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -18,6 +19,7 @@ public class BaseIT {
 		testProps = new Properties();
 
 		try {
+			siloFrontend = new SiloFrontend(testProps.getProperty("server.host"), testProps.getProperty("server.port"), testProps.getProperty("server.path"));
 			testProps.load(BaseIT.class.getResourceAsStream(TEST_PROP_FILE));
 			System.out.println("Test properties:");
 			System.out.println(testProps);
@@ -25,9 +27,11 @@ public class BaseIT {
 			final String msg = String.format("Could not load properties file {}", TEST_PROP_FILE);
 			System.out.println(msg);
 			throw e;
+		} catch (FrontendException e) {
+			System.out.println(e.getMessage());
 		}
 
-		siloFrontend = new SiloFrontend(testProps.getProperty("server.host"), Integer.parseInt(testProps.getProperty("server.port")));
+
 	}
 	
 	@AfterAll

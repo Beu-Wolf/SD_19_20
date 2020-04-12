@@ -14,6 +14,9 @@ import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.QueryServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.Silo;
+import pt.ulisboa.tecnico.sdis.zk.ZKNaming;
+import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
+import pt.ulisboa.tecnico.sdis.zk.ZKRecord;
 
 import java.time.Instant;
 import java.util.Iterator;
@@ -24,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 public class SiloFrontend {
     private ManagedChannel channel;
+    ZKNaming zkNaming;
     private ControlServiceGrpc.ControlServiceBlockingStub ctrlBlockingStub;
     private ControlServiceGrpc.ControlServiceStub ctrlStub;
     private ReportServiceGrpc.ReportServiceStub reportStub;
@@ -32,18 +36,24 @@ public class SiloFrontend {
     private ReportServiceGrpc.ReportServiceBlockingStub reportBlockingStub;
     public static final Metadata.Key<String> METADATA_CAM_NAME = Metadata.Key.of("name", Metadata.ASCII_STRING_MARSHALLER);
 
-    public SiloFrontend(String host, int port) {
-        String target = host + ":" + port;
-        this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+    public SiloFrontend(String host, String port, String path) throws FrontendException{
+        try {
+            zkNaming = new ZKNaming(host, port);
+            ZKRecord record = zkNaming.lookup(path);
+            String target = record.getURI();
+            this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
 
-        this.ctrlStub = ControlServiceGrpc.newStub(this.channel);
-        this.ctrlBlockingStub = ControlServiceGrpc.newBlockingStub(this.channel);
+            this.ctrlStub = ControlServiceGrpc.newStub(this.channel);
+            this.ctrlBlockingStub = ControlServiceGrpc.newBlockingStub(this.channel);
 
-        this.queryStub = QueryServiceGrpc.newStub(this.channel);
-        this.queryBlockingStub = QueryServiceGrpc.newBlockingStub(this.channel);
+            this.queryStub = QueryServiceGrpc.newStub(this.channel);
+            this.queryBlockingStub = QueryServiceGrpc.newBlockingStub(this.channel);
 
-        this.reportStub = ReportServiceGrpc.newStub(this.channel);
-        this.reportBlockingStub = ReportServiceGrpc.newBlockingStub(this.channel);
+            this.reportStub = ReportServiceGrpc.newStub(this.channel);
+            this.reportBlockingStub = ReportServiceGrpc.newBlockingStub(this.channel);
+        } catch (ZKNamingException e) {
+            throw new FrontendException("Error looking up in zookeeper: " + e.getMessage());
+        }
     }
 
     public void shutdown() {

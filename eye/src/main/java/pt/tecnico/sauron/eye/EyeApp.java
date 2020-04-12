@@ -16,20 +16,21 @@ public class EyeApp {
 
 		if(args.length < 5) {
 			System.out.println("Argument(s) missing!");
-			System.out.printf("Usage: java %s host port camName latitude longitude%n", EyeApp.class.getName());
+			System.out.printf("Usage: java %s host port path camName latitude longitude%n", EyeApp.class.getName());
 			return;
 		}
 
 		String host = args[0];
-		int port = Integer.parseInt(args[1]);
-		SiloFrontend siloFrontend = new SiloFrontend(host, port);
+		String port = args[1];
+		String path = args[2];
 
 		// register cam
-		final String name = args[2];
-		final double lat = Double.parseDouble(args[3]);
-		final double lon = Double.parseDouble(args[4]);
+		final String name = args[3];
+		final double lat = Double.parseDouble(args[4]);
+		final double lon = Double.parseDouble(args[5]);
 
 		try {
+			SiloFrontend siloFrontend = new SiloFrontend(host, port, path);
 			Eye eye = new Eye(siloFrontend, name, lat, lon);
 			eye.interactive();
 		} catch(FrontendException e) {

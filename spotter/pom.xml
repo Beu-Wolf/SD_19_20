@@ -15,8 +15,10 @@
 
 	<properties>
 		<!-- see parent POM for more properties -->
-
+		<zoo.host>localhost</zoo.host>
+		<zoo.port>2181</zoo.port>
 		<mainclass>pt.tecnico.sauron.spotter.SpotterApp</mainclass>
+		<server.path>/grpc/sauron/silo/1</server.path>
 	</properties>
 
 	<dependencies>
@@ -66,6 +68,9 @@
 				<configuration>
 					<mainClass>${mainclass}</mainClass>
 					<arguments>
+						<argument>${zoo.host}</argument>
+						<argument>${zoo.port}</argument>
+						<argument>${server.path}</argument>
 					</arguments>
 				</configuration>
 			</plugin>

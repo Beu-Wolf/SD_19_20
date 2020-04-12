@@ -2,6 +2,7 @@ package pt.tecnico.sauron.spotter;
 
 
 import pt.tecnico.sauron.silo.client.SiloFrontend;
+import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 
 public class SpotterApp {
 	
@@ -14,20 +15,24 @@ public class SpotterApp {
 		// 	System.out.printf("arg[%d] = %s%n", i, args[i]);
 		// }
 
-		if (args.length != 2) {
+		if (args.length != 3) {
 			System.out.println("Arguments missing");
 			System.out.printf("Usage: %s host port%n", Spotter.class.getName());
 			return;
 		}
 
 		String host = args[0];
-		int port = Integer.parseInt(args[1]);
+		String port = args[1];
+		String path = args[2];
+		try {
+			SiloFrontend siloFrontend = new SiloFrontend(host, port, path);
 
-		SiloFrontend siloFrontend = new SiloFrontend(host, port);
+			Spotter spotter = new Spotter(siloFrontend);
 
-		Spotter spotter = new Spotter(siloFrontend);
-
-		spotter.begin();
+			spotter.begin();
+		} catch (FrontendException e) {
+			System.err.println(e.getMessage());
+		}
 
 
 	}
