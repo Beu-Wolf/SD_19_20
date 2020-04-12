@@ -14,6 +14,9 @@ import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.QueryServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.Silo;
+import pt.ulisboa.tecnico.sdis.zk.ZKNaming;
+import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
+import pt.ulisboa.tecnico.sdis.zk.ZKRecord;
 
 import java.time.Instant;
 import java.util.Iterator;
@@ -32,8 +35,11 @@ public class SiloFrontend {
     private ReportServiceGrpc.ReportServiceBlockingStub reportBlockingStub;
     public static final Metadata.Key<String> METADATA_CAM_NAME = Metadata.Key.of("name", Metadata.ASCII_STRING_MARSHALLER);
 
-    public SiloFrontend(String host, int port) {
-        String target = host + ":" + port;
+    public SiloFrontend(String zooHost, String zooPort, String serverPath) throws ZKNamingException {
+        ZKNaming zkNaming = new ZKNaming(zooHost,zooPort);
+        ZKRecord record = zkNaming.lookup(serverPath);
+        String target = record.getURI();
+
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
 
         this.ctrlStub = ControlServiceGrpc.newStub(this.channel);
