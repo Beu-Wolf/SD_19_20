@@ -76,7 +76,9 @@ public class Eye {
             scanner.close();
         } catch (NoSuchElementException e) {
             // no more lines in input
+            System.out.println("Reached end of input");
             sendObservations();
+            System.exit(0);
         } catch (InterruptedException e) {
             System.err.printf("Got interrupted while sleeping. %s%nExiting.", e.getMessage());
         }
