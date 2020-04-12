@@ -32,8 +32,7 @@ public class SpotterApp {
 
 			spotter.begin();
 		} catch (ZKNamingException e) {
-			e.printStackTrace();
+			System.out.println("Could not find server in given path. Make sure the server is up and running.");
 		}
 	}
-
 }
