@@ -2,6 +2,7 @@ package pt.tecnico.sauron.silo.client;
 
 
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
+import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
 public class SiloClientApp {
 	
@@ -14,24 +15,25 @@ public class SiloClientApp {
 			System.out.printf("arg[%d] = %s%n", i, args[i]);
 		}
 
-		if (args.length < 2) {
+		if (args.length < 3) {
 			System.out.println("Argument(s) missing!");
-			System.out.printf("Usage: java %s host port%n", SiloClientApp.class.getName());
+			System.out.printf("Usage: java %s zooHost zooPort%n", SiloClientApp.class.getName());
 			return;
 		}
 
-		final String host = args[0];
-		final int port = Integer.parseInt(args[1]);
+		final String zooHost = args[0];
+		final String zooPort = args[1];
+		final String serverPath = args[2];
 
-		SiloFrontend siloFrontend = new SiloFrontend(host, port);
 		try {
+			SiloFrontend siloFrontend = new SiloFrontend(zooHost, zooPort, serverPath);
 			String sentence = "friend";
 			String response = siloFrontend.ctrlPing(sentence);
 			System.out.println(response);
-		} catch (FrontendException e) {
+			siloFrontend.shutdown();
+		} catch (FrontendException | ZKNamingException e) {
 			System.err.println("Caught exception with description: " + e.getMessage());
 		}
-		siloFrontend.shutdown();
 	}
 
 
