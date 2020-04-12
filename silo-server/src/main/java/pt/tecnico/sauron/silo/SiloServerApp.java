@@ -55,6 +55,8 @@ public class SiloServerApp {
 				}
 			}
 		}
+
+		System.exit(0);
 	}
 	
 }
