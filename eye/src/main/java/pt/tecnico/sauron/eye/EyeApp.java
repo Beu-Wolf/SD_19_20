@@ -37,8 +37,7 @@ public class EyeApp {
 		} catch(FrontendException e) {
 			System.err.println(e.getMessage());
 		} catch (ZKNamingException e) {
-			System.err.println("Error while looking up given path");
-			e.printStackTrace();
+			System.out.println("Could not find server in given path. Make sure the server is up and running.");
 		}
 
 	}
