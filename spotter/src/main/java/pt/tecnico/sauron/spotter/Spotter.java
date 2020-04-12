@@ -118,7 +118,7 @@ public class Spotter {
              }
              scanner.close();
          } catch (NoSuchElementException e) {
-             System.err.println("Exiting...");
+             System.err.println("Reached enf of input. Exiting...");
          }
     }
 
