@@ -17,6 +17,16 @@
 		<!-- see parent POM for more properties -->
 
 		<mainclass>pt.tecnico.sauron.eye.EyeApp</mainclass>
+
+		<zoo.host>localhost</zoo.host>
+		<zoo.port>2181</zoo.port>
+		<!-- instance number -->
+		<instance>1</instance>
+		<server.path>/grpc/sauron/silo/${instance}</server.path>
+
+		<cam.name>Tagus</cam.name>
+		<cam.lat>38.737613</cam.lat>
+		<cam.lon>-9.303164</cam.lon>
 	</properties>
 
 	<dependencies>
@@ -66,7 +76,12 @@
 				<configuration>
 					<mainClass>${mainclass}</mainClass>
 					<arguments>
-
+						<argument>${zoo.host}</argument>
+						<argument>${zoo.port}</argument>
+						<argument>${server.path}</argument>
+						<argument>${cam.name}</argument>
+						<argument>${cam.lat}</argument>
+						<argument>${cam.lon}</argument>
 					</arguments>
 				</configuration>
 			</plugin>
