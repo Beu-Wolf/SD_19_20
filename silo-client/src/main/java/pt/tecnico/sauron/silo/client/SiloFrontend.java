@@ -19,9 +19,7 @@ import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 import pt.ulisboa.tecnico.sdis.zk.ZKRecord;
 
 import java.time.Instant;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -35,11 +33,23 @@ public class SiloFrontend {
     private ReportServiceGrpc.ReportServiceBlockingStub reportBlockingStub;
     public static final Metadata.Key<String> METADATA_CAM_NAME = Metadata.Key.of("name", Metadata.ASCII_STRING_MARSHALLER);
 
+
     public SiloFrontend(String zooHost, String zooPort, String serverPath) throws ZKNamingException {
         ZKNaming zkNaming = new ZKNaming(zooHost,zooPort);
-        ZKRecord record = zkNaming.lookup(serverPath);
-        String target = record.getURI();
+        Collection<ZKRecord> records = zkNaming.listRecords(serverPath);
+        ZKRecord record = ((ArrayList<ZKRecord>) records).get(new Random().nextInt(records.size()));
+        siloInfo(record);
+    }
 
+    public SiloFrontend(String zooHost, String zooPort, String serverPath, String instance) throws ZKNamingException {
+        ZKNaming zkNaming = new ZKNaming(zooHost, zooPort);
+        String path = serverPath + "/" + instance;
+        ZKRecord record = zkNaming.lookup(path);
+        siloInfo(record);
+    }
+
+    private void siloInfo(ZKRecord record) {
+        String target = record.getURI();
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
 
         this.ctrlStub = ControlServiceGrpc.newStub(this.channel);

@@ -21,8 +21,7 @@
 		<zoo.host>localhost</zoo.host>
 		<zoo.port>2181</zoo.port>
 		<!-- instance number -->
-		<instance>1</instance>
-		<server.path>/grpc/sauron/silo/${instance}</server.path>
+		<server.path>/grpc/sauron/silo</server.path>
 	</properties>
 
 	<dependencies>
