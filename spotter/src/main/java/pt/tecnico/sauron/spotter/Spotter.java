@@ -3,6 +3,7 @@ package pt.tecnico.sauron.spotter;
 import io.grpc.StatusRuntimeException;
 import pt.tecnico.sauron.silo.client.SiloFrontend;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
+import pt.tecnico.sauron.silo.client.dto.CoordsDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
 import pt.tecnico.sauron.silo.client.dto.ReportDto;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
@@ -184,14 +185,16 @@ public class Spotter {
                 break;
             } else if (Pattern.matches(OBS_TO_LOAD_CAR, command)) {
                 String camName = getGroupFromPattern(command, obsToLoadCar, 1);
-                CamDto cam = siloFrontend.camInfo(camName);
+                CoordsDto coords = siloFrontend.camInfo(camName);
+                CamDto cam = new CamDto(camName, coords.getLat(), coords.getLon());
                 String id = getGroupFromPattern(command, obsToLoadCar, 2);
                 ObservationDto obs = new ObservationDto(ObservationDto.ObservationType.CAR, id);
                 ReportDto report = new ReportDto(obs, cam, Instant.now());
                 listReports.add(report);
             } else if (Pattern.matches(OBS_TO_LOAD_PERSON, command)) {
                 String camName = getGroupFromPattern(command, obsToLoadPerson, 1);
-                CamDto cam = siloFrontend.camInfo(camName);
+                CoordsDto coords = siloFrontend.camInfo(camName);
+                CamDto cam = new CamDto(camName, coords.getLat(), coords.getLon());
                 String id = getGroupFromPattern(command, obsToLoadPerson, 2);
                 ObservationDto obs = new ObservationDto(ObservationDto.ObservationType.PERSON, id);
                 ReportDto report = new ReportDto(obs, cam, Instant.now());

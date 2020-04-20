@@ -26,7 +26,7 @@ message InfoRequest {
 }
 
 message InfoResponse {
-    Cam cam = 1;
+    google.type.LatLng coords = 1;
 }
 
 enum ObservationType {

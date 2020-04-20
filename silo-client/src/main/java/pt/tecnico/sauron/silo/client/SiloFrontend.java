@@ -181,12 +181,12 @@ public class SiloFrontend {
         }
     }
 
-    public CamDto camInfo(String name) throws CameraNotFoundException, CameraInfoException {
+    public CoordsDto camInfo(String name) throws CameraNotFoundException, CameraInfoException {
         Silo.InfoRequest request = createInfoRequest(name);
 
         try {
             Silo.InfoResponse response = this.reportBlockingStub.camInfo(request);
-            return camFromGRPC(response.getCam());
+            return new CoordsDto(response.getCoords().getLatitude(), response.getCoords().getLongitude());
         } catch (RuntimeException e) {
             Status status = Status.fromThrowable(e);
             if(status == Status.NOT_FOUND) {

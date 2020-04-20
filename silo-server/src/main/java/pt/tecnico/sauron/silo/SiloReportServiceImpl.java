@@ -104,7 +104,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
 
     private pt.tecnico.sauron.silo.grpc.Silo.InfoResponse createInfoResponse(Cam cam) {
         return pt.tecnico.sauron.silo.grpc.Silo.InfoResponse.newBuilder()
-                .setCam(camToGRPC(cam))
+                .setCoords(coordsToGRPC(new Coords(cam.getLat(), cam.getLon())))
                 .build();
     }
 

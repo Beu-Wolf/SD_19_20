@@ -2,6 +2,7 @@ package pt.tecnico.sauron.silo.client;
 
 import org.junit.jupiter.api.*;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
+import pt.tecnico.sauron.silo.client.dto.CoordsDto;
 import pt.tecnico.sauron.silo.client.exceptions.*;
 
 public class CamJoinIT extends BaseIT {
@@ -18,7 +19,10 @@ public class CamJoinIT extends BaseIT {
         CamDto cam = new CamDto(name, lat, lon);
         try {
             siloFrontend.camJoin(cam);
-            Assertions.assertEquals(cam.toString(), siloFrontend.camInfo(cam.getName()).toString());
+
+            CoordsDto coords = siloFrontend.camInfo(cam.getName());
+            CamDto serverCam = new CamDto(name, coords.getLat(), coords.getLon());
+            Assertions.assertEquals(cam.toString(), serverCam.toString());
         } catch (FrontendException e) {
             e.printStackTrace();
         }
@@ -30,9 +34,15 @@ public class CamJoinIT extends BaseIT {
             CamDto cam = new CamDto(name, lat, lon);
             CamDto duplicate = new CamDto(name, newLat , newLon);
             siloFrontend.camJoin(cam);
-            Assertions.assertEquals(ErrorMessages.CAMERA_ALREADY_EXISTS, Assertions.assertThrows(
-                    CameraAlreadyExistsException.class, ()->siloFrontend.camJoin(duplicate))
-                    .getMessage() );
+            Assertions.assertEquals(
+                ErrorMessages.CAMERA_ALREADY_EXISTS,
+                Assertions.assertThrows(
+                    CameraAlreadyExistsException.class, () -> {
+                        siloFrontend.camJoin(duplicate);
+                    }
+                ).getMessage()
+            );
+
         } catch (FrontendException e) {
             e.printStackTrace();
         }
@@ -44,7 +54,11 @@ public class CamJoinIT extends BaseIT {
             CamDto cam = new CamDto(name, lat, lon);
             siloFrontend.camJoin(cam);
             Assertions.assertDoesNotThrow(()->siloFrontend.camJoin(cam));
-            Assertions.assertEquals(cam, siloFrontend.camInfo(cam.getName()));
+
+            CoordsDto coords =  siloFrontend.camInfo(cam.getName());
+            CamDto serverCam = new CamDto(name, coords.getLat(), coords.getLon());
+            Assertions.assertEquals(cam,serverCam);
+
         } catch (FrontendException e) {
             e.printStackTrace();
         }
