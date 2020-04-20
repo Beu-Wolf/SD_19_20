@@ -12,6 +12,10 @@ public class CamJoinIT extends BaseIT {
     public static double lon = 8.678456;
     public static double newLat = 11.123456;
     public static double newLon = 9.564738;
+    public static double badPositiveLat = 200.122001;
+    public static double badNegativeLat = -181.192034;
+    public static double badPositiveLon = 91.112345;
+    public static double badNegativeLon = -90.112344;
 
     @Test
     public void joinCameraOKTest() {
@@ -72,6 +76,30 @@ public class CamJoinIT extends BaseIT {
         Assertions.assertEquals("Camera names must be between 3 and 15 characters long!", Assertions.assertThrows(
         CameraRegisterException.class,()->siloFrontend.camJoin(longCam))
         .getMessage());
+    }
+
+    @Test
+    public void camJoinInvalidLatitude() {
+        CamDto badNegLatCam = new CamDto(name, badNegativeLat, lon);
+        Assertions.assertEquals("Invalid Camera coordinates!", Assertions.assertThrows(
+                CameraRegisterException.class, ()->siloFrontend.camJoin(badNegLatCam))
+                .getMessage());
+        CamDto badPosLatCam = new CamDto(name, badPositiveLat, lon);
+        Assertions.assertEquals("Invalid Camera coordinates!", Assertions.assertThrows(
+                CameraRegisterException.class, ()->siloFrontend.camJoin(badPosLatCam))
+                .getMessage());
+    }
+
+    @Test
+    public void camJoinInvalidLongitude() {
+        CamDto badNegLonCam = new CamDto(name, lat, badNegativeLon);
+        Assertions.assertEquals("Invalid Camera coordinates!", Assertions.assertThrows(
+                CameraRegisterException.class, ()->siloFrontend.camJoin(badNegLonCam))
+                .getMessage());
+        CamDto badPosLonCam = new CamDto(name, lat, badPositiveLon);
+        Assertions.assertEquals("Invalid Camera coordinates!", Assertions.assertThrows(
+                CameraRegisterException.class, ()->siloFrontend.camJoin(badPosLonCam))
+                .getMessage());
     }
 
 
