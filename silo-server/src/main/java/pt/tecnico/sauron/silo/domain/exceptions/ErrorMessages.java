@@ -11,4 +11,5 @@ public class ErrorMessages {
     public static String INVALID_CAMERA_NAME_SIZE = "Camera names must be between 3 and 15 characters long!";
     public static String TYPE_NOT_SUPPORTED = "Type to observe not supported!";
     public static String EMPTY_CAMERA_NAME = "Camera name is empty!";
+    public static String INVALID_COORDS = "Invalid Camera coordinates!";
 }

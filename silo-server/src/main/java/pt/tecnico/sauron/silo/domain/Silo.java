@@ -1,6 +1,7 @@
 package pt.tecnico.sauron.silo.domain;
 
 import pt.tecnico.sauron.silo.domain.exceptions.DuplicateCameraNameException;
+import pt.tecnico.sauron.silo.domain.exceptions.InvalidCameraCoordsException;
 import pt.tecnico.sauron.silo.domain.exceptions.NoCameraFoundException;
 import pt.tecnico.sauron.silo.domain.exceptions.ObservationNotFoundException;
 
@@ -16,12 +17,14 @@ public class Silo {
 
     public Silo() {}
 
-    public synchronized void registerCam(Cam cam) throws DuplicateCameraNameException {
+    public void registerCam(Cam cam) throws DuplicateCameraNameException, InvalidCameraCoordsException {
         String name = cam.getName();
         if(this.cams.containsKey(name)) {
             if(!cam.equals(this.cams.get(name))) {
                 throw new DuplicateCameraNameException();
             }
+        } else if (!validCoords(cam.getCoords())) {
+            throw new InvalidCameraCoordsException();
         } else {
             cams.put(cam.getName(), cam);
         }
@@ -29,12 +32,12 @@ public class Silo {
 
 
 
-    public synchronized void recordReport(Report report) {
+    public void recordReport(Report report) {
         reports.addFirst(report);
     }
 
 
-    public synchronized  void registerObservation(Cam cam, Observation observation) {
+    public void registerObservation(Cam cam, Observation observation) {
         // let the server register the time
         Report report = new Report(cam, observation, Instant.now());
         recordReport(report);
@@ -65,5 +68,9 @@ public class Silo {
             throw new NoCameraFoundException();
         }
         return cam;
+    }
+
+    private boolean validCoords(Coords coords) {
+        return coords.getLat() >= -180.0 && coords.getLat() <= 180.0 && coords.getLon() >= -90.0 && coords.getLon() <= 90.0;
     }
 }
