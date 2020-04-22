@@ -14,6 +14,7 @@ import java.util.LinkedList;
 
 public class ReportIT extends BaseIT {
     private static String cameraName = "testCamera";
+    private static int LOADTESTOBS = 200;
 
     @BeforeAll
     public static void registerCamera() {
@@ -37,6 +38,20 @@ public class ReportIT extends BaseIT {
         list.add(carDto);
 
         assertDoesNotThrow(() -> siloFrontend.report(this.cameraName, list));
+    }
+
+    @Test
+    public void validLoadTest() {
+        LinkedList<ObservationDto> list = new LinkedList<>();
+
+        for (int i = 1; i <= LOADTESTOBS; i++) {
+            ObservationDto personDto = new ObservationDto(ObservationDto.ObservationType.PERSON, String.valueOf(i));
+            ObservationDto carDto = new ObservationDto(ObservationDto.ObservationType.CAR, "AA" + String.format("%04d", i));
+            list.add(personDto);
+            list.add(carDto);
+        }
+
+        assertDoesNotThrow(()->siloFrontend.report(this.cameraName, list));
     }
 
     @Test
