@@ -1,8 +1,8 @@
 package pt.tecnico.sauron.eye;
 
 import pt.tecnico.sauron.silo.client.SiloFrontend;
-import pt.tecnico.sauron.silo.client.dto.FrontendCam;
-import pt.tecnico.sauron.silo.client.dto.FrontendObservation;
+import pt.tecnico.sauron.silo.client.domain.FrontendCam;
+import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
 import pt.tecnico.sauron.silo.client.exceptions.CameraAlreadyExistsException;
 import pt.tecnico.sauron.silo.client.exceptions.CameraRegisterException;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
