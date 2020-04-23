@@ -4,9 +4,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import pt.tecnico.sauron.silo.client.dto.CamDto;
-import pt.tecnico.sauron.silo.client.dto.ObservationDto;
-import pt.tecnico.sauron.silo.client.dto.ReportDto;
+import pt.tecnico.sauron.silo.client.dto.FrontendCam;
+import pt.tecnico.sauron.silo.client.dto.FrontendObservation;
+import pt.tecnico.sauron.silo.client.dto.FrontendReport;
 import pt.tecnico.sauron.silo.client.exceptions.*;
 
 import java.time.Instant;
@@ -43,12 +43,12 @@ public class TraceIT extends BaseIT {
     };
 
 
-    private static final CamDto[] cams = {
-            new CamDto("First", 0, 0),
-            new CamDto("Second", 1, 1),
-            new CamDto("Third", 2, 2),
-            new CamDto("Fourth", 3, 3),
-            new CamDto("Fifth", 4, 4)
+    private static final FrontendCam[] cams = {
+            new FrontendCam("First", 0, 0),
+            new FrontendCam("Second", 1, 1),
+            new FrontendCam("Third", 2, 2),
+            new FrontendCam("Fourth", 3, 3),
+            new FrontendCam("Fifth", 4, 4)
     };
 
     @BeforeAll
@@ -63,15 +63,15 @@ public class TraceIT extends BaseIT {
         };
 
 
-        List<ReportDto> reports = new LinkedList<>();
+        List<FrontendReport> reports = new LinkedList<>();
         Assertions.assertEquals(cams.length, instants.length);
         for(int i = 0; i < cams.length; i++) {
-            reports.add(new ReportDto(
-                    new ObservationDto(ObservationDto.ObservationType.CAR, validCarIds[0]),
+            reports.add(new FrontendReport(
+                    new FrontendObservation(FrontendObservation.ObservationType.CAR, validCarIds[0]),
                     cams[i],
                     instants[i]));
-            reports.add(new ReportDto(
-                    new ObservationDto(ObservationDto.ObservationType.PERSON, validPersonIds[0]),
+            reports.add(new FrontendReport(
+                    new FrontendObservation(FrontendObservation.ObservationType.PERSON, validPersonIds[0]),
                     cams[i],
                     instants[i]));
         }
@@ -89,7 +89,7 @@ public class TraceIT extends BaseIT {
         Assertions.assertEquals(
             "Can't handle observation type!",
             Assertions.assertThrows(InvalidArgumentException.class, () -> {
-                this.siloFrontend.trace(ObservationDto.ObservationType.UNSPEC, "1337_5p34k");
+                this.siloFrontend.trace(FrontendObservation.ObservationType.UNSPEC, "1337_5p34k");
             }).getMessage()
         );
     }
@@ -100,7 +100,7 @@ public class TraceIT extends BaseIT {
             Assertions.assertEquals(
                 "Person ID must be an unsigned long!",
                 Assertions.assertThrows(InvalidArgumentException.class, () -> {
-                    this.siloFrontend.trace(ObservationDto.ObservationType.PERSON, invalidId);
+                    this.siloFrontend.trace(FrontendObservation.ObservationType.PERSON, invalidId);
                 }).getMessage()
             );
         }
@@ -112,7 +112,7 @@ public class TraceIT extends BaseIT {
             Assertions.assertEquals(
                 "Car ID must be a valid portuguese license plate!",
                 Assertions.assertThrows(InvalidArgumentException.class, () -> {
-                    this.siloFrontend.trace(ObservationDto.ObservationType.CAR, invalidId);
+                    this.siloFrontend.trace(FrontendObservation.ObservationType.CAR, invalidId);
                 }).getMessage()
             );
         }
@@ -124,7 +124,7 @@ public class TraceIT extends BaseIT {
         Assertions.assertEquals(
             ErrorMessages.OBSERVATION_NOT_FOUND,
             Assertions.assertThrows(NotFoundException.class, () -> {
-                siloFrontend.trace(ObservationDto.ObservationType.CAR, notSeenCarId);
+                siloFrontend.trace(FrontendObservation.ObservationType.CAR, notSeenCarId);
             }).getMessage()
         );
     }
@@ -134,7 +134,7 @@ public class TraceIT extends BaseIT {
         Assertions.assertEquals(
             ErrorMessages.OBSERVATION_NOT_FOUND,
             Assertions.assertThrows(NotFoundException.class, () -> {
-                siloFrontend.trace(ObservationDto.ObservationType.PERSON, notSeenPeronId);
+                siloFrontend.trace(FrontendObservation.ObservationType.PERSON, notSeenPeronId);
             }).getMessage()
         );
     }
@@ -142,7 +142,7 @@ public class TraceIT extends BaseIT {
     @Test
     public void traceExistingPerson() {
         Assertions.assertDoesNotThrow(() -> {
-            List<ReportDto> response = siloFrontend.trace(ObservationDto.ObservationType.PERSON, validPersonIds[0]);
+            List<FrontendReport> response = siloFrontend.trace(FrontendObservation.ObservationType.PERSON, validPersonIds[0]);
             Assertions.assertEquals(response.size(), cams.length);
             for(int i = 0; i < cams.length; i++) {
                 // sorted by new
@@ -155,7 +155,7 @@ public class TraceIT extends BaseIT {
     @Test
     public void traceExistingCar() {
         Assertions.assertDoesNotThrow(() -> {
-            List<ReportDto> response = siloFrontend.trace(ObservationDto.ObservationType.CAR, validCarIds[0]);
+            List<FrontendReport> response = siloFrontend.trace(FrontendObservation.ObservationType.CAR, validCarIds[0]);
             Assertions.assertEquals(response.size(), cams.length);
             for(int i = 0; i < cams.length; i++) {
                 // sorted by new
