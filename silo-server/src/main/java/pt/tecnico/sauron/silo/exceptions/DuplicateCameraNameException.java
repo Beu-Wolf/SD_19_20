@@ -1,4 +1,4 @@
-package pt.tecnico.sauron.silo.domain.exceptions;
+package pt.tecnico.sauron.silo.exceptions;
 
 public class DuplicateCameraNameException extends SiloException {
     public DuplicateCameraNameException() {

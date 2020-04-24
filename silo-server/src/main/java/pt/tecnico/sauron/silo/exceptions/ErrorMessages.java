@@ -1,4 +1,4 @@
-package pt.tecnico.sauron.silo.domain.exceptions;
+package pt.tecnico.sauron.silo.exceptions;
 
 public class ErrorMessages {
     public static String BLANK_INPUT = "Input cannot be blank!";

@@ -7,9 +7,9 @@ import pt.tecnico.sauron.silo.client.domain.FrontendCam;
 import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
 import pt.tecnico.sauron.silo.client.exceptions.*;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.LinkedList;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ReportIT extends BaseIT {
     private static String cameraName = "testCamera";
@@ -41,11 +41,11 @@ public class ReportIT extends BaseIT {
 
     @Test
     public void validLoadTest() {
-        LinkedList<ObservationDto> list = new LinkedList<>();
+        LinkedList<FrontendObservation> list = new LinkedList<>();
 
         for (int i = 1; i <= LOADTESTOBS; i++) {
-            ObservationDto personDto = new ObservationDto(ObservationDto.ObservationType.PERSON, String.valueOf(i));
-            ObservationDto carDto = new ObservationDto(ObservationDto.ObservationType.CAR, "AA" + String.format("%04d", i));
+            FrontendObservation personDto = new FrontendObservation(FrontendObservation.ObservationType.PERSON, String.valueOf(i));
+            FrontendObservation carDto = new FrontendObservation(FrontendObservation.ObservationType.CAR, "AA" + String.format("%04d", i));
             list.add(personDto);
             list.add(carDto);
         }

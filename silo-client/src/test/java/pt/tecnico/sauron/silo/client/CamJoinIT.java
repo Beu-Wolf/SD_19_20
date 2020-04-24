@@ -94,11 +94,11 @@ public class CamJoinIT extends BaseIT {
 
     @Test
     public void camJoinInvalidLatitude() {
-        CamDto badNegLatCam = new CamDto(name, badNegativeLat, lon);
+        FrontendCam badNegLatCam = new FrontendCam(name, badNegativeLat, lon);
         Assertions.assertEquals("Invalid Camera coordinates!", Assertions.assertThrows(
                 CameraRegisterException.class, ()->siloFrontend.camJoin(badNegLatCam))
                 .getMessage());
-        CamDto badPosLatCam = new CamDto(name, badPositiveLat, lon);
+        FrontendCam badPosLatCam = new FrontendCam(name, badPositiveLat, lon);
         Assertions.assertEquals("Invalid Camera coordinates!", Assertions.assertThrows(
                 CameraRegisterException.class, ()->siloFrontend.camJoin(badPosLatCam))
                 .getMessage());
@@ -106,11 +106,11 @@ public class CamJoinIT extends BaseIT {
 
     @Test
     public void camJoinInvalidLongitude() {
-        CamDto badNegLonCam = new CamDto(name, lat, badNegativeLon);
+        FrontendCam badNegLonCam = new FrontendCam(name, lat, badNegativeLon);
         Assertions.assertEquals("Invalid Camera coordinates!", Assertions.assertThrows(
                 CameraRegisterException.class, ()->siloFrontend.camJoin(badNegLonCam))
                 .getMessage());
-        CamDto badPosLonCam = new CamDto(name, lat, badPositiveLon);
+        FrontendCam badPosLonCam = new FrontendCam(name, lat, badPositiveLon);
         Assertions.assertEquals("Invalid Camera coordinates!", Assertions.assertThrows(
                 CameraRegisterException.class, ()->siloFrontend.camJoin(badPosLonCam))
                 .getMessage());

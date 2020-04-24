@@ -1,7 +1,7 @@
 package pt.tecnico.sauron.silo.domain;
 
-import pt.tecnico.sauron.silo.domain.exceptions.EmptyCameraNameException;
-import pt.tecnico.sauron.silo.domain.exceptions.InvalidCameraNameException;
+import pt.tecnico.sauron.silo.exceptions.EmptyCameraNameException;
+import pt.tecnico.sauron.silo.exceptions.InvalidCameraNameException;
 
 public class Cam {
     private String name;

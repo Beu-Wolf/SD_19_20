@@ -5,7 +5,7 @@ import com.google.type.LatLng;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.sauron.silo.domain.*;
-import pt.tecnico.sauron.silo.domain.exceptions.*;
+import pt.tecnico.sauron.silo.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.Silo;
 
