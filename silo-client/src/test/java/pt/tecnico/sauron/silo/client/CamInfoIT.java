@@ -1,7 +1,8 @@
 package pt.tecnico.sauron.silo.client;
 
 import org.junit.jupiter.api.*;
-import pt.tecnico.sauron.silo.client.dto.CamDto;
+import pt.tecnico.sauron.silo.client.domain.FrontendCam;
+import pt.tecnico.sauron.silo.client.domain.FrontendCoords;
 import pt.tecnico.sauron.silo.client.exceptions.CameraNotFoundException;
 import pt.tecnico.sauron.silo.client.exceptions.ClearException;
 import pt.tecnico.sauron.silo.client.exceptions.ErrorMessages;
@@ -17,10 +18,13 @@ public class CamInfoIT extends BaseIT {
     @Test
     public void camInfoOKTest() {
         try {
-            CamDto cam = new CamDto(name, lat, lon);
+            FrontendCam cam = new FrontendCam(name, lat, lon);
+
             siloFrontend.camJoin(cam);
-            CamDto received = siloFrontend.camInfo(name);
-            Assertions.assertEquals(cam.toString(), received.toString());
+            FrontendCoords received = siloFrontend.camInfo(name);
+
+            Assertions.assertEquals(cam.getLat(), received.getLat());
+            Assertions.assertEquals(cam.getLon(), received.getLon());
         } catch (FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }
@@ -28,10 +32,13 @@ public class CamInfoIT extends BaseIT {
 
     @Test
     public void camInfoNotExistsTest() {
-        Assertions.assertEquals(ErrorMessages.CAMERA_NOT_FOUND, Assertions.assertThrows(
-                CameraNotFoundException.class, ()->siloFrontend.camInfo("name"))
-                        .getMessage());
-
+        Assertions.assertEquals(
+            ErrorMessages.CAMERA_NOT_FOUND,
+            Assertions.assertThrows(
+                CameraNotFoundException.class,
+                () -> {
+                    siloFrontend.camInfo("name");
+                }).getMessage());
     }
 
     @AfterEach

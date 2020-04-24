@@ -9,8 +9,12 @@ import pt.tecnico.sauron.silo.domain.exceptions.ErrorMessages;
 import pt.tecnico.sauron.silo.domain.exceptions.ObservationNotFoundException;
 import pt.tecnico.sauron.silo.domain.exceptions.SiloInvalidArgumentException;
 import pt.tecnico.sauron.silo.grpc.QueryServiceGrpc;
-import pt.tecnico.sauron.silo.grpc.Silo.QueryRequest;
-import pt.tecnico.sauron.silo.grpc.Silo.QueryResponse;
+import pt.tecnico.sauron.silo.grpc.Silo.TrackRequest;
+import pt.tecnico.sauron.silo.grpc.Silo.TrackResponse;
+import pt.tecnico.sauron.silo.grpc.Silo.TrackMatchRequest;
+import pt.tecnico.sauron.silo.grpc.Silo.TrackMatchResponse;
+import pt.tecnico.sauron.silo.grpc.Silo.TraceRequest;
+import pt.tecnico.sauron.silo.grpc.Silo.TraceResponse;
 import pt.tecnico.sauron.silo.grpc.Silo.ObservationType;
 
 import java.time.Instant;
@@ -30,7 +34,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
     // SERVICE IMPLEMENTATION
     // ===================================================
     @Override
-    public void track(QueryRequest request, StreamObserver<QueryResponse> responseObserver) {
+    public void track(TrackRequest request, StreamObserver<TrackResponse> responseObserver) {
         String id = request.getId();
         ObservationType type = request.getType();
 
@@ -38,7 +42,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
             Observation observation = observationFromGRPC(type, id);
             Report report = silo.track(observation);
 
-            QueryResponse response = createQueryResponse(report);
+            TrackResponse response = reportToTrackResponse(report);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
 
@@ -52,8 +56,8 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
     }
 
     @Override
-    public void trackMatch(QueryRequest request, StreamObserver<QueryResponse> responseObserver) {
-        String pattern = request.getId();
+    public void trackMatch(TrackMatchRequest request, StreamObserver<TrackMatchResponse> responseObserver) {
+        String pattern = request.getPattern();
         ObservationType type = request.getType();
 
         try {
@@ -67,7 +71,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
                 if (!matched.contains(id) && observation.matches(comparator)) {
                     matched.add(id);
 
-                    QueryResponse response = createQueryResponse(report);
+                    TrackMatchResponse response = reportToTrackMatchResponse(report);
                     responseObserver.onNext(response);
                 }
             }
@@ -86,7 +90,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
     }
 
     @Override
-    public void trace(QueryRequest request, StreamObserver<QueryResponse> responseObserver) {
+    public void trace(TraceRequest request, StreamObserver<TraceResponse> responseObserver) {
         ObservationType type = request.getType();
         String queryId = request.getId();
         boolean found = false;
@@ -99,7 +103,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
 
                 if (observation.equals(queryObservation)) {
                     found = true;
-                    responseObserver.onNext(createQueryResponse(report));
+                    responseObserver.onNext(reportToTraceResponse(report));
                 }
             }
         } catch (SiloInvalidArgumentException e) {
@@ -116,22 +120,27 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         }
     }
 
-
-
-    // ===================================================
-    // CREATE GRPC RESPONSES
-    // ===================================================
-    private QueryResponse createQueryResponse(Report report) throws SiloInvalidArgumentException {
-        return reportToGRPC(report);
-    }
-
-
-
     // ===================================================
     // CONVERT BETWEEN DOMAIN AND GRPC
     // ===================================================
-    private QueryResponse reportToGRPC(Report report) throws SiloInvalidArgumentException {
-        return QueryResponse.newBuilder()
+    private TrackResponse reportToTrackResponse(Report report) throws SiloInvalidArgumentException {
+        return TrackResponse.newBuilder()
+                .setCam(camFromGRPC(report.getCam()))
+                .setObservation(observationToGRPC(report.getObservation()))
+                .setTimestamp(timestampToGRPC(report.getTimestamp()))
+                .build();
+    }
+
+    private TrackMatchResponse reportToTrackMatchResponse(Report report) throws SiloInvalidArgumentException {
+        return TrackMatchResponse.newBuilder()
+                .setCam(camFromGRPC(report.getCam()))
+                .setObservation(observationToGRPC(report.getObservation()))
+                .setTimestamp(timestampToGRPC(report.getTimestamp()))
+                .build();
+    }
+
+    private TraceResponse reportToTraceResponse(Report report) throws SiloInvalidArgumentException {
+        return TraceResponse.newBuilder()
                 .setCam(camFromGRPC(report.getCam()))
                 .setObservation(observationToGRPC(report.getObservation()))
                 .setTimestamp(timestampToGRPC(report.getTimestamp()))

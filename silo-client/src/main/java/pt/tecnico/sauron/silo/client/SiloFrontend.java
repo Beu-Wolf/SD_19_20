@@ -5,10 +5,10 @@ import com.google.type.LatLng;
 import io.grpc.*;
 import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
-import pt.tecnico.sauron.silo.client.dto.CamDto;
-import pt.tecnico.sauron.silo.client.dto.CoordsDto;
-import pt.tecnico.sauron.silo.client.dto.ObservationDto;
-import pt.tecnico.sauron.silo.client.dto.ReportDto;
+import pt.tecnico.sauron.silo.client.domain.FrontendCam;
+import pt.tecnico.sauron.silo.client.domain.FrontendCoords;
+import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
+import pt.tecnico.sauron.silo.client.domain.FrontendReport;
 import pt.tecnico.sauron.silo.client.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.QueryServiceGrpc;
@@ -95,7 +95,8 @@ public class SiloFrontend {
         }
     }
 
-    public void ctrlInitCams(List<CamDto> cams) throws RuntimeException, ZKNamingException, FrontendException, InterruptedException {
+
+    public void ctrlInitCams(List<FrontendCam> cams) throws RuntimeException, ZKNamingException, FrontendException, InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
         StreamObserver<Silo.InitResponse> responseObserver = new StreamObserver<>() {
             @Override
@@ -113,7 +114,7 @@ public class SiloFrontend {
 
         StreamObserver<Silo.InitCamRequest> requestObserver = this.ctrlStub.initCams(responseObserver);
         try {
-            for(CamDto cam : cams) {
+            for(FrontendCam cam : cams) {
                 Silo.InitCamRequest request = createInitCamRequest(cam);
                 requestObserver.onNext(request);
 
@@ -144,7 +145,7 @@ public class SiloFrontend {
         }
     }
 
-    public void ctrlInitObservations(List<ReportDto> reports) throws RuntimeException, ZKNamingException, FrontendException, InterruptedException {
+    public void ctrlInitObservations(List<FrontendReport> reports) throws RuntimeException, ZKNamingException, FrontendException, InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
         StreamObserver<Silo.InitResponse> responseObserver = new StreamObserver<>() {
             @Override
@@ -162,7 +163,7 @@ public class SiloFrontend {
 
         StreamObserver<Silo.InitObservationRequest> requestObserver = this.ctrlStub.initObservations(responseObserver);
         try {
-            for(ReportDto report : reports) {
+            for(FrontendReport report : reports) {
                 Silo.InitObservationRequest request = createInitObservationRequest(report);
                 requestObserver.onNext(request);
 
@@ -207,7 +208,7 @@ public class SiloFrontend {
     }
 
 
-    public void camJoin(CamDto cam) throws ZKNamingException, FrontendException {
+    public void camJoin(FrontendCam cam) throws ZKNamingException, FrontendException {
         Silo.JoinRequest request = createJoinRequest(cam);
 
         try {
@@ -228,12 +229,12 @@ public class SiloFrontend {
         }
     }
 
-    public CamDto camInfo(String name) throws FrontendException, ZKNamingException {
+    public FrontendCoords camInfo(String name) throws FrontendException, ZKNamingException {
         Silo.InfoRequest request = createInfoRequest(name);
 
         try {
             Silo.InfoResponse response = this.reportBlockingStub.camInfo(request);
-            return camFromGRPC(response.getCam());
+            return new FrontendCoords(response.getCoords().getLatitude(), response.getCoords().getLongitude());
         } catch (RuntimeException e) {
             Status status = Status.fromThrowable(e);
             if (status.getCode() == Status.Code.UNAVAILABLE) {
@@ -247,7 +248,7 @@ public class SiloFrontend {
         }
     }
 
-    public void report(String name, List<ObservationDto> observations)
+    public void report(String name, List<FrontendObservation> observations)
             throws FrontendException, ZKNamingException {
         Metadata header = new Metadata();
 
@@ -278,7 +279,7 @@ public class SiloFrontend {
 
         StreamObserver<Silo.Observation> requestObserver = reportStubWithHeaders.report(responseObserver);
         try {
-            for (ObservationDto observation : observations) {
+            for (FrontendObservation observation : observations) {
                 Silo.Observation request = createReportRequest(observation);
                 requestObserver.onNext(request);
 
@@ -325,11 +326,11 @@ public class SiloFrontend {
     }
 
 
-    public ReportDto track(ObservationDto.ObservationType type, String id) throws FrontendException, ZKNamingException {
-        Silo.QueryRequest request = createQueryRequest(type, id);
+    public FrontendReport track(FrontendObservation.ObservationType type, String id) throws FrontendException, ZKNamingException {
+        Silo.TrackRequest request = createTrackRequest(type, id);
 
         try {
-            return reportFromGRPC(queryBlockingStub.track(request));
+            return reportFromTrackResponse(queryBlockingStub.track(request));
         } catch(StatusRuntimeException e) {
             Status status = Status.fromThrowable(e);
             if(status.getCode() == Status.Code.UNAVAILABLE) {
@@ -347,16 +348,14 @@ public class SiloFrontend {
         }
     }
 
-    public List<ReportDto> trackMatch(ObservationDto.ObservationType type, String query) throws FrontendException, ZKNamingException {
-        LinkedList<ReportDto> results = new LinkedList<>();
-
-
-        Silo.QueryRequest request = createQueryRequest(type, query);
+    public List<FrontendReport> trackMatch(FrontendObservation.ObservationType type, String query) throws FrontendException, ZKNamingException {
+        LinkedList<FrontendReport> results = new LinkedList<>();
+        Silo.TrackMatchRequest request = createTrackMatchRequest(type, query);
 
         try {
-            Iterator<Silo.QueryResponse> it = queryBlockingStub.trackMatch(request);
+            Iterator<Silo.TrackMatchResponse> it = queryBlockingStub.trackMatch(request);
             while (it.hasNext()) {
-                results.push(reportFromGRPC(it.next()));
+                results.push(reportFromTrackMatchResponse(it.next()));
             }
             return results;
         } catch(StatusRuntimeException e) {
@@ -376,16 +375,14 @@ public class SiloFrontend {
         }
     }
 
-    public List<ReportDto> trace(ObservationDto.ObservationType type, String id) throws FrontendException, ZKNamingException {
-        LinkedList<ReportDto> results = new LinkedList<>();
-
-
-        Silo.QueryRequest request = createQueryRequest(type, id);
+    public List<FrontendReport> trace(FrontendObservation.ObservationType type, String id) throws FrontendException, ZKNamingException {
+        LinkedList<FrontendReport> results = new LinkedList<>();
+        Silo.TraceRequest request = createTraceRequest(type, id);
 
         try {
-            Iterator<Silo.QueryResponse> it = queryBlockingStub.trace(request);
+            Iterator<Silo.TraceResponse> it = queryBlockingStub.trace(request);
             while (it.hasNext()) {
-                results.addLast(reportFromGRPC(it.next()));
+                results.addLast(reportFromTraceResponse(it.next()));
             }
             return results;
         } catch(StatusRuntimeException e) {
@@ -415,13 +412,13 @@ public class SiloFrontend {
         return Silo.PingRequest.newBuilder().setText(sentence).build();
     }
 
-    private Silo.InitCamRequest createInitCamRequest(CamDto cam) {
+    private Silo.InitCamRequest createInitCamRequest(FrontendCam cam) {
         return Silo.InitCamRequest.newBuilder()
                 .setCam(camToGRPC(cam))
                 .build();
     }
 
-    private Silo.InitObservationRequest createInitObservationRequest(ReportDto report) {
+    private Silo.InitObservationRequest createInitObservationRequest(FrontendReport report) {
         return Silo.InitObservationRequest.newBuilder()
                 .setCam(camToGRPC(report.getCam()))
                 .setObservation(observationToGRPC(report.getObservation()))
@@ -434,7 +431,7 @@ public class SiloFrontend {
     }
 
 
-    private Silo.JoinRequest createJoinRequest(CamDto cam) {
+    private Silo.JoinRequest createJoinRequest(FrontendCam cam) {
         return Silo.JoinRequest.newBuilder()
                 .setCam(camToGRPC(cam))
                 .build();
@@ -444,13 +441,25 @@ public class SiloFrontend {
         return Silo.InfoRequest.newBuilder().setName(name).build();
     }
 
-    private Silo.Observation createReportRequest(ObservationDto observation) {
+    private Silo.Observation createReportRequest(FrontendObservation observation) {
         return observationToGRPC(observation);
     }
 
 
-    private Silo.QueryRequest createQueryRequest(ObservationDto.ObservationType type, String id) {
-        return Silo.QueryRequest.newBuilder()
+    private Silo.TrackRequest createTrackRequest(FrontendObservation.ObservationType type, String id) {
+        return Silo.TrackRequest.newBuilder()
+                .setType(observationTypeToGRPC(type))
+                .setId(id).build();
+    }
+
+    private Silo.TrackMatchRequest createTrackMatchRequest(FrontendObservation.ObservationType type, String pattern) {
+        return Silo.TrackMatchRequest.newBuilder()
+                .setType(observationTypeToGRPC(type))
+                .setPattern(pattern).build();
+    }
+
+    private Silo.TraceRequest createTraceRequest(FrontendObservation.ObservationType type, String id) {
+        return Silo.TraceRequest.newBuilder()
                 .setType(observationTypeToGRPC(type))
                 .setId(id).build();
     }
@@ -459,26 +468,42 @@ public class SiloFrontend {
     // ===================================================
     // CONVERT BETWEEN DTO AND GRPC
     // ===================================================
-    private ReportDto reportFromGRPC(Silo.QueryResponse response) {
-        ObservationDto observationDto = observationFromGRPC(response.getObservation());
-        CamDto camDto = camFromGRPC(response.getCam());
+    private FrontendReport reportFromTrackResponse(Silo.TrackResponse response) {
+        FrontendObservation frontendObservation = observationFromGRPC(response.getObservation());
+        FrontendCam frontendCam = camFromGRPC(response.getCam());
         Instant timestamp = timestampFromGRPC(response.getTimestamp());
 
-        return new ReportDto(observationDto, camDto, timestamp);
+        return new FrontendReport(frontendObservation, frontendCam, timestamp);
     }
 
-    private Silo.Observation observationToGRPC(ObservationDto observation) {
+    private FrontendReport reportFromTrackMatchResponse(Silo.TrackMatchResponse response) {
+        FrontendObservation frontendObservation = observationFromGRPC(response.getObservation());
+        FrontendCam frontendCam = camFromGRPC(response.getCam());
+        Instant timestamp = timestampFromGRPC(response.getTimestamp());
+
+        return new FrontendReport(frontendObservation, frontendCam, timestamp);
+    }
+
+    private FrontendReport reportFromTraceResponse(Silo.TraceResponse response) {
+        FrontendObservation frontendObservation = observationFromGRPC(response.getObservation());
+        FrontendCam frontendCam = camFromGRPC(response.getCam());
+        Instant timestamp = timestampFromGRPC(response.getTimestamp());
+
+        return new FrontendReport(frontendObservation, frontendCam, timestamp);
+    }
+
+    private Silo.Observation observationToGRPC(FrontendObservation observation) {
         return Silo.Observation.newBuilder()
                 .setObservationId(observation.getId())
                 .setType(observationTypeToGRPC(observation.getType()))
                 .build();
     }
-    private ObservationDto observationFromGRPC(Silo.Observation observation) {
-        return new ObservationDto(observationTypeFromGRPC(observation.getType()),
+    private FrontendObservation observationFromGRPC(Silo.Observation observation) {
+        return new FrontendObservation(observationTypeFromGRPC(observation.getType()),
                 observation.getObservationId());
     }
 
-    private Silo.ObservationType observationTypeToGRPC(ObservationDto.ObservationType type) {
+    private Silo.ObservationType observationTypeToGRPC(FrontendObservation.ObservationType type) {
         switch(type) {
             case CAR:
                 return Silo.ObservationType.CAR;
@@ -488,31 +513,31 @@ public class SiloFrontend {
                 return Silo.ObservationType.UNSPEC;
         }
     }
-    private ObservationDto.ObservationType observationTypeFromGRPC(Silo.ObservationType type) {
+    private FrontendObservation.ObservationType observationTypeFromGRPC(Silo.ObservationType type) {
         switch(type) {
             case CAR:
-                return ObservationDto.ObservationType.CAR;
+                return FrontendObservation.ObservationType.CAR;
             case PERSON:
-                return ObservationDto.ObservationType.PERSON;
+                return FrontendObservation.ObservationType.PERSON;
             default:
-                return ObservationDto.ObservationType.UNSPEC;
+                return FrontendObservation.ObservationType.UNSPEC;
         }
     }
 
-    private Silo.Cam camToGRPC(CamDto cam) {
+    private Silo.Cam camToGRPC(FrontendCam cam) {
         return Silo.Cam.newBuilder()
                 .setName(cam.getName())
                 .setCoords(coordsToGRPC(cam.getCoords()))
                 .build();
     }
-    private CamDto camFromGRPC(Silo.Cam cam) {
+    private FrontendCam camFromGRPC(Silo.Cam cam) {
         String name = cam.getName();
         LatLng coords = cam.getCoords();
 
-        return new CamDto(name, coords.getLatitude(), coords.getLongitude());
+        return new FrontendCam(name, coords.getLatitude(), coords.getLongitude());
     }
 
-    private LatLng coordsToGRPC(CoordsDto coords) {
+    private LatLng coordsToGRPC(FrontendCoords coords) {
         return LatLng.newBuilder()
                 .setLatitude(coords.getLat())
                 .setLongitude(coords.getLon())

@@ -1,23 +1,23 @@
-package pt.tecnico.sauron.silo.client.dto;
+package pt.tecnico.sauron.silo.client.domain;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-public class ReportDto implements Comparable<ReportDto> {
-    private CamDto cam;
-    private ObservationDto observation;
+public class FrontendReport implements Comparable<FrontendReport> {
+    private FrontendCam cam;
+    private FrontendObservation observation;
     private Instant timestamp;
 
-    public ReportDto(ObservationDto observation, CamDto cam, Instant timestamp) {
+    public FrontendReport(FrontendObservation observation, FrontendCam cam, Instant timestamp) {
         this.observation = observation;
         this.cam = cam;
         this.timestamp = timestamp;
     }
 
 
-    public ObservationDto getObservation() { return this.observation; }
+    public FrontendObservation getObservation() { return this.observation; }
 
-    public CamDto getCam() {return this.cam; }
+    public FrontendCam getCam() {return this.cam; }
     public Instant getTimestamp() { return this.timestamp; }
 
     @Override
@@ -29,14 +29,14 @@ public class ReportDto implements Comparable<ReportDto> {
     }
 
     @Override
-    public int compareTo(ReportDto r) {
+    public int compareTo(FrontendReport r) {
         return this.observation.compareTo(r.getObservation());
     }
 
     @Override
     public boolean equals(Object o) {
-        if(o instanceof ReportDto) {
-            ReportDto r = (ReportDto) o;
+        if(o instanceof FrontendReport) {
+            FrontendReport r = (FrontendReport) o;
             return this.observation.equals(r.getObservation()) && this.cam.equals(r.getCam()) && this.timestamp.equals(r.getTimestamp());
         }
         return false;

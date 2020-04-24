@@ -1,8 +1,8 @@
 package pt.tecnico.sauron.eye;
 
 import pt.tecnico.sauron.silo.client.SiloFrontend;
-import pt.tecnico.sauron.silo.client.dto.CamDto;
-import pt.tecnico.sauron.silo.client.dto.ObservationDto;
+import pt.tecnico.sauron.silo.client.domain.FrontendCam;
+import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
 import pt.tecnico.sauron.silo.client.exceptions.CameraAlreadyExistsException;
 import pt.tecnico.sauron.silo.client.exceptions.CameraRegisterException;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
@@ -30,12 +30,12 @@ public class Eye {
 
     // attributes
     private SiloFrontend siloFrontend;
-    private CamDto cam;
-    private List<ObservationDto> observationBuffer = new LinkedList<>();
+    private FrontendCam cam;
+    private List<FrontendObservation> observationBuffer = new LinkedList<>();
 
     public Eye(SiloFrontend siloFrontend, String name, double lat, double lon) throws FrontendException, ZKNamingException {
         this.siloFrontend = siloFrontend;
-        this.cam = new CamDto(name, lat, lon);
+        this.cam = new FrontendCam(name, lat, lon);
 
         this.siloFrontend.camJoin(this.cam);
         System.out.println("Registered Successfully!");
@@ -53,12 +53,12 @@ public class Eye {
                 } else if(Pattern.matches(CAR_OBSERVATION, line)) {
                     Matcher m = carObservationPattern.matcher(line);
                     m.find();
-                    registerObservation(ObservationDto.ObservationType.CAR, m.group(1));
+                    registerObservation(FrontendObservation.ObservationType.CAR, m.group(1));
 
                 } else if(Pattern.matches(PERSON_OBSERVATION, line)) {
                     Matcher m = personObservationPattern.matcher(line);
                     m.find();
-                    registerObservation(ObservationDto.ObservationType.PERSON, m.group(1));
+                    registerObservation(FrontendObservation.ObservationType.PERSON, m.group(1));
 
                 } else if(Pattern.matches(COMMENT, line)) {
                     continue;
@@ -85,8 +85,8 @@ public class Eye {
         }
     }
 
-    private void registerObservation(ObservationDto.ObservationType type, String id) {
-        ObservationDto observation = new ObservationDto(type, id);
+    private void registerObservation(FrontendObservation.ObservationType type, String id) {
+        FrontendObservation observation = new FrontendObservation(type, id);
         observationBuffer.add(observation);
     }
 
