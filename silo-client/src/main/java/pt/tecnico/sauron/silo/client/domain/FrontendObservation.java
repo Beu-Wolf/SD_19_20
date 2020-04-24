@@ -1,12 +1,12 @@
-package pt.tecnico.sauron.silo.client.dto;
+package pt.tecnico.sauron.silo.client.domain;
 
-public class ObservationDto implements Comparable<ObservationDto>{
+public class FrontendObservation implements Comparable<FrontendObservation>{
     public enum ObservationType { UNSPEC, CAR, PERSON }
 
     private ObservationType type;
     private String id;
 
-    public ObservationDto(ObservationType type, String id) {
+    public FrontendObservation(ObservationType type, String id) {
         this.type = type;
         this.id = id;
     }
@@ -20,13 +20,13 @@ public class ObservationDto implements Comparable<ObservationDto>{
     }
 
     @Override
-    public int compareTo(ObservationDto obs) {
+    public int compareTo(FrontendObservation obs) {
         return this.id.compareTo(obs.getId());
     }
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof ObservationDto && ((ObservationDto) o).getId().equals(this.id);
+        return o instanceof FrontendObservation && ((FrontendObservation) o).getId().equals(this.id);
     }
 
 }

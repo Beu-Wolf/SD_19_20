@@ -1,7 +1,8 @@
 package pt.tecnico.sauron.silo.client;
 
 import org.junit.jupiter.api.*;
-import pt.tecnico.sauron.silo.client.dto.CamDto;
+import pt.tecnico.sauron.silo.client.domain.FrontendCam;
+import pt.tecnico.sauron.silo.client.domain.FrontendCoords;
 import pt.tecnico.sauron.silo.client.exceptions.*;
 
 public class CamJoinIT extends BaseIT {
@@ -19,10 +20,13 @@ public class CamJoinIT extends BaseIT {
 
     @Test
     public void joinCameraOKTest() {
-        CamDto cam = new CamDto(name, lat, lon);
+        FrontendCam cam = new FrontendCam(name, lat, lon);
         try {
             siloFrontend.camJoin(cam);
-            Assertions.assertEquals(cam.toString(), siloFrontend.camInfo(cam.getName()).toString());
+
+            FrontendCoords coords = siloFrontend.camInfo(cam.getName());
+            FrontendCam serverCam = new FrontendCam(name, coords.getLat(), coords.getLon());
+            Assertions.assertEquals(cam.toString(), serverCam.toString());
         } catch (FrontendException e) {
             e.printStackTrace();
         }
@@ -31,12 +35,18 @@ public class CamJoinIT extends BaseIT {
     @Test
     public void joinCameraNameDuplicateTest() {
         try {
-            CamDto cam = new CamDto(name, lat, lon);
-            CamDto duplicate = new CamDto(name, newLat , newLon);
+            FrontendCam cam = new FrontendCam(name, lat, lon);
+            FrontendCam duplicate = new FrontendCam(name, newLat , newLon);
             siloFrontend.camJoin(cam);
-            Assertions.assertEquals(ErrorMessages.CAMERA_ALREADY_EXISTS, Assertions.assertThrows(
-                    CameraAlreadyExistsException.class, ()->siloFrontend.camJoin(duplicate))
-                    .getMessage() );
+            Assertions.assertEquals(
+                ErrorMessages.CAMERA_ALREADY_EXISTS,
+                Assertions.assertThrows(
+                    CameraAlreadyExistsException.class, () -> {
+                        siloFrontend.camJoin(duplicate);
+                    }
+                ).getMessage()
+            );
+
         } catch (FrontendException e) {
             e.printStackTrace();
         }
@@ -45,10 +55,14 @@ public class CamJoinIT extends BaseIT {
     @Test
     public void joinSameCameraTwiceTest() {
         try {
-            CamDto cam = new CamDto(name, lat, lon);
+            FrontendCam cam = new FrontendCam(name, lat, lon);
             siloFrontend.camJoin(cam);
             Assertions.assertDoesNotThrow(()->siloFrontend.camJoin(cam));
-            Assertions.assertEquals(cam, siloFrontend.camInfo(cam.getName()));
+
+            FrontendCoords coords =  siloFrontend.camInfo(cam.getName());
+            FrontendCam serverCam = new FrontendCam(name, coords.getLat(), coords.getLon());
+            Assertions.assertEquals(cam,serverCam);
+
         } catch (FrontendException e) {
             e.printStackTrace();
         }
@@ -56,7 +70,7 @@ public class CamJoinIT extends BaseIT {
 
     @Test
     public void camJoinWithBlankName() {
-        CamDto cam = new CamDto("", lat, lon);
+        FrontendCam cam = new FrontendCam("", lat, lon);
         Assertions.assertEquals("Camera name is empty!", Assertions.assertThrows(
                 CameraRegisterException.class, ()->siloFrontend.camJoin(cam))
                 .getMessage() );
@@ -64,7 +78,7 @@ public class CamJoinIT extends BaseIT {
 
     @Test
     public void camJoinWithShortName() {
-        CamDto shortCam = new CamDto(shortName, lat, lon);
+        FrontendCam shortCam = new FrontendCam(shortName, lat, lon);
         Assertions.assertEquals("Camera names must be between 3 and 15 characters long!", Assertions.assertThrows(
         CameraRegisterException.class,()->siloFrontend.camJoin(shortCam))
          .getMessage());
@@ -72,7 +86,7 @@ public class CamJoinIT extends BaseIT {
 
     @Test
     public void camJoinWithLongName() {
-        CamDto longCam = new CamDto(longName, lat, lon);
+        FrontendCam longCam = new FrontendCam(longName, lat, lon);
         Assertions.assertEquals("Camera names must be between 3 and 15 characters long!", Assertions.assertThrows(
         CameraRegisterException.class,()->siloFrontend.camJoin(longCam))
         .getMessage());

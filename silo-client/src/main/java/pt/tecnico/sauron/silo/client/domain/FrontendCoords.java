@@ -1,10 +1,10 @@
-package pt.tecnico.sauron.silo.client.dto;
+package pt.tecnico.sauron.silo.client.domain;
 
-public class CoordsDto {
+public class FrontendCoords {
     double lat;
     double lon;
 
-    public CoordsDto(double lat, double lon) {
+    public FrontendCoords(double lat, double lon) {
         this.lat = lat;
         this.lon = lon;
     }
@@ -19,8 +19,8 @@ public class CoordsDto {
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof  CoordsDto) {
-            CoordsDto c = (CoordsDto) o;
+        if (o instanceof FrontendCoords) {
+            FrontendCoords c = (FrontendCoords) o;
             return getLat() == c.getLat() && getLon() == c.getLon();
         }
         return false;

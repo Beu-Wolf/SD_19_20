@@ -1,11 +1,10 @@
 package pt.tecnico.sauron.silo.client;
 
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import pt.tecnico.sauron.silo.client.dto.CamDto;
-import pt.tecnico.sauron.silo.client.dto.ObservationDto;
+import pt.tecnico.sauron.silo.client.domain.FrontendCam;
+import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
 import pt.tecnico.sauron.silo.client.exceptions.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -18,9 +17,9 @@ public class ReportIT extends BaseIT {
 
     @BeforeAll
     public static void registerCamera() {
-        CamDto camDto = new CamDto(cameraName, 10, 10);
+        FrontendCam frontendCam = new FrontendCam(cameraName, 10, 10);
         try {
-            siloFrontend.camJoin(camDto);
+            siloFrontend.camJoin(frontendCam);
         } catch(CameraAlreadyExistsException e) {
             // ignore
         } catch(CameraRegisterException e) {
@@ -30,10 +29,10 @@ public class ReportIT extends BaseIT {
 
     @Test
     public void valid() {
-        ObservationDto personDto = new ObservationDto(ObservationDto.ObservationType.PERSON, "123");
-        ObservationDto carDto = new ObservationDto(ObservationDto.ObservationType.CAR, "AA00BB");
+        FrontendObservation personDto = new FrontendObservation(FrontendObservation.ObservationType.PERSON, "123");
+        FrontendObservation carDto = new FrontendObservation(FrontendObservation.ObservationType.CAR, "AA00BB");
 
-        LinkedList<ObservationDto> list = new LinkedList<>();
+        LinkedList<FrontendObservation> list = new LinkedList<>();
         list.add(personDto);
         list.add(carDto);
 
@@ -56,43 +55,43 @@ public class ReportIT extends BaseIT {
 
     @Test
     public void invalidPersonId() {
-        ObservationDto observationDto = new ObservationDto(ObservationDto.ObservationType.PERSON, "asdf");
-        LinkedList<ObservationDto> list = new LinkedList<>();
-        list.add(observationDto);
+        FrontendObservation frontendObservation = new FrontendObservation(FrontendObservation.ObservationType.PERSON, "asdf");
+        LinkedList<FrontendObservation> list = new LinkedList<>();
+        list.add(frontendObservation);
         assertEquals("Person ID must be an unsigned long!",
                 assertThrows(InvalidArgumentException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
     }
 
     @Test
     public void invalidCarId() {
-        ObservationDto observationDto = new ObservationDto(ObservationDto.ObservationType.CAR, "asdf");
-        LinkedList<ObservationDto> list = new LinkedList<>();
-        list.add(observationDto);
+        FrontendObservation frontendObservation = new FrontendObservation(FrontendObservation.ObservationType.CAR, "asdf");
+        LinkedList<FrontendObservation> list = new LinkedList<>();
+        list.add(frontendObservation);
         assertEquals("Car ID must be a valid portuguese license plate!",
                 assertThrows(InvalidArgumentException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
     }
 
     @Test
     public void invalidType() {
-        ObservationDto observationDto = new ObservationDto(ObservationDto.ObservationType.UNSPEC, "asdf");
-        LinkedList<ObservationDto> list = new LinkedList<>();
-        list.add(observationDto);
+        FrontendObservation frontendObservation = new FrontendObservation(FrontendObservation.ObservationType.UNSPEC, "asdf");
+        LinkedList<FrontendObservation> list = new LinkedList<>();
+        list.add(frontendObservation);
         assertEquals("Type to observe not supported!",
                 assertThrows(InvalidArgumentException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
     }
 
     @Test
     public void emptyList() {
-        LinkedList<ObservationDto> list = new LinkedList<>();
+        LinkedList<FrontendObservation> list = new LinkedList<>();
         assertDoesNotThrow(() -> siloFrontend.report(this.cameraName, list));
     }
 
     @Test
     public void unknownCamera() {
         String camName = "thisCamDoesntExist123";
-        ObservationDto observationDto = new ObservationDto(ObservationDto.ObservationType.PERSON, "asdf");
-        LinkedList<ObservationDto> list = new LinkedList<>();
-        list.add(observationDto);
+        FrontendObservation frontendObservation = new FrontendObservation(FrontendObservation.ObservationType.PERSON, "asdf");
+        LinkedList<FrontendObservation> list = new LinkedList<>();
+        list.add(frontendObservation);
         assertEquals("Camera not found",
                 assertThrows(CameraNotFoundException.class, () -> siloFrontend.report(camName, list)).getMessage());
     }

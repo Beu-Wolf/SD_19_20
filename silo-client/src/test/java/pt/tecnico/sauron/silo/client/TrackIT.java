@@ -1,9 +1,9 @@
 package pt.tecnico.sauron.silo.client;
 
 import org.junit.jupiter.api.*;
-import pt.tecnico.sauron.silo.client.dto.CamDto;
-import pt.tecnico.sauron.silo.client.dto.ObservationDto;
-import pt.tecnico.sauron.silo.client.dto.ReportDto;
+import pt.tecnico.sauron.silo.client.domain.FrontendCam;
+import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
+import pt.tecnico.sauron.silo.client.domain.FrontendReport;
 import pt.tecnico.sauron.silo.client.exceptions.*;
 
 import java.time.Instant;
@@ -44,32 +44,32 @@ public class TrackIT extends BaseIT {
             "Second"
     };
 
-    private static final CamDto[] cams = {
-            new CamDto(camNames[0], 0, 0),
-            new CamDto(camNames[1], 1, 1)
+    private static final FrontendCam[] cams = {
+            new FrontendCam(camNames[0], 0, 0),
+            new FrontendCam(camNames[1], 1, 1)
     };
 
     @BeforeAll
     public static void setupTrack () {
         Instant instant = Instant.now();
 
-        List<ReportDto> reports = new LinkedList<>();
-        reports.add(new ReportDto(
-                new ObservationDto(ObservationDto.ObservationType.CAR, validCarIds[0]),
+        List<FrontendReport> reports = new LinkedList<>();
+        reports.add(new FrontendReport(
+                new FrontendObservation(FrontendObservation.ObservationType.CAR, validCarIds[0]),
                 cams[1],
                 instant.minus(1, DAYS)));
-        reports.add(new ReportDto(
-                new ObservationDto(ObservationDto.ObservationType.PERSON, validPersonIds[0]),
+        reports.add(new FrontendReport(
+                new FrontendObservation(FrontendObservation.ObservationType.PERSON, validPersonIds[0]),
                 cams[1],
                 instant.minus(1, DAYS)));
 
         // last report
-        reports.add(new ReportDto(
-                new ObservationDto(ObservationDto.ObservationType.CAR, validCarIds[0]),
+        reports.add(new FrontendReport(
+                new FrontendObservation(FrontendObservation.ObservationType.CAR, validCarIds[0]),
                 cams[0],
                 instant));
-        reports.add(new ReportDto(
-                new ObservationDto(ObservationDto.ObservationType.PERSON, validPersonIds[0]),
+        reports.add(new FrontendReport(
+                new FrontendObservation(FrontendObservation.ObservationType.PERSON, validPersonIds[0]),
                 cams[0],
                 instant));
 
@@ -86,7 +86,7 @@ public class TrackIT extends BaseIT {
         Assertions.assertEquals(
             "Can't handle observation type!",
             Assertions.assertThrows(InvalidArgumentException.class, () -> {
-                this.siloFrontend.track(ObservationDto.ObservationType.UNSPEC, "1337_5p34k");
+                this.siloFrontend.track(FrontendObservation.ObservationType.UNSPEC, "1337_5p34k");
             }).getMessage()
         );
     }
@@ -97,7 +97,7 @@ public class TrackIT extends BaseIT {
             Assertions.assertEquals(
                 "Person ID must be an unsigned long!",
                 Assertions.assertThrows(InvalidArgumentException.class, () -> {
-                    this.siloFrontend.track(ObservationDto.ObservationType.PERSON, invalidId);
+                    this.siloFrontend.track(FrontendObservation.ObservationType.PERSON, invalidId);
                 }).getMessage()
             );
         }
@@ -109,7 +109,7 @@ public class TrackIT extends BaseIT {
             Assertions.assertEquals(
                 "Car ID must be a valid portuguese license plate!",
                 Assertions.assertThrows(InvalidArgumentException.class, () -> {
-                    this.siloFrontend.track(ObservationDto.ObservationType.CAR, invalidId);
+                    this.siloFrontend.track(FrontendObservation.ObservationType.CAR, invalidId);
                 }).getMessage()
             );
         }
@@ -121,7 +121,7 @@ public class TrackIT extends BaseIT {
         Assertions.assertEquals(
                 ErrorMessages.OBSERVATION_NOT_FOUND,
                 Assertions.assertThrows(NotFoundException.class, () -> {
-                    siloFrontend.track(ObservationDto.ObservationType.CAR, validCarIds[1]);
+                    siloFrontend.track(FrontendObservation.ObservationType.CAR, validCarIds[1]);
                 }).getMessage()
         );
     }
@@ -131,7 +131,7 @@ public class TrackIT extends BaseIT {
         Assertions.assertEquals(
                 ErrorMessages.OBSERVATION_NOT_FOUND,
                 Assertions.assertThrows(NotFoundException.class, () -> {
-                    siloFrontend.track(ObservationDto.ObservationType.PERSON, validPersonIds[1]);
+                    siloFrontend.track(FrontendObservation.ObservationType.PERSON, validPersonIds[1]);
                 }).getMessage()
         );
     }
@@ -139,7 +139,7 @@ public class TrackIT extends BaseIT {
     @Test
     public void trackExistingPerson() {
         Assertions.assertDoesNotThrow(() -> {
-            ReportDto response = siloFrontend.track(ObservationDto.ObservationType.PERSON, validPersonIds[0]);
+            FrontendReport response = siloFrontend.track(FrontendObservation.ObservationType.PERSON, validPersonIds[0]);
             Assertions.assertEquals(response.getCam(), cams[0]);
             Assertions.assertEquals(response.getId(), validPersonIds[0]);
         });
@@ -148,7 +148,7 @@ public class TrackIT extends BaseIT {
     @Test
     public void trackExistingCar() {
         Assertions.assertDoesNotThrow(() -> {
-            ReportDto response = siloFrontend.track(ObservationDto.ObservationType.CAR, validCarIds[0]);
+            FrontendReport response = siloFrontend.track(FrontendObservation.ObservationType.CAR, validCarIds[0]);
             Assertions.assertEquals(response.getCam(), cams[0]);
             Assertions.assertEquals(response.getId(), validCarIds[0]);
         });

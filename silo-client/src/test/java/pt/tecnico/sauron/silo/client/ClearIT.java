@@ -2,9 +2,9 @@ package pt.tecnico.sauron.silo.client;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import pt.tecnico.sauron.silo.client.dto.CamDto;
-import pt.tecnico.sauron.silo.client.dto.ObservationDto;
-import pt.tecnico.sauron.silo.client.dto.ReportDto;
+import pt.tecnico.sauron.silo.client.domain.FrontendCam;
+import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
+import pt.tecnico.sauron.silo.client.domain.FrontendReport;
 import pt.tecnico.sauron.silo.client.exceptions.ErrorMessages;
 import pt.tecnico.sauron.silo.client.exceptions.NotFoundException;
 
@@ -19,26 +19,26 @@ public class ClearIT extends BaseIT {
 
         Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear());
         Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
-                Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, "*"))
+                Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(FrontendObservation.ObservationType.CAR, "*"))
                         .getMessage());
         Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
-                Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, "*"))
+                Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(FrontendObservation.ObservationType.PERSON, "*"))
                         .getMessage());
     }
 
     @Test //Silo with observations and Cameras
     public void fullSilo() {
         try {
-            LinkedList<CamDto> camList = createCams(5);
-            LinkedList<ReportDto> observations = createReports(5, camList);
+            LinkedList<FrontendCam> camList = createCams(5);
+            LinkedList<FrontendReport> observations = createReports(5, camList);
             siloFrontend.ctrlInitCams(camList);
             siloFrontend.ctrlInitObservations(observations);
             Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear());
             Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
-                    Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(ObservationDto.ObservationType.CAR, "*"))
+                    Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(FrontendObservation.ObservationType.CAR, "*"))
                             .getMessage());
             Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
-                    Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, "*"))
+                    Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(FrontendObservation.ObservationType.PERSON, "*"))
                             .getMessage());
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -46,25 +46,25 @@ public class ClearIT extends BaseIT {
     }
 
 
-    public LinkedList<CamDto> createCams(int count) {
-        LinkedList<CamDto> list = new LinkedList<>();
+    public LinkedList<FrontendCam> createCams(int count) {
+        LinkedList<FrontendCam> list = new LinkedList<>();
         for(int i = 1; i <= count; i++) {
             double lat = i*1.2;
             double lon = i*-1.2;
-            CamDto cam = new CamDto("Camera "+i, lat, lon);
+            FrontendCam cam = new FrontendCam("Camera "+i, lat, lon);
             list.add(cam);
         }
         return list;
     }
 
-    public LinkedList<ReportDto> createReports(int count, List<CamDto> camList) {
-        LinkedList<ReportDto> list =  new LinkedList<>();
+    public LinkedList<FrontendReport> createReports(int count, List<FrontendCam> camList) {
+        LinkedList<FrontendReport> list =  new LinkedList<>();
         for(int i = 0; i < count; i++ ) {
-            CamDto at = camList.get(i);
-            ObservationDto personObs =  new ObservationDto(ObservationDto.ObservationType.PERSON, String.valueOf(i));
-            ReportDto personReport = new ReportDto(personObs, at, Instant.now());
-            ObservationDto carObs = new ObservationDto(ObservationDto.ObservationType.CAR, "AAAA00");
-            ReportDto carReport = new ReportDto(carObs, at, Instant.now());
+            FrontendCam at = camList.get(i);
+            FrontendObservation personObs =  new FrontendObservation(FrontendObservation.ObservationType.PERSON, String.valueOf(i));
+            FrontendReport personReport = new FrontendReport(personObs, at, Instant.now());
+            FrontendObservation carObs = new FrontendObservation(FrontendObservation.ObservationType.CAR, "AAAA00");
+            FrontendReport carReport = new FrontendReport(carObs, at, Instant.now());
             list.add(personReport);
             list.add(carReport);
         }

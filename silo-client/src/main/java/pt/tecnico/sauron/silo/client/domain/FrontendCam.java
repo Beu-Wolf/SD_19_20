@@ -1,18 +1,18 @@
-package pt.tecnico.sauron.silo.client.dto;
+package pt.tecnico.sauron.silo.client.domain;
 
-public class CamDto {
+public class FrontendCam {
     private String name;
-    private CoordsDto coords;
+    private FrontendCoords coords;
 
-    public CamDto(String name, double lat, double lon) {
+    public FrontendCam(String name, double lat, double lon) {
         this.name = name;
-        this.coords = new CoordsDto(lat, lon);
+        this.coords = new FrontendCoords(lat, lon);
     }
 
     public String getName() { return this.name; }
     public Double getLat() { return this.coords.getLat(); }
     public Double getLon() { return this.coords.getLon(); }
-    public CoordsDto getCoords() {
+    public FrontendCoords getCoords() {
         return coords;
     }
 
@@ -23,8 +23,8 @@ public class CamDto {
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof CamDto) {
-            CamDto c = (CamDto) o;
+        if (o instanceof FrontendCam) {
+            FrontendCam c = (FrontendCam) o;
             return this.name.equals(c.getName()) && this.coords.equals(c.getCoords());
         }
         return false;
