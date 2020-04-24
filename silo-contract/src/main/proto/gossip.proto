@@ -1,0 +1,81 @@
+//
+// Protocol buffers definition for Gossip protocol
+//
+syntax = "proto3";
+package pt.tecnico.sauron.silo.grpc;
+
+import "google/protobuf/timestamp.proto";
+import "silo.proto";
+
+message VecTimestamp {
+    repeated int32 timestamps = 1;
+}
+
+message CamJoinCommand {
+    JoinRequest request = 1;
+}
+
+// TODO: implement this request in silo.proto
+message ReportRequest {
+    Cam cam = 1;
+    repeated Observation obs = 2;
+}
+
+message ReportCommand {
+    ReportRequest request = 1;
+    google.protobuf.Timestamp observationInstant = 2;
+}
+
+message ClearCommand {
+    // empty
+}
+
+// TODO: implement this request in silo.proto
+message InitCamsRequest {
+    repeated Cam cams = 1;
+}
+message InitCamsCommand {
+    InitCamsRequest request = 1;
+}
+
+// TODO: implement this request in silo.proto
+message InitObservationItem {
+    Observation observation = 1;
+    google.protobuf.Timestamp timestamp = 2;
+    Cam cam = 3;
+}
+message InitObservationsRequest {
+    repeated InitObservationItem item = 1;
+}
+message InitObservationsCommand {
+    InitObservationsRequest request = 1;
+}
+
+
+message Record {
+    string opId = 1;        // universal operation ID
+    VecTimestamp prev = 2;  // client timestamp on update creation
+    VecTimestamp ts = 3;    // ts returned to the client
+
+    int32 replicaId = 4;    // Id of replica that received the update
+
+    oneof commands {        // command
+        CamJoinCommand camJoin = 5;
+        ReportCommand report = 6;
+        ClearCommand clear = 7;
+        InitCamsCommand initCams = 8;
+        InitObservationsCommand initObservations = 9;
+     };
+}
+
+message GossipRequest {
+    VecTimestamp replicaTimeStamp = 1; // sender replica update log timestamp
+                                       // on gossip sending instant
+    repeated Record records = 2;
+}
+
+message GossipResponse {}
+
+service GossipService {
+    rpc Gossip(GossipRequest) returns (GossipResponse);
+}

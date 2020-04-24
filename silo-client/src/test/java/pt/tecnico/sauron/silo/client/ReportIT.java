@@ -8,9 +8,9 @@ import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
 import pt.tecnico.sauron.silo.client.exceptions.*;
 import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import java.util.LinkedList;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ReportIT extends BaseIT {
     private static String cameraName = "testCamera";

@@ -1,9 +1,9 @@
 package pt.tecnico.sauron.silo.domain;
 
-import pt.tecnico.sauron.silo.domain.exceptions.DuplicateCameraNameException;
-import pt.tecnico.sauron.silo.domain.exceptions.InvalidCameraCoordsException;
-import pt.tecnico.sauron.silo.domain.exceptions.NoCameraFoundException;
-import pt.tecnico.sauron.silo.domain.exceptions.ObservationNotFoundException;
+import pt.tecnico.sauron.silo.exceptions.DuplicateCameraNameException;
+import pt.tecnico.sauron.silo.exceptions.InvalidCameraCoordsException;
+import pt.tecnico.sauron.silo.exceptions.NoCameraFoundException;
+import pt.tecnico.sauron.silo.exceptions.ObservationNotFoundException;
 
 import java.time.Instant;
 import java.util.Deque;
