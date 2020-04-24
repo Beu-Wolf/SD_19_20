@@ -268,10 +268,10 @@ public class SiloFrontend {
 
 
     public FrontendReport track(FrontendObservation.ObservationType type, String id) throws QueryException, NotFoundException, InvalidArgumentException {
-        Silo.QueryRequest request = createQueryRequest(type, id);
+        Silo.TrackRequest request = createTrackRequest(type, id);
 
         try {
-            return reportFromGRPC(queryBlockingStub.track(request));
+            return reportFromTrackResponse(queryBlockingStub.track(request));
         } catch(StatusRuntimeException e) {
             Status status = Status.fromThrowable(e);
             if (status.getCode() == Status.Code.NOT_FOUND) {
@@ -285,16 +285,16 @@ public class SiloFrontend {
         }
     }
 
-    public List<FrontendReport> trackMatch(FrontendObservation.ObservationType type, String query) throws QueryException, NotFoundException, InvalidArgumentException {
+    public List<FrontendReport> trackMatch(FrontendObservation.ObservationType type, String pattern) throws QueryException, NotFoundException, InvalidArgumentException {
         LinkedList<FrontendReport> results = new LinkedList<>();
 
 
-        Silo.QueryRequest request = createQueryRequest(type, query);
+        Silo.TrackMatchRequest request = createTrackMatchRequest(type, pattern);
 
         try {
-            Iterator<Silo.QueryResponse> it = queryBlockingStub.trackMatch(request);
+            Iterator<Silo.TrackMatchResponse> it = queryBlockingStub.trackMatch(request);
             while (it.hasNext()) {
-                results.push(reportFromGRPC(it.next()));
+                results.push(reportFromTrackMatchResponse(it.next()));
             }
             return results;
         } catch(StatusRuntimeException e) {
@@ -314,12 +314,12 @@ public class SiloFrontend {
         LinkedList<FrontendReport> results = new LinkedList<>();
 
 
-        Silo.QueryRequest request = createQueryRequest(type, id);
+        Silo.TraceRequest request = createTraceRequest(type, id);
 
         try {
-            Iterator<Silo.QueryResponse> it = queryBlockingStub.trace(request);
+            Iterator<Silo.TraceResponse> it = queryBlockingStub.trace(request);
             while (it.hasNext()) {
-                results.addLast(reportFromGRPC(it.next()));
+                results.addLast(reportFromTraceResponse(it.next()));
             }
             return results;
         } catch(StatusRuntimeException e) {
@@ -379,8 +379,20 @@ public class SiloFrontend {
     }
 
 
-    private Silo.QueryRequest createQueryRequest(FrontendObservation.ObservationType type, String id) {
-        return Silo.QueryRequest.newBuilder()
+    private Silo.TrackRequest createTrackRequest(FrontendObservation.ObservationType type, String id) {
+        return Silo.TrackRequest.newBuilder()
+                .setType(observationTypeToGRPC(type))
+                .setId(id).build();
+    }
+
+    private Silo.TrackMatchRequest createTrackMatchRequest(FrontendObservation.ObservationType type, String pattern) {
+        return Silo.TrackMatchRequest.newBuilder()
+                .setType(observationTypeToGRPC(type))
+                .setPattern(pattern).build();
+    }
+
+    private Silo.TraceRequest createTraceRequest(FrontendObservation.ObservationType type, String id) {
+        return Silo.TraceRequest.newBuilder()
                 .setType(observationTypeToGRPC(type))
                 .setId(id).build();
     }
@@ -389,7 +401,23 @@ public class SiloFrontend {
     // ===================================================
     // CONVERT BETWEEN DTO AND GRPC
     // ===================================================
-    private FrontendReport reportFromGRPC(Silo.QueryResponse response) {
+    private FrontendReport reportFromTrackResponse(Silo.TrackResponse response) {
+        FrontendObservation frontendObservation = observationFromGRPC(response.getObservation());
+        FrontendCam frontendCam = camFromGRPC(response.getCam());
+        Instant timestamp = timestampFromGRPC(response.getTimestamp());
+
+        return new FrontendReport(frontendObservation, frontendCam, timestamp);
+    }
+
+    private FrontendReport reportFromTrackMatchResponse(Silo.TrackMatchResponse response) {
+        FrontendObservation frontendObservation = observationFromGRPC(response.getObservation());
+        FrontendCam frontendCam = camFromGRPC(response.getCam());
+        Instant timestamp = timestampFromGRPC(response.getTimestamp());
+
+        return new FrontendReport(frontendObservation, frontendCam, timestamp);
+    }
+
+    private FrontendReport reportFromTraceResponse(Silo.TraceResponse response) {
         FrontendObservation frontendObservation = observationFromGRPC(response.getObservation());
         FrontendCam frontendCam = camFromGRPC(response.getCam());
         Instant timestamp = timestampFromGRPC(response.getTimestamp());

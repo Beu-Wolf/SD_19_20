@@ -50,21 +50,43 @@ service ReportService {
     rpc Report(stream Observation) returns (ReportResponse);
 }
 
-message QueryRequest {
+message TrackRequest {
     ObservationType type = 1;
     string id = 2;
 }
 
-message QueryResponse {
+message TrackResponse {
+    Observation observation = 1;
+    google.protobuf.Timestamp timestamp = 2;
+    Cam cam = 3;
+}
+
+message TrackMatchRequest {
+    ObservationType type = 1;
+    string pattern = 2;
+}
+
+message TrackMatchResponse {
+    Observation observation = 1;
+    google.protobuf.Timestamp timestamp = 2;
+    Cam cam = 3;
+}
+
+message TraceRequest {
+    ObservationType type = 1;
+    string id = 2;
+}
+
+message TraceResponse {
     Observation observation = 1;
     google.protobuf.Timestamp timestamp = 2;
     Cam cam = 3;
 }
 
 service QueryService {
-    rpc Track (QueryRequest) returns (QueryResponse);
-    rpc TrackMatch (QueryRequest) returns (stream QueryResponse);
-    rpc Trace (QueryRequest) returns (stream QueryResponse);
+    rpc Track (TrackRequest) returns (TrackResponse);
+    rpc TrackMatch (TrackMatchRequest) returns (stream TrackMatchResponse);
+    rpc Trace (TraceRequest) returns (stream TraceResponse);
 }
 
 message PingRequest {
