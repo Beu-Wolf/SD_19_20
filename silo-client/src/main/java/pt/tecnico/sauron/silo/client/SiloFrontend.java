@@ -37,11 +37,16 @@ public class SiloFrontend {
     public static final String SERVER_PATH = "/grpc/sauron/silo";
 
 
-    public SiloFrontend(String zooHost, String zooPort) throws ZKNamingException {
+    public SiloFrontend(String zooHost, String zooPort) throws ZKNamingException, FrontendException {
         zkNaming = new ZKNaming(zooHost,zooPort);
         Collection<ZKRecord> records = zkNaming.listRecords(SERVER_PATH);
-        ZKRecord record = ((ArrayList<ZKRecord>) records).get(new Random().nextInt(records.size()));
-        siloInfo(record);
+        Optional<ZKRecord> optRecord = getRandomRecord(records);
+        if (optRecord.isPresent()) {
+            ZKRecord record = optRecord.get();
+            siloInfo(record);
+        } else {
+            throw new FrontendException(ErrorMessages.NO_ONLINE_SERVERS);
+        }
     }
 
     public SiloFrontend(String zooHost, String zooPort, String instance) throws ZKNamingException {
@@ -67,6 +72,12 @@ public class SiloFrontend {
 
     public void shutdown() {
         this.channel.shutdown();
+    }
+
+    public static <ZKRecord> Optional<ZKRecord> getRandomRecord(Collection<ZKRecord> e) {
+        return e.stream()
+                .skip((int) (e.size()* Math.random()))
+                .findFirst();
     }
 
     public void makeNewConnection() throws ZKNamingException {

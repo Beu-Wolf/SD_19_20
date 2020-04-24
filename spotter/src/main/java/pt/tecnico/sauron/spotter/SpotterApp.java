@@ -2,6 +2,7 @@ package pt.tecnico.sauron.spotter;
 
 
 import pt.tecnico.sauron.silo.client.SiloFrontend;
+import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
 public class SpotterApp {
@@ -41,6 +42,8 @@ public class SpotterApp {
 			spotter.begin();
 		} catch (ZKNamingException e) {
 			System.out.println("Could not find server in given path. Make sure the server is up and running.");
+		} catch (FrontendException e) {
+			System.out.println(e.getMessage());
 		}
 	}
 }
