@@ -18,7 +18,7 @@ message CamJoinCommand {
 // TODO: implement this request in silo.proto
 message ReportRequest {
     Cam cam = 1;
-    repeated Observation obs = 2;
+    repeated Observation observations = 2;
 }
 
 message ReportCommand {
