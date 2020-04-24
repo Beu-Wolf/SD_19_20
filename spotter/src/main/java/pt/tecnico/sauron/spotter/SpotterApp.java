@@ -2,12 +2,14 @@ package pt.tecnico.sauron.spotter;
 
 
 import pt.tecnico.sauron.silo.client.SiloFrontend;
+import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
 public class SpotterApp {
 	
 	public static void main(String[] args) {
 		System.out.println(SpotterApp.class.getSimpleName());
+		String instance = null;
 		
 		// receive and print arguments
 //		 System.out.printf("Received %d arguments%n", args.length);
@@ -17,22 +19,31 @@ public class SpotterApp {
 
 		if (args.length < 3) {
 			System.out.println("Arguments missing");
-			System.out.printf("Usage: %s zooHost zooPort serverPath%n", Spotter.class.getName());
+			System.out.printf("Usage: %s zooHost zooPort [instance] %n", Spotter.class.getName());
 			return;
 		}
 
 		String zooHost = args[0];
 		String zooPort = args[1];
-		String serverPath = args[2];
+
+		if(args.length == 3) {
+			instance = args[2];
+		}
 
 		SiloFrontend siloFrontend;
 		try {
-			siloFrontend = new SiloFrontend(zooHost, zooPort, serverPath);
+			if (instance != null)
+				siloFrontend = new SiloFrontend(zooHost, zooPort, instance);
+			else
+				siloFrontend = new SiloFrontend(zooHost, zooPort);
+
 			Spotter spotter = new Spotter(siloFrontend);
 
 			spotter.begin();
 		} catch (ZKNamingException e) {
 			System.out.println("Could not find server in given path. Make sure the server is up and running.");
+		} catch (FrontendException e) {
+			System.out.println(e.getMessage());
 		}
 	}
 }

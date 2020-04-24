@@ -10,4 +10,6 @@ public class ErrorMessages {
     public static final String WAITING_THREAD_INTERRUPT = "Waiting for the thread to interrupt!";
     public static final String GENERIC_QUERY_ERROR = "Error executing query!";
     public static final String OBSERVATION_NOT_FOUND = "Observation not found!";
+    public static final String NO_CONNECTION = "Server is down, attempting new connection...";
+    public static final String NO_ONLINE_SERVERS = "No servers online!";
 }

@@ -6,6 +6,7 @@ import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
 import pt.tecnico.sauron.silo.client.exceptions.CameraAlreadyExistsException;
 import pt.tecnico.sauron.silo.client.exceptions.CameraRegisterException;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
+import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -32,7 +33,7 @@ public class Eye {
     private FrontendCam cam;
     private List<FrontendObservation> observationBuffer = new LinkedList<>();
 
-    public Eye(SiloFrontend siloFrontend, String name, double lat, double lon) throws CameraRegisterException, CameraAlreadyExistsException {
+    public Eye(SiloFrontend siloFrontend, String name, double lat, double lon) throws FrontendException, ZKNamingException {
         this.siloFrontend = siloFrontend;
         this.cam = new FrontendCam(name, lat, lon);
 
@@ -96,6 +97,8 @@ public class Eye {
                 System.out.println("Successfully reported observations!");
             } catch (FrontendException e) {
                 System.err.println("Could not add observations: " + e.getMessage());
+            } catch (ZKNamingException e) {
+                System.err.println("Could not find server in given path. Make sure the server is up and running.");
             }
         }
     }

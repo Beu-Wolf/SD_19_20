@@ -7,6 +7,7 @@ import pt.tecnico.sauron.silo.client.exceptions.CameraNotFoundException;
 import pt.tecnico.sauron.silo.client.exceptions.ClearException;
 import pt.tecnico.sauron.silo.client.exceptions.ErrorMessages;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
+import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
 public class CamInfoIT extends BaseIT {
 
@@ -24,7 +25,7 @@ public class CamInfoIT extends BaseIT {
 
             Assertions.assertEquals(cam.getLat(), received.getLat());
             Assertions.assertEquals(cam.getLon(), received.getLon());
-        } catch (FrontendException e) {
+        } catch (FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }
     }
@@ -44,7 +45,7 @@ public class CamInfoIT extends BaseIT {
     public void clear() {
         try {
             siloFrontend.ctrlClear();
-        } catch (ClearException e) {
+        } catch (FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }
     }
