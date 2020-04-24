@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 public class SiloFrontend {
     private ManagedChannel channel;
+    private ZKNaming zkNaming;
     private ControlServiceGrpc.ControlServiceBlockingStub ctrlBlockingStub;
     private ControlServiceGrpc.ControlServiceStub ctrlStub;
     private ReportServiceGrpc.ReportServiceStub reportStub;
@@ -33,17 +34,19 @@ public class SiloFrontend {
     private ReportServiceGrpc.ReportServiceBlockingStub reportBlockingStub;
     public static final Metadata.Key<String> METADATA_CAM_NAME = Metadata.Key.of("name", Metadata.ASCII_STRING_MARSHALLER);
 
+    public static final String SERVER_PATH = "/grpc/sauron/silo";
 
-    public SiloFrontend(String zooHost, String zooPort, String serverPath) throws ZKNamingException {
-        ZKNaming zkNaming = new ZKNaming(zooHost,zooPort);
-        Collection<ZKRecord> records = zkNaming.listRecords(serverPath);
+
+    public SiloFrontend(String zooHost, String zooPort) throws ZKNamingException {
+        zkNaming = new ZKNaming(zooHost,zooPort);
+        Collection<ZKRecord> records = zkNaming.listRecords(SERVER_PATH);
         ZKRecord record = ((ArrayList<ZKRecord>) records).get(new Random().nextInt(records.size()));
         siloInfo(record);
     }
 
-    public SiloFrontend(String zooHost, String zooPort, String serverPath, String instance) throws ZKNamingException {
-        ZKNaming zkNaming = new ZKNaming(zooHost, zooPort);
-        String path = serverPath + "/" + instance;
+    public SiloFrontend(String zooHost, String zooPort, String instance) throws ZKNamingException {
+        zkNaming = new ZKNaming(zooHost, zooPort);
+        String path = SERVER_PATH + "/" + instance;
         ZKRecord record = zkNaming.lookup(path);
         siloInfo(record);
     }
@@ -66,22 +69,33 @@ public class SiloFrontend {
         this.channel.shutdown();
     }
 
+    public void makeNewConnection() throws ZKNamingException {
+        Collection<ZKRecord> records = zkNaming.listRecords(SERVER_PATH);
+        ZKRecord record = ((ArrayList<ZKRecord>) records).get(new Random().nextInt(records.size()));
+        siloInfo(record);
+    }
+
 
 
     // ===================================================
     // GRPC FRONTEND
     // ===================================================
-    public String ctrlPing(String sentence) throws PingException {
+    public String ctrlPing(String sentence) throws FrontendException, ZKNamingException {
         Silo.PingRequest request = createPingRequest(sentence);
         try {
             Silo.PingResponse response = this.ctrlBlockingStub.ping(request);
             return response.getText();
         } catch (StatusRuntimeException e) {
+            Status status = Status.fromThrowable(e);
+            if (status.getCode() == Status.Code.UNAVAILABLE) {
+                makeNewConnection();
+                throw new FrontendException(ErrorMessages.NO_CONNECTION);
+            }
             throw new PingException(e.getStatus().getDescription());
         }
     }
 
-    public void ctrlInitCams(List<CamDto> cams) throws RuntimeException, InterruptedException {
+    public void ctrlInitCams(List<CamDto> cams) throws RuntimeException, ZKNamingException, FrontendException, InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
         StreamObserver<Silo.InitResponse> responseObserver = new StreamObserver<>() {
             @Override
@@ -114,6 +128,13 @@ public class SiloFrontend {
             }
             requestObserver.onCompleted();
             latch.await(10, TimeUnit.SECONDS);
+        } catch (StatusRuntimeException e) {
+            Status status = Status.fromThrowable(e);
+            if (status.getCode() == Status.Code.UNAVAILABLE) {
+                makeNewConnection();
+                throw new FrontendException(ErrorMessages.NO_CONNECTION);
+            }
+            throw e;
         } catch (RuntimeException e) {
             requestObserver.onError(e);
             throw e;
@@ -123,7 +144,7 @@ public class SiloFrontend {
         }
     }
 
-    public void ctrlInitObservations(List<ReportDto> reports) throws RuntimeException, InterruptedException {
+    public void ctrlInitObservations(List<ReportDto> reports) throws RuntimeException, ZKNamingException, FrontendException, InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
         StreamObserver<Silo.InitResponse> responseObserver = new StreamObserver<>() {
             @Override
@@ -156,6 +177,13 @@ public class SiloFrontend {
             }
             requestObserver.onCompleted();
             latch.await(10, TimeUnit.SECONDS);
+        } catch (StatusRuntimeException e) {
+            Status status = Status.fromThrowable(e);
+            if (status.getCode() == Status.Code.UNAVAILABLE) {
+                makeNewConnection();
+                throw new FrontendException(ErrorMessages.NO_CONNECTION);
+            }
+            throw e;
         } catch (RuntimeException e) {
             requestObserver.onError(e);
             throw e;
@@ -165,22 +193,31 @@ public class SiloFrontend {
         }
     }
 
-    public void ctrlClear() throws ClearException{
+    public void ctrlClear() throws FrontendException, ZKNamingException{
         try {
             Silo.ClearResponse response =  this.ctrlBlockingStub.clear(createClearRequest());
         } catch (StatusRuntimeException e) {
+            Status status = Status.fromThrowable(e);
+            if (status.getCode() == Status.Code.UNAVAILABLE) {
+                makeNewConnection();
+                throw new FrontendException(ErrorMessages.NO_CONNECTION);
+            }
             throw new ClearException(e.getStatus().getDescription());
         }
     }
 
 
-    public void camJoin(CamDto cam) throws CameraAlreadyExistsException, CameraRegisterException {
+    public void camJoin(CamDto cam) throws ZKNamingException, FrontendException {
         Silo.JoinRequest request = createJoinRequest(cam);
 
         try {
             this.reportBlockingStub.camJoin(request);
         } catch(RuntimeException e) {
             Status status = Status.fromThrowable(e);
+            if (status.getCode() == Status.Code.UNAVAILABLE) {
+                makeNewConnection();
+                throw new FrontendException(ErrorMessages.NO_CONNECTION);
+            }
             if(status.getCode() == Status.Code.ALREADY_EXISTS) {
                 throw new CameraAlreadyExistsException();
             }
@@ -191,7 +228,7 @@ public class SiloFrontend {
         }
     }
 
-    public CamDto camInfo(String name) throws CameraNotFoundException, CameraInfoException {
+    public CamDto camInfo(String name) throws FrontendException, ZKNamingException {
         Silo.InfoRequest request = createInfoRequest(name);
 
         try {
@@ -199,6 +236,10 @@ public class SiloFrontend {
             return camFromGRPC(response.getCam());
         } catch (RuntimeException e) {
             Status status = Status.fromThrowable(e);
+            if (status.getCode() == Status.Code.UNAVAILABLE) {
+                makeNewConnection();
+                throw new FrontendException(ErrorMessages.NO_CONNECTION);
+            }
             if(status == Status.NOT_FOUND) {
                 throw new CameraNotFoundException();
             }
@@ -207,7 +248,7 @@ public class SiloFrontend {
     }
 
     public void report(String name, List<ObservationDto> observations)
-            throws ReportException, CameraNotFoundException, InvalidArgumentException {
+            throws FrontendException, ZKNamingException {
         Metadata header = new Metadata();
 
         header.put(METADATA_CAM_NAME, name);
@@ -266,6 +307,13 @@ public class SiloFrontend {
                 }
             }
 
+        } catch (StatusRuntimeException e) {
+            Status status = Status.fromThrowable(e);
+            if (status.getCode() == Status.Code.UNAVAILABLE) {
+                makeNewConnection();
+                throw new FrontendException(ErrorMessages.NO_CONNECTION);
+            }
+            throw e;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new ReportException(ErrorMessages.WAITING_THREAD_INTERRUPT);
@@ -277,13 +325,17 @@ public class SiloFrontend {
     }
 
 
-    public ReportDto track(ObservationDto.ObservationType type, String id) throws QueryException, NotFoundException, InvalidArgumentException {
+    public ReportDto track(ObservationDto.ObservationType type, String id) throws FrontendException, ZKNamingException {
         Silo.QueryRequest request = createQueryRequest(type, id);
 
         try {
             return reportFromGRPC(queryBlockingStub.track(request));
         } catch(StatusRuntimeException e) {
             Status status = Status.fromThrowable(e);
+            if(status.getCode() == Status.Code.UNAVAILABLE) {
+                makeNewConnection();
+                throw new FrontendException(ErrorMessages.NO_CONNECTION);
+            }
             if (status.getCode() == Status.Code.NOT_FOUND) {
                 throw new NotFoundException();
             }
@@ -295,7 +347,7 @@ public class SiloFrontend {
         }
     }
 
-    public List<ReportDto> trackMatch(ObservationDto.ObservationType type, String query) throws QueryException, NotFoundException, InvalidArgumentException {
+    public List<ReportDto> trackMatch(ObservationDto.ObservationType type, String query) throws FrontendException, ZKNamingException {
         LinkedList<ReportDto> results = new LinkedList<>();
 
 
@@ -309,6 +361,10 @@ public class SiloFrontend {
             return results;
         } catch(StatusRuntimeException e) {
             Status status = Status.fromThrowable(e);
+            if(status.getCode() == Status.Code.UNAVAILABLE) {
+                makeNewConnection();
+                throw new FrontendException(ErrorMessages.NO_CONNECTION);
+            }
             if (status.getCode() == Status.Code.NOT_FOUND) {
                 throw new NotFoundException();
             }
@@ -320,7 +376,7 @@ public class SiloFrontend {
         }
     }
 
-    public List<ReportDto> trace(ObservationDto.ObservationType type, String id) throws QueryException, InvalidArgumentException, NotFoundException {
+    public List<ReportDto> trace(ObservationDto.ObservationType type, String id) throws FrontendException, ZKNamingException {
         LinkedList<ReportDto> results = new LinkedList<>();
 
 
@@ -334,6 +390,10 @@ public class SiloFrontend {
             return results;
         } catch(StatusRuntimeException e) {
             Status status = Status.fromThrowable(e);
+            if(status.getCode() == Status.Code.UNAVAILABLE) {
+                makeNewConnection();
+                throw new FrontendException(ErrorMessages.NO_CONNECTION);
+            }
             if (status.getCode() == Status.Code.NOT_FOUND) {
                 throw new NotFoundException();
             }

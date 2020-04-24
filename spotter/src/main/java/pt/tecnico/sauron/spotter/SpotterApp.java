@@ -18,24 +18,23 @@ public class SpotterApp {
 
 		if (args.length < 3) {
 			System.out.println("Arguments missing");
-			System.out.printf("Usage: %s zooHost zooPort serverPath [instance] %n", Spotter.class.getName());
+			System.out.printf("Usage: %s zooHost zooPort [instance] %n", Spotter.class.getName());
 			return;
 		}
 
 		String zooHost = args[0];
 		String zooPort = args[1];
-		String serverPath = args[2];
 
-		if(args.length == 4) {
-			instance = args[3];
+		if(args.length == 3) {
+			instance = args[2];
 		}
 
 		SiloFrontend siloFrontend;
 		try {
 			if (instance != null)
-				siloFrontend = new SiloFrontend(zooHost, zooPort, serverPath, instance);
+				siloFrontend = new SiloFrontend(zooHost, zooPort, instance);
 			else
-				siloFrontend = new SiloFrontend(zooHost, zooPort, serverPath);
+				siloFrontend = new SiloFrontend(zooHost, zooPort);
 
 			Spotter spotter = new Spotter(siloFrontend);
 

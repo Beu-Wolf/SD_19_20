@@ -22,7 +22,7 @@ public class BaseIT {
 			testProps.load(BaseIT.class.getResourceAsStream(TEST_PROP_FILE));
 			System.out.println("Test properties:");
 			System.out.println(testProps);
-			siloFrontend = new SiloFrontend(testProps.getProperty("zoo.host"), testProps.getProperty("zoo.port"), testProps.getProperty("server.path"));
+			siloFrontend = new SiloFrontend(testProps.getProperty("zoo.host"), testProps.getProperty("zoo.port"), testProps.getProperty("instance"));
 		}catch (IOException e) {
 			final String msg = String.format("Could not load properties file {}", TEST_PROP_FILE);
 			System.out.println(msg);

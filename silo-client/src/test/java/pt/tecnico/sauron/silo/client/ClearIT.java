@@ -6,7 +6,9 @@ import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.dto.ObservationDto;
 import pt.tecnico.sauron.silo.client.dto.ReportDto;
 import pt.tecnico.sauron.silo.client.exceptions.ErrorMessages;
+import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 import pt.tecnico.sauron.silo.client.exceptions.NotFoundException;
+import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
 import java.time.Instant;
 import java.util.LinkedList;
@@ -40,7 +42,7 @@ public class ClearIT extends BaseIT {
             Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
                     Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(ObservationDto.ObservationType.PERSON, "*"))
                             .getMessage());
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }
     }

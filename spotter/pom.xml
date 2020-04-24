@@ -20,8 +20,6 @@
 
 		<zoo.host>localhost</zoo.host>
 		<zoo.port>2181</zoo.port>
-		<!-- instance number -->
-		<server.path>/grpc/sauron/silo</server.path>
 	</properties>
 
 	<dependencies>
@@ -73,7 +71,6 @@
 					<arguments>
 						<argument>${zoo.host}</argument>
 						<argument>${zoo.port}</argument>
-						<argument>${server.path}</argument>
 					</arguments>
 				</configuration>
 			</plugin>

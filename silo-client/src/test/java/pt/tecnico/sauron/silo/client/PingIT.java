@@ -4,6 +4,7 @@ import org.junit.jupiter.api.*;
 import pt.tecnico.sauron.silo.client.exceptions.ErrorMessages;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 import pt.tecnico.sauron.silo.client.exceptions.PingException;
+import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
 import static io.grpc.Status.Code.INVALID_ARGUMENT;
 
@@ -15,7 +16,7 @@ public class PingIT extends BaseIT{
         try {
             String response = siloFrontend.ctrlPing(sentence);
             Assertions.assertEquals("Hello friend!", response);
-        } catch (FrontendException e) {
+        } catch (FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }
     }

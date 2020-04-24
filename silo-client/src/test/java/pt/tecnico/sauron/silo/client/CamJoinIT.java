@@ -3,6 +3,7 @@ package pt.tecnico.sauron.silo.client;
 import org.junit.jupiter.api.*;
 import pt.tecnico.sauron.silo.client.dto.CamDto;
 import pt.tecnico.sauron.silo.client.exceptions.*;
+import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
 public class CamJoinIT extends BaseIT {
     public static String name = "testCamera";
@@ -23,7 +24,7 @@ public class CamJoinIT extends BaseIT {
         try {
             siloFrontend.camJoin(cam);
             Assertions.assertEquals(cam.toString(), siloFrontend.camInfo(cam.getName()).toString());
-        } catch (FrontendException e) {
+        } catch (FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }
     }
@@ -37,7 +38,7 @@ public class CamJoinIT extends BaseIT {
             Assertions.assertEquals(ErrorMessages.CAMERA_ALREADY_EXISTS, Assertions.assertThrows(
                     CameraAlreadyExistsException.class, ()->siloFrontend.camJoin(duplicate))
                     .getMessage() );
-        } catch (FrontendException e) {
+        } catch (FrontendException |ZKNamingException e) {
             e.printStackTrace();
         }
     }
@@ -49,7 +50,7 @@ public class CamJoinIT extends BaseIT {
             siloFrontend.camJoin(cam);
             Assertions.assertDoesNotThrow(()->siloFrontend.camJoin(cam));
             Assertions.assertEquals(cam, siloFrontend.camInfo(cam.getName()));
-        } catch (FrontendException e) {
+        } catch (FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }
     }
@@ -107,7 +108,7 @@ public class CamJoinIT extends BaseIT {
     public void clear() {
         try {
             siloFrontend.ctrlClear();
-        } catch (ClearException e) {
+        } catch (FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }
     }
