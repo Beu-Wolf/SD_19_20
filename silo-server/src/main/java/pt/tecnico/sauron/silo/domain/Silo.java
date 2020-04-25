@@ -43,6 +43,11 @@ public class Silo {
         recordReport(report);
     }
 
+    public void registerGossipObservation(Cam cam, Observation observation, Instant instant) {
+        Report report = new Report(cam, observation, instant);
+        recordReport(report);
+    }
+
 
     public void clearCams() {
         cams.clear();
