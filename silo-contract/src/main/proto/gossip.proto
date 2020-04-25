@@ -28,15 +28,6 @@ message InitCamsCommand {
     InitCamsRequest request = 1;
 }
 
-// TODO: implement this request in silo.proto
-message InitObservationItem {
-    Observation observation = 1;
-    google.protobuf.Timestamp timestamp = 2;
-    Cam cam = 3;
-}
-message InitObservationsRequest {
-    repeated InitObservationItem item = 1;
-}
 message InitObservationsCommand {
     InitObservationsRequest request = 1;
 }

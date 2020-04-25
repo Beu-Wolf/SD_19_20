@@ -118,13 +118,17 @@ message InitCamsResponse {
     // empty
 }
 
-message InitObservationRequest {
+message InitObservationsItem {
     Observation observation = 1;
     google.protobuf.Timestamp timestamp = 2;
     Cam cam = 3;
 }
 
-message InitObservationResponse {
+message InitObservationsRequest {
+    repeated InitObservationsItem observations = 1;
+}
+
+message InitObservationsResponse {
     // empty
 }
 
@@ -132,5 +136,5 @@ service ControlService {
     rpc Ping(PingRequest) returns (PingResponse);
     rpc Clear(ClearRequest) returns (ClearResponse);
     rpc InitCams(InitCamsRequest) returns (InitCamsResponse);
-    rpc InitObservations(stream InitObservationRequest) returns (InitObservationResponse);
+    rpc InitObservations(InitObservationsRequest) returns (InitObservationsResponse);
 }
