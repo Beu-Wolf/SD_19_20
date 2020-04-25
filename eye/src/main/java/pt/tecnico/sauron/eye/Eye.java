@@ -91,12 +91,10 @@ public class Eye {
     private void sendObservations() {
         if(observationBuffer.size() > 0) {
             try {
-                this.siloFrontend.report(this.cam.getName(), observationBuffer);
-                System.out.println("Successfully reported observations!");
+                int numAcked = this.siloFrontend.report(this.cam.getName(), observationBuffer);
+                System.out.printf("Successfully reported %d observations!%n", numAcked);
             } catch (FrontendException e) {
-                System.err.println("Could not add observations: " + e.getMessage());
-            } catch (ZKNamingException e) {
-                System.err.println("Could not find server in given path. Make sure the server is up and running.");
+                System.err.println("Could not add all observations:\n" + e.getMessage());
             }
         }
     }

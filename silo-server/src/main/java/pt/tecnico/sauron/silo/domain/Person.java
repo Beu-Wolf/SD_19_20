@@ -9,7 +9,7 @@ public class Person extends Observation {
         try {
             Long.parseUnsignedLong(id);
         } catch(NumberFormatException e) {
-            throw new InvalidPersonIdException();
+            throw new InvalidPersonIdException(id);
         }
     }
 

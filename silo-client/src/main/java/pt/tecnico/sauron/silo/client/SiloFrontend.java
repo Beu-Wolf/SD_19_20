@@ -3,8 +3,6 @@ package pt.tecnico.sauron.silo.client;
 import com.google.protobuf.Timestamp;
 import com.google.type.LatLng;
 import io.grpc.*;
-import io.grpc.stub.MetadataUtils;
-import io.grpc.stub.StreamObserver;
 import pt.tecnico.sauron.silo.client.domain.FrontendCam;
 import pt.tecnico.sauron.silo.client.domain.FrontendCoords;
 import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
@@ -20,8 +18,7 @@ import pt.ulisboa.tecnico.sdis.zk.ZKRecord;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class SiloFrontend {
     private ManagedChannel channel;
@@ -107,101 +104,23 @@ public class SiloFrontend {
     }
 
 
-    public void ctrlInitCams(List<FrontendCam> cams) throws RuntimeException, ZKNamingException, FrontendException, InterruptedException {
-        final CountDownLatch latch = new CountDownLatch(1);
-        StreamObserver<Silo.InitResponse> responseObserver = new StreamObserver<>() {
-            @Override
-            public void onNext(Silo.InitResponse response) {}
+    public void ctrlInitCams(List<FrontendCam> cams) throws RuntimeException, FrontendException {
+        Silo.InitCamsRequest request = createInitCamsRequest(cams);
 
-            @Override
-            public void onError(Throwable throwable) {
-                latch.countDown();
-            }
-            @Override
-            public void onCompleted() {
-                latch.countDown();
-            }
-        };
-
-        StreamObserver<Silo.InitCamRequest> requestObserver = this.ctrlStub.initCams(responseObserver);
         try {
-            for(FrontendCam cam : cams) {
-                Silo.InitCamRequest request = createInitCamRequest(cam);
-                requestObserver.onNext(request);
-
-                // As per the documentation for client side streaming in gRPC,
-                // we should sleep for an amount of time between each call
-                // to allow for the server to send an error if it happens
-                Thread.sleep(10);
-
-                if (latch.getCount() == 0) {
-                    return;
-                }
-            }
-            requestObserver.onCompleted();
-            latch.await(10, TimeUnit.SECONDS);
-        } catch (StatusRuntimeException e) {
-            Status status = Status.fromThrowable(e);
-            if (status.getCode() == Status.Code.UNAVAILABLE) {
-                makeNewConnection();
-                throw new FrontendException(ErrorMessages.NO_CONNECTION);
-            }
-            throw e;
-        } catch (RuntimeException e) {
-            requestObserver.onError(e);
-            throw e;
-        } catch (InterruptedException e) {
-            requestObserver.onError(e);
-            Thread.currentThread().interrupt();
+            this.ctrlBlockingStub.initCams(request);
+        } catch(RuntimeException e) {
+            throw new FrontendException(e.getMessage());
         }
     }
 
-    public void ctrlInitObservations(List<FrontendReport> reports) throws RuntimeException, ZKNamingException, FrontendException, InterruptedException {
-        final CountDownLatch latch = new CountDownLatch(1);
-        StreamObserver<Silo.InitResponse> responseObserver = new StreamObserver<>() {
-            @Override
-            public void onNext(Silo.InitResponse response) {}
+    public void ctrlInitObservations(List<FrontendReport> reports) throws FrontendException {
+        Silo.InitObservationsRequest request = createInitObservationsRequest(reports);
 
-            @Override
-            public void onError(Throwable throwable) {
-                latch.countDown();
-            }
-            @Override
-            public void onCompleted() {
-                latch.countDown();
-            }
-        };
-
-        StreamObserver<Silo.InitObservationRequest> requestObserver = this.ctrlStub.initObservations(responseObserver);
         try {
-            for(FrontendReport report : reports) {
-                Silo.InitObservationRequest request = createInitObservationRequest(report);
-                requestObserver.onNext(request);
-
-                // As per the documentation for client side streaming in gRPC,
-                // we should sleep for an amount of time between each call
-                // to allow for the server to send an error if it happens
-                Thread.sleep(10);
-
-                if (latch.getCount() == 0) {
-                    return;
-                }
-            }
-            requestObserver.onCompleted();
-            latch.await(10, TimeUnit.SECONDS);
-        } catch (StatusRuntimeException e) {
-            Status status = Status.fromThrowable(e);
-            if (status.getCode() == Status.Code.UNAVAILABLE) {
-                makeNewConnection();
-                throw new FrontendException(ErrorMessages.NO_CONNECTION);
-            }
-            throw e;
+            this.ctrlBlockingStub.initObservations(request);
         } catch (RuntimeException e) {
-            requestObserver.onError(e);
-            throw e;
-        } catch (InterruptedException e) {
-            requestObserver.onError(e);
-            Thread.currentThread().interrupt();
+            throw new FrontendException(e.getMessage());
         }
     }
 
@@ -259,81 +178,27 @@ public class SiloFrontend {
         }
     }
 
-    public void report(String name, List<FrontendObservation> observations)
-            throws FrontendException, ZKNamingException {
-        Metadata header = new Metadata();
+    public int report(String name, List<FrontendObservation> observations)
+            throws CameraNotFoundException, ReportException, InvalidArgumentException {
+        if(observations.size() == 0) return 0;
+        Silo.ReportRequest request = createReportRequest(name, observations);
 
-        header.put(METADATA_CAM_NAME, name);
-        ReportServiceGrpc.ReportServiceStub reportStubWithHeaders = MetadataUtils.attachHeaders(this.reportStub, header);
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        // Arrays must be used to allow changes from the inner class
-        final boolean[] error = new boolean[1];
-        final Status[] errorStatus = new Status[1];
-
-        StreamObserver<Silo.ReportResponse> responseObserver =  new StreamObserver<>() {
-            @Override
-            public void onNext(Silo.ReportResponse reportResponse) {}
-
-            @Override
-            public void onError(Throwable throwable) {
-                Status status = Status.fromThrowable(throwable);
-                    error[0] = true;
-                    errorStatus[0] = status;
-                    latch.countDown();
-            }
-            @Override
-            public void onCompleted() {
-                latch.countDown();
-            }
-        };
-
-        StreamObserver<Silo.Observation> requestObserver = reportStubWithHeaders.report(responseObserver);
+        Silo.ReportResponse response;
         try {
-            for (FrontendObservation observation : observations) {
-                Silo.Observation request = createReportRequest(observation);
-                requestObserver.onNext(request);
-
-                // As per the documentation for client side streaming in gRPC,
-                // we should sleep for an amount of time between each call
-                // to allow for the server to send an error if it happens
-                Thread.sleep(10);
-
-                if (latch.getCount() == 0) {
-                    break;
-                }
-
-            }
-
-            requestObserver.onCompleted();
-            latch.await(10, TimeUnit.SECONDS);
-
-            if (error[0]) {
-                switch(errorStatus[0].getCode()) {
-                    case NOT_FOUND:
-                        throw new CameraNotFoundException();
-                    case INVALID_ARGUMENT:
-                        throw new InvalidArgumentException(errorStatus[0].getDescription());
-                    default:
-                        throw new ReportException(errorStatus[0].getDescription());
-                }
-            }
-
-        } catch (StatusRuntimeException e) {
-            Status status = Status.fromThrowable(e);
-            if (status.getCode() == Status.Code.UNAVAILABLE) {
-                makeNewConnection();
-                throw new FrontendException(ErrorMessages.NO_CONNECTION);
-            }
-            throw e;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new ReportException(ErrorMessages.WAITING_THREAD_INTERRUPT);
+            response = this.reportBlockingStub.report(request);
         } catch (RuntimeException e) {
-            requestObserver.onError(e);
-            throw new ReportException(e.toString());
+            Status status = Status.fromThrowable(e);
+            switch (status.getCode()) {
+                case NOT_FOUND:
+                    throw new CameraNotFoundException();
+                case INVALID_ARGUMENT:
+                    throw new InvalidArgumentException(status.getDescription());
+                default:
+                    throw new ReportException(status.getDescription());
+            }
         }
 
+        return response.getNumAcked();
     }
 
 
@@ -423,17 +288,19 @@ public class SiloFrontend {
         return Silo.PingRequest.newBuilder().setText(sentence).build();
     }
 
-    private Silo.InitCamRequest createInitCamRequest(FrontendCam cam) {
-        return Silo.InitCamRequest.newBuilder()
-                .setCam(camToGRPC(cam))
+    private Silo.InitCamsRequest createInitCamsRequest(List<FrontendCam> cams) {
+        return Silo.InitCamsRequest.newBuilder()
+                .addAllCams(cams.stream()
+                        .map(this::camToGRPC)
+                        .collect(Collectors.toList()))
                 .build();
     }
 
-    private Silo.InitObservationRequest createInitObservationRequest(FrontendReport report) {
-        return Silo.InitObservationRequest.newBuilder()
-                .setCam(camToGRPC(report.getCam()))
-                .setObservation(observationToGRPC(report.getObservation()))
-                .setTimestamp(timestampToGRPC(report.getTimestamp()))
+    private Silo.InitObservationsRequest createInitObservationsRequest(List<FrontendReport> reports) {
+        return Silo.InitObservationsRequest.newBuilder()
+                .addAllObservations(reports.stream()
+                        .map(this::reportToGRPC)
+                        .collect(Collectors.toList()))
                 .build();
     }
 
@@ -452,8 +319,11 @@ public class SiloFrontend {
         return Silo.InfoRequest.newBuilder().setName(name).build();
     }
 
-    private Silo.Observation createReportRequest(FrontendObservation observation) {
-        return observationToGRPC(observation);
+    private Silo.ReportRequest createReportRequest(String camName, List<FrontendObservation> observations) {
+        return Silo.ReportRequest.newBuilder()
+                .setCamName(camName)
+                .addAllObservations(observations.stream().map(this::observationToGRPC).collect(Collectors.toList()))
+                .build();
     }
 
 
@@ -485,6 +355,14 @@ public class SiloFrontend {
         Instant timestamp = timestampFromGRPC(response.getTimestamp());
 
         return new FrontendReport(frontendObservation, frontendCam, timestamp);
+    }
+
+    private Silo.InitObservationsItem reportToGRPC(FrontendReport report) {
+        return Silo.InitObservationsItem.newBuilder()
+                .setCam(camToGRPC(report.getCam()))
+                .setObservation(observationToGRPC(report.getObservation()))
+                .setTimestamp(timestampToGRPC(report.getTimestamp()))
+                .build();
     }
 
     private FrontendReport reportFromTrackMatchResponse(Silo.TrackMatchResponse response) {
