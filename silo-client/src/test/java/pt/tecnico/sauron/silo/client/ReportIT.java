@@ -59,7 +59,7 @@ public class ReportIT extends BaseIT {
         LinkedList<FrontendObservation> list = new LinkedList<>();
         list.add(frontendObservation);
         assertEquals("Person ID must be an unsigned long!",
-                assertThrows(InvalidArgumentException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
+                assertThrows(FrontendException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
     }
 
     @Test
@@ -68,7 +68,7 @@ public class ReportIT extends BaseIT {
         LinkedList<FrontendObservation> list = new LinkedList<>();
         list.add(frontendObservation);
         assertEquals("Car ID must be a valid portuguese license plate!",
-                assertThrows(InvalidArgumentException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
+                assertThrows(FrontendException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
     }
 
     @Test
@@ -77,7 +77,7 @@ public class ReportIT extends BaseIT {
         LinkedList<FrontendObservation> list = new LinkedList<>();
         list.add(frontendObservation);
         assertEquals("Type to observe not supported!",
-                assertThrows(InvalidArgumentException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
+                assertThrows(FrontendException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
     }
 
     @Test
