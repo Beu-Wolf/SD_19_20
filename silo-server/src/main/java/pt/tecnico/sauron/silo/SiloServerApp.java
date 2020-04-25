@@ -28,13 +28,15 @@ public class SiloServerApp {
 		final String serverHost = args[2];
 		final String serverPort = args[3];
 		final String serverPath = args[4];
+		final String[] pathSplit = serverPath.split("/");
+		final int instance = Integer.parseInt(pathSplit[pathSplit.length-1]);
 
 		ZKNaming zkNaming = null;
 		try {
 			zkNaming = new ZKNaming(zooHost, zooPort);
 			// publish
 			zkNaming.rebind(serverPath, serverHost, serverPort);
-			SiloServer server = new SiloServer(Integer.parseInt(serverPort));
+			SiloServer server = new SiloServer(Integer.parseInt(serverPort), zkNaming, instance);
 			server.start();
 			server.awaitTermination();
 		} catch(IOException e) {
