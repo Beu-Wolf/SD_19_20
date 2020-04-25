@@ -8,7 +8,7 @@ public class EyeApp {
 
 	public static void main(String[] args) {
 		System.out.println(EyeApp.class.getSimpleName());
-		String instance = null;
+		Integer instance = null;
 		
 		// receive and print arguments
 //		 System.out.printf("Received %d arguments%n", args.length);
@@ -30,8 +30,8 @@ public class EyeApp {
 		final double lat = Double.parseDouble(args[3]);
 		final double lon = Double.parseDouble(args[4]);
 
-		if (args.length == 6) {
-			instance = args[5];
+		if (args.length >= 6) {
+			instance = Integer.parseInt(args[5]);
 		}
 
 		SiloFrontend siloFrontend;

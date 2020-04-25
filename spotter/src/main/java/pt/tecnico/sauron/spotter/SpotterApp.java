@@ -9,7 +9,7 @@ public class SpotterApp {
 	
 	public static void main(String[] args) {
 		System.out.println(SpotterApp.class.getSimpleName());
-		String instance = null;
+		Integer instance = null;
 		
 		// receive and print arguments
 //		 System.out.printf("Received %d arguments%n", args.length);
@@ -17,7 +17,7 @@ public class SpotterApp {
 //		 	System.out.printf("arg[%d] = %s%n", i, args[i]);
 //		 }
 
-		if (args.length < 3) {
+		if (args.length < 2) {
 			System.out.println("Arguments missing");
 			System.out.printf("Usage: %s zooHost zooPort [instance] %n", Spotter.class.getName());
 			return;
@@ -26,8 +26,8 @@ public class SpotterApp {
 		String zooHost = args[0];
 		String zooPort = args[1];
 
-		if(args.length == 3) {
-			instance = args[2];
+		if(args.length >= 3) {
+			instance = Integer.parseInt(args[2]);
 		}
 
 		SiloFrontend siloFrontend;

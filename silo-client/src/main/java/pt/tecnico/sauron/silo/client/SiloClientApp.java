@@ -8,6 +8,8 @@ public class SiloClientApp {
 	
 	public static void main(String[] args) {
 		System.out.println(SiloClientApp.class.getSimpleName());
+		Integer instance;
+		SiloFrontend siloFrontend;
 		
 		// receive and print arguments
 		System.out.printf("Received %d arguments%n", args.length);
@@ -17,16 +19,21 @@ public class SiloClientApp {
 
 		if (args.length < 3) {
 			System.out.println("Argument(s) missing!");
-			System.out.printf("Usage: java %s zooHost zooPort%n", SiloClientApp.class.getName());
+			System.out.printf("Usage: java %s zooHost zooPort [serverInstance]%n", SiloClientApp.class.getName());
 			return;
 		}
 
 		final String zooHost = args[0];
 		final String zooPort = args[1];
-		final String serverPath = args[2];
+
 
 		try {
-			SiloFrontend siloFrontend = new SiloFrontend(zooHost, zooPort, serverPath);
+			if(args.length >= 3) {
+				instance = Integer.parseInt(args[2]);
+				siloFrontend = new SiloFrontend(zooHost, zooPort, instance);
+			} else {
+				siloFrontend = new SiloFrontend(zooHost, zooPort);
+			}
 			String sentence = "friend";
 			String response = siloFrontend.ctrlPing(sentence);
 			System.out.println(response);

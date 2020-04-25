@@ -49,9 +49,9 @@ public class SiloFrontend {
         }
     }
 
-    public SiloFrontend(String zooHost, String zooPort, String instance) throws ZKNamingException {
+    public SiloFrontend(String zooHost, String zooPort, Integer instance) throws ZKNamingException {
         zkNaming = new ZKNaming(zooHost, zooPort);
-        String path = SERVER_PATH + "/" + instance;
+        String path = SERVER_PATH + "/" + instance.toString();
         ZKRecord record = zkNaming.lookup(path);
         siloInfo(record);
     }

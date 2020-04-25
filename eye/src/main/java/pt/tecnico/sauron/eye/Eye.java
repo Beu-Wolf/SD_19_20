@@ -3,8 +3,6 @@ package pt.tecnico.sauron.eye;
 import pt.tecnico.sauron.silo.client.SiloFrontend;
 import pt.tecnico.sauron.silo.client.domain.FrontendCam;
 import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
-import pt.tecnico.sauron.silo.client.exceptions.CameraAlreadyExistsException;
-import pt.tecnico.sauron.silo.client.exceptions.CameraRegisterException;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
