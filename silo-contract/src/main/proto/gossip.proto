@@ -24,10 +24,6 @@ message ClearCommand {
     // empty
 }
 
-// TODO: implement this request in silo.proto
-message InitCamsRequest {
-    repeated Cam cams = 1;
-}
 message InitCamsCommand {
     InitCamsRequest request = 1;
 }

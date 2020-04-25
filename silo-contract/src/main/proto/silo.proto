@@ -111,8 +111,12 @@ message ClearResponse {
     // empty
 }
 
-message InitCamRequest {
-    Cam cam = 1;
+message InitCamsRequest {
+    repeated Cam cams = 1;
+}
+
+message InitCamsResponse {
+    // empty
 }
 
 message InitObservationRequest {
@@ -121,13 +125,13 @@ message InitObservationRequest {
     Cam cam = 3;
 }
 
-message InitResponse {
+message InitObservationResponse {
     // empty
 }
 
 service ControlService {
     rpc Ping(PingRequest) returns (PingResponse);
     rpc Clear(ClearRequest) returns (ClearResponse);
-    rpc InitCams(stream InitCamRequest) returns (InitResponse);
-    rpc InitObservations(stream InitObservationRequest) returns (InitResponse);
+    rpc InitCams(InitCamsRequest) returns (InitCamsResponse);
+    rpc InitObservations(stream InitObservationRequest) returns (InitObservationResponse);
 }
