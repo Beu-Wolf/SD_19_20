@@ -8,7 +8,6 @@ import pt.tecnico.sauron.silo.client.domain.FrontendReport;
 import pt.tecnico.sauron.silo.client.exceptions.ErrorMessages;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 import pt.tecnico.sauron.silo.client.exceptions.NotFoundException;
-import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
 import java.time.Instant;
 import java.util.LinkedList;
@@ -42,7 +41,7 @@ public class ClearIT extends BaseIT {
             Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
                     Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(FrontendObservation.ObservationType.PERSON, "*"))
                             .getMessage());
-        } catch (InterruptedException | FrontendException | ZKNamingException e) {
+        } catch (FrontendException e) {
             e.printStackTrace();
         }
     }
