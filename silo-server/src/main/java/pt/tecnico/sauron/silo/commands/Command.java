@@ -60,6 +60,10 @@ public abstract class Command {
                 .build();
     }
 
+    private Instant instantFromGRPC(Timestamp timestamp) {
+        return Instant.ofEpochSecond(timestamp.getSeconds());
+    }
+
     private Coords coordsFromGRPC(LatLng coords) {
         return new Coords(coords.getLatitude(), coords.getLongitude());
     }
@@ -85,6 +89,19 @@ public abstract class Command {
 
     protected Instant timestampFromGRPC(Timestamp timestamp) {
         return Instant.ofEpochSecond(timestamp.getSeconds());
+    }
+
+    protected Report reportFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.InitObservationRequest report) throws SiloInvalidArgumentException, EmptyCameraNameException, InvalidCameraNameException {
+        try {
+            Cam cam = camFromGRPC(report.getCam());
+            Observation obs = observationFromGRPC(report.getObservation());
+            Instant timestamp = instantFromGRPC(report.getTimestamp());
+
+            return new Report(cam, obs, timestamp);
+        } catch (TypeNotSupportedException e) {
+            System.out.println(e.getMessage());
+        }
+        return null;
     }
 
 }

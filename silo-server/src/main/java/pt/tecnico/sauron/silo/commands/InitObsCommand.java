@@ -1,34 +1,34 @@
 package pt.tecnico.sauron.silo.commands;
 
-import pt.tecnico.sauron.silo.domain.Cam;
-import pt.tecnico.sauron.silo.domain.Observation;
+import pt.tecnico.sauron.silo.domain.Report;
 import pt.tecnico.sauron.silo.domain.Silo;
-import pt.tecnico.sauron.silo.exceptions.SiloInvalidArgumentException;
+import pt.tecnico.sauron.silo.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.Gossip;
 
 import java.time.Instant;
 import java.util.LinkedList;
 
 public class InitObsCommand extends Command {
-    private Cam cam;
-    private LinkedList<Observation> obs;
-    private Instant observationInstant;
+    private LinkedList<Report> reports;
 
-    public InitObsCommand(Silo silo, Cam cam, LinkedList<Observation> obs, Instant observationInstant) {
+    public InitObsCommand(Silo silo, LinkedList<Report> reports) {
         super(silo);
-        this.cam = cam;
-        this.obs = obs;
-        this.observationInstant = observationInstant;
+        this.reports = reports;
     }
 
-    public void addObs(Observation o) {
-        obs.add(o);
+    public InitObsCommand(Silo silo, Gossip.InitObservationsCommand command) {
+        super(silo);
+        LinkedList<Report> newReports = new LinkedList<>();
+        for (Gossip.InitObservationItem item: command.getRequest().getItemList()) {
+
+        }
+
     }
 
     @Override
     public void execute() {
-        for (Observation o : this.obs) {
-            silo.registerGossipObservation(this.cam, o, observationInstant);
+        for (Report r: this.reports) {
+            silo.recordReport(r);
         }
     }
 
@@ -36,11 +36,11 @@ public class InitObsCommand extends Command {
     public Gossip.Record commandToGRPC(Gossip.Record record) {
         LinkedList<Gossip.InitObservationItem> siloInitItem = new LinkedList<>();
         try {
-            for (Observation o: this.obs) {
+            for (Report r: this.reports) {
                 siloInitItem.add(Gossip.InitObservationItem.newBuilder()
-                .setCam(camToGRPC(this.cam))
-                .setObservation(observationToGRPC(o))
-                .setTimestamp(timestampToGRPC(this.observationInstant))
+                .setCam(camToGRPC(r.getCam()))
+                .setObservation(observationToGRPC(r.getObservation()))
+                .setTimestamp(timestampToGRPC(r.getTimestamp()))
                 .build());
             }
 

@@ -83,9 +83,11 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
             case CAMJOIN:
                 return new CamJoinCommand(this.silo, record.getCamJoin());
             case INITCAMS:
-                return new InitCamsCommand(record.getInitCams());
+                return new InitCamsCommand(this.silo, record.getInitCams());
             case INITOBSERVATIONS:
-                return new InitObsCommand(record.getInitObservations());
+                return new InitObsCommand(this.silo, record.getInitObservations());
+            default:
+                return null;
         }
     }
 }

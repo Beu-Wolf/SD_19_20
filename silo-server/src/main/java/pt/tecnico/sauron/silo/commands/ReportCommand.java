@@ -25,13 +25,13 @@ public class ReportCommand extends Command {
     public ReportCommand( Silo silo, Gossip.ReportCommand reportCommand) {
         super(silo);
         try {
-            Cam cam = camFromGRPC(reportCommand.getRequest().getCam());
+            Cam camObj = camFromGRPC(reportCommand.getRequest().getCam());
             LinkedList<Observation> obs = new LinkedList<>();
             for (pt.tecnico.sauron.silo.grpc.Silo.Observation o : reportCommand.getRequest().getObservationsList()) {
                 obs.add(observationFromGRPC(o));
             }
             Instant instant = timestampFromGRPC(reportCommand.getObservationInstant());
-            this.cam = cam;
+            this.cam = camObj;
             this.obs = obs;
             this.observationInstant = instant;
         } catch (InvalidCameraNameException | EmptyCameraNameException | InvalidCarIdException | InvalidPersonIdException | TypeNotSupportedException e) {
