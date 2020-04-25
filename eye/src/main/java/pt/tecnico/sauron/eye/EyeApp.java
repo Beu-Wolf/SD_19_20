@@ -8,6 +8,7 @@ public class EyeApp {
 
 	public static void main(String[] args) {
 		System.out.println(EyeApp.class.getSimpleName());
+		String instance = null;
 		
 		// receive and print arguments
 //		 System.out.printf("Received %d arguments%n", args.length);
@@ -15,23 +16,31 @@ public class EyeApp {
 //		   System.out.printf("arg[%d] = %s%n", i, args[i]);
 //		 }
 
-		if(args.length < 6) {
+		if(args.length < 5) {
 			System.out.println("Argument(s) missing!");
-			System.out.printf("Usage: java %s zooHost zooPort serverPath camName latitude longitude%n", EyeApp.class.getName());
+			System.out.printf("Usage: java %s zooHost zooPort camName latitude longitude [instance]%n", EyeApp.class.getName());
 			return;
 		}
 
 		String zooHost = args[0];
 		String zooPort = args[1];
-		String serverPath = args[2];
 
 		// register cam
-		final String name = args[3];
-		final double lat = Double.parseDouble(args[4]);
-		final double lon = Double.parseDouble(args[5]);
+		final String name = args[2];
+		final double lat = Double.parseDouble(args[3]);
+		final double lon = Double.parseDouble(args[4]);
 
+		if (args.length == 6) {
+			instance = args[5];
+		}
+
+		SiloFrontend siloFrontend;
 		try {
-			SiloFrontend siloFrontend = new SiloFrontend(zooHost, zooPort, serverPath);
+			if (instance == null)
+				siloFrontend = new SiloFrontend(zooHost, zooPort);
+			else {
+				siloFrontend = new SiloFrontend(zooHost, zooPort, instance);
+			}
 			Eye eye = new Eye(siloFrontend, name, lat, lon);
 			eye.interactive();
 		} catch(FrontendException e) {

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import pt.tecnico.sauron.silo.client.domain.FrontendCam;
 import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
 import pt.tecnico.sauron.silo.client.exceptions.*;
+import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
 import java.util.LinkedList;
 
@@ -22,7 +23,7 @@ public class ReportIT extends BaseIT {
             siloFrontend.camJoin(frontendCam);
         } catch(CameraAlreadyExistsException e) {
             // ignore
-        } catch(CameraRegisterException e) {
+        } catch(FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }
     }
@@ -100,7 +101,7 @@ public class ReportIT extends BaseIT {
     public static void clear() {
         try {
             siloFrontend.ctrlClear();
-        } catch (ClearException e) {
+        } catch (FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }
     }

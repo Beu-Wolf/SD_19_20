@@ -7,6 +7,7 @@ import pt.tecnico.sauron.silo.client.domain.FrontendCoords;
 import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
 import pt.tecnico.sauron.silo.client.domain.FrontendReport;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
+import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
 import java.time.Instant;
 import java.util.*;
@@ -114,6 +115,8 @@ public class Spotter {
                  } catch (InterruptedException e) {
                      Thread.currentThread().interrupt();
                      System.err.println(e.getMessage());
+                 } catch (ZKNamingException e) {
+                     System.err.println("Could not find server in given path. Make sure the server is up and running.");
                  }
 
              }
@@ -149,7 +152,7 @@ public class Spotter {
                 "trail [car|person] [id]: find all observations of person or car, must use a valid id\n");
     }
 
-    private void initCameras(Scanner scanner) throws InterruptedException {
+    private void initCameras(Scanner scanner) throws ZKNamingException, FrontendException, InterruptedException {
         System.out.println("Insert cameras: name,latitude,longitude . done when finished");
         LinkedList<FrontendCam> listCams = new LinkedList<>();
         while(true) {
@@ -172,7 +175,7 @@ public class Spotter {
         }
     }
 
-    private void initObs(Scanner scanner) throws InterruptedException, FrontendException {
+    private void initObs(Scanner scanner) throws ZKNamingException, FrontendException, InterruptedException {
         System.out.println("Insert observations: cameraName,type,id . done when finished");
         LinkedList<FrontendReport> listReports = new LinkedList<>();
         while(true) {

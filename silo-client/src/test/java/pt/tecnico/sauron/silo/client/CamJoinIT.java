@@ -4,6 +4,7 @@ import org.junit.jupiter.api.*;
 import pt.tecnico.sauron.silo.client.domain.FrontendCam;
 import pt.tecnico.sauron.silo.client.domain.FrontendCoords;
 import pt.tecnico.sauron.silo.client.exceptions.*;
+import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
 public class CamJoinIT extends BaseIT {
     public static String name = "testCamera";
@@ -23,11 +24,10 @@ public class CamJoinIT extends BaseIT {
         FrontendCam cam = new FrontendCam(name, lat, lon);
         try {
             siloFrontend.camJoin(cam);
-
             FrontendCoords coords = siloFrontend.camInfo(cam.getName());
             FrontendCam serverCam = new FrontendCam(name, coords.getLat(), coords.getLon());
             Assertions.assertEquals(cam.toString(), serverCam.toString());
-        } catch (FrontendException e) {
+        } catch (FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }
     }
@@ -47,7 +47,7 @@ public class CamJoinIT extends BaseIT {
                 ).getMessage()
             );
 
-        } catch (FrontendException e) {
+        } catch (FrontendException |ZKNamingException e) {
             e.printStackTrace();
         }
     }
@@ -58,12 +58,11 @@ public class CamJoinIT extends BaseIT {
             FrontendCam cam = new FrontendCam(name, lat, lon);
             siloFrontend.camJoin(cam);
             Assertions.assertDoesNotThrow(()->siloFrontend.camJoin(cam));
-
             FrontendCoords coords =  siloFrontend.camInfo(cam.getName());
             FrontendCam serverCam = new FrontendCam(name, coords.getLat(), coords.getLon());
             Assertions.assertEquals(cam,serverCam);
 
-        } catch (FrontendException e) {
+        } catch (FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }
     }
@@ -121,7 +120,7 @@ public class CamJoinIT extends BaseIT {
     public void clear() {
         try {
             siloFrontend.ctrlClear();
-        } catch (ClearException e) {
+        } catch (FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }
     }

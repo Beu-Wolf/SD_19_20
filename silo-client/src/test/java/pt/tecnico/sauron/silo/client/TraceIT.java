@@ -8,6 +8,7 @@ import pt.tecnico.sauron.silo.client.domain.FrontendCam;
 import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
 import pt.tecnico.sauron.silo.client.domain.FrontendReport;
 import pt.tecnico.sauron.silo.client.exceptions.*;
+import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -169,7 +170,7 @@ public class TraceIT extends BaseIT {
     public static void tearDown() {
         try {
             siloFrontend.ctrlClear();
-        } catch(ClearException e) {
+        } catch(FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }
     }
