@@ -40,14 +40,20 @@ message Observation {
     string observationId = 2;
 }
 
+message ReportRequest {
+    string camName = 1;
+    repeated Observation observations = 2;
+}
+
 message ReportResponse {
-    // empty
+    int32 numAcked = 1;
+    repeated string errors = 2;
 }
 
 service ReportService {
     rpc CamJoin(JoinRequest) returns (JoinResponse);
     rpc CamInfo(InfoRequest) returns (InfoResponse);
-    rpc Report(stream Observation) returns (ReportResponse);
+    rpc Report(ReportRequest) returns (ReportResponse);
 }
 
 message TrackRequest {
