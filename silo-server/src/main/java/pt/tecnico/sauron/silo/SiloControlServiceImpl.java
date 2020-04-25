@@ -42,7 +42,7 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
     }
 
     @Override
-    public void clear( Silo.ClearRequest request, StreamObserver<Silo.ClearResponse> responseObserver) {
+    public void clear(Silo.ClearRequest request, StreamObserver<Silo.ClearResponse> responseObserver) {
         silo.clearObservations();
         silo.clearCams();
 
@@ -51,32 +51,29 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
     }
 
     @Override
-    public StreamObserver<Silo.InitCamRequest> initCams(StreamObserver<Silo.InitResponse> responseObserver) {
-        return new StreamObserver<>() {
-            @Override
-            public void onNext(Silo.InitCamRequest request) {
-                try {
-                    Cam cam = camFromGRPC(request.getCam());
-                    silo.registerCam(cam);
-                } catch(SiloException e) {
-                    responseObserver.onError(e);
-                }
+    public void initCams(Silo.InitCamsRequest request, StreamObserver<Silo.InitCamsResponse> responseObserver) {
+        CompositeSiloException exceptions = new CompositeSiloException();
+        for(Silo.Cam grpcCam : request.getCamsList()) {
+            try {
+                Cam cam = camFromGRPC(grpcCam);
+                silo.registerCam(cam);
+            } catch (SiloException e) {
+               exceptions.addException(e);
             }
+        }
 
-            @Override
-            public void onError(Throwable throwable) {
-            }
+        if(!exceptions.isEmpty()) {
+            responseObserver.onError(Status.INVALID_ARGUMENT
+                    .withDescription(exceptions.getMessage())
+                    .asRuntimeException());
+        }
 
-            @Override
-            public void onCompleted() {
-                responseObserver.onNext(pt.tecnico.sauron.silo.grpc.Silo.InitResponse.getDefaultInstance());
-                responseObserver.onCompleted();
-            }
-        };
+        responseObserver.onNext(pt.tecnico.sauron.silo.grpc.Silo.InitCamsResponse.getDefaultInstance());
+        responseObserver.onCompleted();
     }
 
     @Override
-    public StreamObserver<Silo.InitObservationRequest> initObservations(StreamObserver<Silo.InitResponse> responseObserver) {
+    public StreamObserver<Silo.InitObservationRequest> initObservations(StreamObserver<Silo.InitObservationResponse> responseObserver) {
         return new StreamObserver<>() {
             @Override
             public void onNext(Silo.InitObservationRequest request) {
@@ -96,7 +93,7 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
 
             @Override
             public void onCompleted() {
-                responseObserver.onNext(pt.tecnico.sauron.silo.grpc.Silo.InitResponse.getDefaultInstance());
+                responseObserver.onNext(pt.tecnico.sauron.silo.grpc.Silo.InitObservationResponse.getDefaultInstance());
                 responseObserver.onCompleted();
             }
         };
