@@ -221,7 +221,7 @@ public class SiloFrontend {
     }
 
     public int report(String name, List<FrontendObservation> observations)
-            throws CameraNotFoundException, ReportException, CompositeException {
+            throws CameraNotFoundException, ReportException, InvalidArgumentException {
         if(observations.size() == 0) return 0;
         Silo.ReportRequest request = createReportRequest(name, observations);
 
@@ -233,17 +233,11 @@ public class SiloFrontend {
             switch (status.getCode()) {
                 case NOT_FOUND:
                     throw new CameraNotFoundException();
+                case INVALID_ARGUMENT:
+                    throw new InvalidArgumentException(status.getDescription());
                 default:
                     throw new ReportException(status.getDescription());
             }
-        }
-        if(response.getErrorsCount() > 0) {
-            CompositeException e = new CompositeException();
-            List<String> errors = response.getErrorsList();
-            for(String err : errors) {
-                e.addException(new FrontendException(err));
-            }
-            throw e;
         }
 
         return response.getNumAcked();

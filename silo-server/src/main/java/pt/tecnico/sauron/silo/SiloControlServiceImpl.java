@@ -64,8 +64,8 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
 
         if(!exceptions.isEmpty()) {
             responseObserver.onError(Status.INVALID_ARGUMENT
-                    .withDescription(exceptions.getMessage())
-                    .asRuntimeException());
+                .withDescription(exceptions.getMessage())
+                .asRuntimeException());
         }
 
         responseObserver.onNext(pt.tecnico.sauron.silo.grpc.Silo.InitCamsResponse.getDefaultInstance());

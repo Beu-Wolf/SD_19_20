@@ -47,7 +47,6 @@ message ReportRequest {
 
 message ReportResponse {
     int32 numAcked = 1;
-    repeated string errors = 2;
 }
 
 service ReportService {

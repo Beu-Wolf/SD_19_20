@@ -6,9 +6,6 @@ import pt.tecnico.sauron.silo.domain.*;
 import pt.tecnico.sauron.silo.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBase {
 
     private pt.tecnico.sauron.silo.domain.Silo silo;
@@ -64,7 +61,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
         }
 
         // convert repeated observation to observation List
-        List<String> errors = new ArrayList<>();
+        CompositeSiloException exceptions = new CompositeSiloException();
         int numAcked = 0;
         for(pt.tecnico.sauron.silo.grpc.Silo.Observation observation : request.getObservationsList()) {
             try {
@@ -74,11 +71,18 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
             } catch (InvalidCarIdException
                     |InvalidPersonIdException
                     |TypeNotSupportedException e) {
-                errors.add(e.getMessage());
+                exceptions.addException(e);
             }
         }
 
-        responseObserver.onNext(createReportResponse(numAcked, errors));
+        if(!exceptions.isEmpty()) {
+            responseObserver.onError(Status.INVALID_ARGUMENT
+            .withDescription(exceptions.getMessage())
+            .asRuntimeException());
+            return;
+        }
+
+        responseObserver.onNext(createReportResponse(numAcked));
         responseObserver.onCompleted();
     }
 
@@ -96,10 +100,9 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
                 .build();
     }
 
-    private pt.tecnico.sauron.silo.grpc.Silo.ReportResponse createReportResponse(int numAcked, List<String> errors) {
+    private pt.tecnico.sauron.silo.grpc.Silo.ReportResponse createReportResponse(int numAcked) {
         return pt.tecnico.sauron.silo.grpc.Silo.ReportResponse.newBuilder()
                 .setNumAcked(numAcked)
-                .addAllErrors(errors)
                 .build();
     }
 
