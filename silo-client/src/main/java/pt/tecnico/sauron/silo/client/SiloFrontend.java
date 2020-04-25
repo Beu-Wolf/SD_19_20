@@ -3,7 +3,6 @@ package pt.tecnico.sauron.silo.client;
 import com.google.protobuf.Timestamp;
 import com.google.type.LatLng;
 import io.grpc.*;
-import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.sauron.silo.client.domain.FrontendCam;
 import pt.tecnico.sauron.silo.client.domain.FrontendCoords;
@@ -24,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class SiloFrontend {
     private ManagedChannel channel;
@@ -196,74 +196,33 @@ public class SiloFrontend {
         }
     }
 
-    public void report(String name, List<FrontendObservation> observations)
-            throws ReportException, CameraNotFoundException, InvalidArgumentException {
-        Metadata header = new Metadata();
+    public int report(String name, List<FrontendObservation> observations)
+            throws CameraNotFoundException, ReportException, CompositeException {
+        if(observations.size() == 0) return 0;
+        Silo.ReportRequest request = createReportRequest(name, observations);
 
-        header.put(METADATA_CAM_NAME, name);
-        ReportServiceGrpc.ReportServiceStub reportStubWithHeaders = MetadataUtils.attachHeaders(this.reportStub, header);
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        // Arrays must be used to allow changes from the inner class
-        final boolean[] error = new boolean[1];
-        final Status[] errorStatus = new Status[1];
-
-        StreamObserver<Silo.ReportResponse> responseObserver =  new StreamObserver<>() {
-            @Override
-            public void onNext(Silo.ReportResponse reportResponse) {}
-
-            @Override
-            public void onError(Throwable throwable) {
-                Status status = Status.fromThrowable(throwable);
-                    error[0] = true;
-                    errorStatus[0] = status;
-                    latch.countDown();
-            }
-            @Override
-            public void onCompleted() {
-                latch.countDown();
-            }
-        };
-
-        StreamObserver<Silo.Observation> requestObserver = reportStubWithHeaders.report(responseObserver);
+        Silo.ReportResponse response;
         try {
-            for (FrontendObservation observation : observations) {
-                Silo.Observation request = createReportRequest(observation);
-                requestObserver.onNext(request);
-
-                // As per the documentation for client side streaming in gRPC,
-                // we should sleep for an amount of time between each call
-                // to allow for the server to send an error if it happens
-                Thread.sleep(10);
-
-                if (latch.getCount() == 0) {
-                    break;
-                }
-
-            }
-
-            requestObserver.onCompleted();
-            latch.await(10, TimeUnit.SECONDS);
-
-            if (error[0]) {
-                switch(errorStatus[0].getCode()) {
-                    case NOT_FOUND:
-                        throw new CameraNotFoundException();
-                    case INVALID_ARGUMENT:
-                        throw new InvalidArgumentException(errorStatus[0].getDescription());
-                    default:
-                        throw new ReportException(errorStatus[0].getDescription());
-                }
-            }
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new ReportException(ErrorMessages.WAITING_THREAD_INTERRUPT);
+            response = this.reportBlockingStub.report(request);
         } catch (RuntimeException e) {
-            requestObserver.onError(e);
-            throw new ReportException(e.toString());
+            Status status = Status.fromThrowable(e);
+            switch (status.getCode()) {
+                case NOT_FOUND:
+                    throw new CameraNotFoundException();
+                default:
+                    throw new ReportException(status.getDescription());
+            }
+        }
+        if(response.getErrorsCount() > 0) {
+            CompositeException e = new CompositeException();
+            List<String> errors = response.getErrorsList();
+            for(String err : errors) {
+                e.addException(new FrontendException(err));
+            }
+            throw e;
         }
 
+        return response.getNumAcked();
     }
 
 
@@ -374,8 +333,11 @@ public class SiloFrontend {
         return Silo.InfoRequest.newBuilder().setName(name).build();
     }
 
-    private Silo.Observation createReportRequest(FrontendObservation observation) {
-        return observationToGRPC(observation);
+    private Silo.ReportRequest createReportRequest(String camName, List<FrontendObservation> observations) {
+        return Silo.ReportRequest.newBuilder()
+                .setCamName(camName)
+                .addAllObservations(observations.stream().map(this::observationToGRPC).collect(Collectors.toList()))
+                .build();
     }
 
 

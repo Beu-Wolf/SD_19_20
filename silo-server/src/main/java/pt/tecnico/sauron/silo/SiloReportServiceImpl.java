@@ -2,10 +2,12 @@ package pt.tecnico.sauron.silo;
 
 import com.google.type.LatLng;
 import io.grpc.Status;
-import io.grpc.stub.StreamObserver;
 import pt.tecnico.sauron.silo.domain.*;
 import pt.tecnico.sauron.silo.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBase {
 
@@ -51,48 +53,34 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
     }
 
     @Override
-    public StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.Observation> report(StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.ReportResponse> responseObserver) {
+    public void report(pt.tecnico.sauron.silo.grpc.Silo.ReportRequest request, io.grpc.stub.StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.ReportResponse> responseObserver) {
         Cam cam;
         try {
-            final String name = SiloReportServiceInterceptor.CAM_NAME.get();
+            final String name = request.getCamName();
             cam = this.silo.getCam(name);
         } catch (NoCameraFoundException e) {
             responseObserver.onError(Status.NOT_FOUND.withDescription(e.getMessage()).asRuntimeException());
-            return null;
+            return;
         }
 
-        return new StreamObserver<>() {
-            boolean error = false;
-            SiloException e;
-
-            @Override
-            public void onNext(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) {
-                try {
-                    Observation obs = observationFromGRPC(observation);
-                    silo.registerObservation(cam, obs);
-                } catch (SiloException e) {
-                    this.error = true;
-                    this.e = e;
-                }
+        // convert repeated observation to observation List
+        List<String> errors = new ArrayList<>();
+        int numAcked = 0;
+        for(pt.tecnico.sauron.silo.grpc.Silo.Observation observation : request.getObservationsList()) {
+            try {
+                Observation o = observationFromGRPC(observation);
+                silo.registerObservation(cam, o);
+                numAcked += 1;
+            } catch (InvalidCarIdException
+                    |InvalidPersonIdException
+                    |TypeNotSupportedException e) {
+                errors.add(e.getMessage());
             }
+        }
 
-            @Override
-            public void onError(Throwable throwable) {
-                System.err.println("Error while reporting: " + Status.fromThrowable(throwable).getDescription());
-            }
-
-            @Override
-            public void onCompleted() {
-                if (this.error) {
-                    responseObserver.onError(Status.INVALID_ARGUMENT.withDescription(this.e.getMessage()).asRuntimeException());
-                } else {
-                    responseObserver.onNext(pt.tecnico.sauron.silo.grpc.Silo.ReportResponse.getDefaultInstance());
-                    responseObserver.onCompleted();
-                }
-            }
-        };
+        responseObserver.onNext(createReportResponse(numAcked, errors));
+        responseObserver.onCompleted();
     }
-
 
 
     // ===================================================
@@ -108,6 +96,12 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
                 .build();
     }
 
+    private pt.tecnico.sauron.silo.grpc.Silo.ReportResponse createReportResponse(int numAcked, List<String> errors) {
+        return pt.tecnico.sauron.silo.grpc.Silo.ReportResponse.newBuilder()
+                .setNumAcked(numAcked)
+                .addAllErrors(errors)
+                .build();
+    }
 
 
     // ===================================================
