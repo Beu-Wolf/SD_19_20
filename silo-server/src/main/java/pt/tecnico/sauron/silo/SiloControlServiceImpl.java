@@ -68,35 +68,33 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
                 .asRuntimeException());
         }
 
-        responseObserver.onNext(pt.tecnico.sauron.silo.grpc.Silo.InitCamsResponse.getDefaultInstance());
+        responseObserver.onNext(createInitCamsResponse());
         responseObserver.onCompleted();
     }
 
     @Override
-    public StreamObserver<Silo.InitObservationRequest> initObservations(StreamObserver<Silo.InitObservationResponse> responseObserver) {
-        return new StreamObserver<>() {
-            @Override
-            public void onNext(Silo.InitObservationRequest request) {
-                try {
-                    Report report = reportFromGRPC(request);
+    public void initObservations(Silo.InitObservationsRequest request, StreamObserver<Silo.InitObservationsResponse> responseObserver) {
+        CompositeSiloException exceptions = new CompositeSiloException();
+        for(Silo.InitObservationsItem observation : request.getObservationsList()) {
+            try {
+                Report report = reportFromGRPC(observation);
 
-                    silo.recordReport(report);
-                } catch(SiloException e) {
-                    responseObserver.onError(e);
-                }
+                silo.recordReport(report);
+            } catch(SiloException e) {
+                exceptions.addException(e);
             }
+        }
 
-            @Override
-            public void onError(Throwable throwable) {
-                System.err.println("Error while reporting: " + Status.fromThrowable(throwable).getDescription());
-            }
 
-            @Override
-            public void onCompleted() {
-                responseObserver.onNext(pt.tecnico.sauron.silo.grpc.Silo.InitObservationResponse.getDefaultInstance());
-                responseObserver.onCompleted();
-            }
-        };
+        if(!exceptions.isEmpty()) {
+            responseObserver.onError(INVALID_ARGUMENT
+            .withDescription(exceptions.getMessage())
+            .asRuntimeException());
+            return;
+        }
+
+        responseObserver.onNext(createInitObservationsResponse());
+        responseObserver.onCompleted();
     }
 
 
@@ -110,12 +108,18 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
                 .build();
     }
 
+    private Silo.InitCamsResponse createInitCamsResponse() {
+        return Silo.InitCamsResponse.getDefaultInstance();
+    }
 
+    private Silo.InitObservationsResponse createInitObservationsResponse() {
+        return Silo.InitObservationsResponse.getDefaultInstance();
+    }
 
     // ===================================================
     // CONVERT BETWEEN DOMAIN AND GRPC
     // ===================================================
-    private Report reportFromGRPC(Silo.InitObservationRequest report) throws SiloInvalidArgumentException, EmptyCameraNameException, InvalidCameraNameException {
+    private Report reportFromGRPC(Silo.InitObservationsItem report) throws SiloInvalidArgumentException, EmptyCameraNameException, InvalidCameraNameException {
         Cam cam = camFromGRPC(report.getCam());
         Observation obs = observationFromGRPC(report.getObservation());
         Instant timestamp = instantFromGRPC(report.getTimestamp());
