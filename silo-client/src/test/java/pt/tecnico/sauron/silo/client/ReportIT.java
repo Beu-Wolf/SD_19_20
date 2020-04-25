@@ -59,7 +59,7 @@ public class ReportIT extends BaseIT {
         FrontendObservation frontendObservation = new FrontendObservation(FrontendObservation.ObservationType.PERSON, "asdf");
         LinkedList<FrontendObservation> list = new LinkedList<>();
         list.add(frontendObservation);
-        assertEquals("Person ID must be an unsigned long!",
+        assertEquals("asdf: Person ID must be an unsigned long!",
                 assertThrows(FrontendException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
     }
 
@@ -68,7 +68,7 @@ public class ReportIT extends BaseIT {
         FrontendObservation frontendObservation = new FrontendObservation(FrontendObservation.ObservationType.CAR, "asdf");
         LinkedList<FrontendObservation> list = new LinkedList<>();
         list.add(frontendObservation);
-        assertEquals("Car ID must be a valid portuguese license plate!",
+        assertEquals("asdf: Car ID must be a valid portuguese license plate!",
                 assertThrows(FrontendException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
     }
 

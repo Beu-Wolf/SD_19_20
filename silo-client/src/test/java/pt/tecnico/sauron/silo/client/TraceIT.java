@@ -99,7 +99,7 @@ public class TraceIT extends BaseIT {
     public void testInvalidPersonID() {
         for(String invalidId : invalidPersonIds) {
             Assertions.assertEquals(
-                "Person ID must be an unsigned long!",
+                invalidId + ": Person ID must be an unsigned long!",
                 Assertions.assertThrows(InvalidArgumentException.class, () -> {
                     this.siloFrontend.trace(FrontendObservation.ObservationType.PERSON, invalidId);
                 }).getMessage()
@@ -111,7 +111,7 @@ public class TraceIT extends BaseIT {
     public void testInvalidCarID() {
         for(String invalidId : invalidCarIds) {
             Assertions.assertEquals(
-                "Car ID must be a valid portuguese license plate!",
+                invalidId + ": Car ID must be a valid portuguese license plate!",
                 Assertions.assertThrows(InvalidArgumentException.class, () -> {
                     this.siloFrontend.trace(FrontendObservation.ObservationType.CAR, invalidId);
                 }).getMessage()
