@@ -4,6 +4,7 @@ import pt.tecnico.sauron.silo.domain.Cam;
 import pt.tecnico.sauron.silo.domain.Silo;
 import pt.tecnico.sauron.silo.exceptions.DuplicateCameraNameException;
 import pt.tecnico.sauron.silo.exceptions.InvalidCameraCoordsException;
+import pt.tecnico.sauron.silo.grpc.Gossip;
 
 public class CamJoinCommand extends Command {
 
@@ -21,8 +22,12 @@ public class CamJoinCommand extends Command {
         } catch (DuplicateCameraNameException | InvalidCameraCoordsException e) {
             e.printStackTrace(); // Should we change this??
         }
-
-
     }
 
+    @Override
+    public Gossip.Record commandToGRPC(Gossip.Record record) {
+        pt.tecnico.sauron.silo.grpc.Silo.JoinRequest joinRequest = pt.tecnico.sauron.silo.grpc.Silo.JoinRequest.newBuilder().setCam(camToGRPC(this.cam)).build();
+        Gossip.CamJoinCommand camJoinCommand = Gossip.CamJoinCommand.newBuilder().setRequest(joinRequest).build();
+        return Gossip.Record.newBuilder(record).setCamJoin(camJoinCommand).build();
+    }
 }

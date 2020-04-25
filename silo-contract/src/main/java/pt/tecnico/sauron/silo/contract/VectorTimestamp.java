@@ -56,4 +56,17 @@ public class VectorTimestamp {
 
         return true;
     }
+
+    public boolean greaterThan(VectorTimestamp vec) throws InvalidVectorTimestampException {
+        if (this.values.size() != vec.getValues().size()) {
+            throw new InvalidVectorTimestampException();
+        }
+
+        int lim = this.values.size();
+        for (int i = 0; i < lim; i++) {
+            if (this.values.get(i) <= vec.get(i)) return false;
+        }
+
+        return true;
+    }
 }

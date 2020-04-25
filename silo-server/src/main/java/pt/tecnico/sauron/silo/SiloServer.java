@@ -1,6 +1,7 @@
 package pt.tecnico.sauron.silo;
 
 import io.grpc.*;
+import pt.tecnico.sauron.silo.contract.exceptions.InvalidVectorTimestampException;
 import pt.tecnico.sauron.silo.domain.Silo;
 import pt.tecnico.sauron.silo.grpc.Gossip;
 import pt.tecnico.sauron.silo.grpc.GossipServiceGrpc;
@@ -17,7 +18,6 @@ import java.util.concurrent.*;
 public class SiloServer {
 
     private final String SERVER_PATH = "/grpc/sauron/silo";
-    private final int NUM_REPLICAS = 3;
 
     private final int port;
     private final Server server;
@@ -28,18 +28,14 @@ public class SiloServer {
     ScheduledFuture<?> scheduledFuture;
 
     // Gossip architecture specific structures
-    private int[] replicaTS = new int[NUM_REPLICAS];
-    private int[] valueTS = new int[NUM_REPLICAS];
-    private ConcurrentLinkedDeque<String> executedOperations = new ConcurrentLinkedDeque<>();
-    private int[][] timestampTable = new int[NUM_REPLICAS-1][NUM_REPLICAS];
-    private LinkedList<LogEntry> updateLog = new LinkedList<>();
+    private GossipStructures gossipStructures = new GossipStructures();
 
     private final ZKNaming zkNaming;
 
     final BindableService controlImpl = new SiloControlServiceImpl(silo);
     final BindableService reportImpl = new SiloReportServiceImpl(silo);
     final BindableService queryImpl = new SiloQueryServiceImpl(silo);
-    final BindableService gossipImpl = new SiloGossipServiceImpl(silo);
+    final BindableService gossipImpl = new SiloGossipServiceImpl(silo, gossipStructures);
 
     public SiloServer(int port, ZKNaming zkNaming, int instance){
         this(ServerBuilder.forPort(port), port, zkNaming, instance);
@@ -89,15 +85,16 @@ public class SiloServer {
 
     private void sendGossipMessage() {
         // find available connections
+        int replicaInstance;
         try {
             for (ZKRecord record: zkNaming.listRecords(SERVER_PATH)) {
-                if (getZKRecordInstance(record) != this.instance) {
+                if ( (replicaInstance = getZKRecordInstance(record)) != this.instance) {
                     // make stubs for each one
                     ManagedChannel channel = ManagedChannelBuilder.forTarget(record.getURI()).usePlaintext().build();
                     GossipServiceGrpc.GossipServiceBlockingStub gossipBlockingStub = GossipServiceGrpc.newBlockingStub(channel);
 
                     // constructMessage
-                    Gossip.GossipRequest request = createGossipRequest();
+                    Gossip.GossipRequest request = createGossipRequest(replicaInstance);
                     // send gossipMessage
                     Gossip.GossipResponse response = gossipBlockingStub.gossip(request);
                 }
@@ -112,30 +109,48 @@ public class SiloServer {
         return Integer.parseInt(pathSplit[pathSplit.length-1]);
     }
 
-    private Gossip.GossipRequest createGossipRequest() {
+    private Gossip.GossipRequest createGossipRequest(int replicaInstance) {
         // Create Records from update Log
         // Create VecTimestamp
 
-        LinkedList<Integer> replicaTS = convertIntArraytoVec(this.replicaTS);
-
         //add all Timestamps only works with iterables
-        Gossip.VecTimestamp vecTimestamp = Gossip.VecTimestamp.newBuilder().addAllTimestamps(replicaTS).build();
+        Gossip.VecTimestamp vecTimestamp = Gossip.VecTimestamp.newBuilder().addAllTimestamps(gossipStructures.getReplicaTS().getValues()).build();
 
-        //LinkedList<Gossip.Record> listRecords = convertLogEntrytoRecord()
+        // add all records
+        LinkedList<Gossip.Record> listRecords = updatesToSend(replicaInstance);
+        return Gossip.GossipRequest.newBuilder().addAllRecords(listRecords).setReplicaTimeStamp(vecTimestamp).build();
 
     }
+
+    private LinkedList<Gossip.Record> updatesToSend(int replicaInstance) {
+        try {
+            LinkedList<Gossip.Record> recordList = new LinkedList<>();
+            for (LogEntry le : gossipStructures.getUpdateLog()) {
+                // if the timestamp in the table is lower, we need to send the update
+                if (gossipStructures.getTimestampTable().get(replicaInstance).lessOrEqualThan(le.getTs()))
+                    recordList.add(logEntryToRecord(le));
+            }
+            return recordList;
+        } catch (InvalidVectorTimestampException e) {
+            System.out.println(e.getMessage());
+        }
+        return new LinkedList<>();
+    }
+
 
 
     // ===================================================
     // CONVERT BETWEEN OBJECTS AND GRPC
     // ===================================================
 
-    private LinkedList<Integer> convertIntArraytoVec(int[] timeStamp) {
-        LinkedList<Integer> list = new LinkedList<>();
-        for (int i : timeStamp) {
-            list.add(i);
-        }
-        return list;
+    private Gossip.Record logEntryToRecord(LogEntry le) {
+        Gossip.Record record = Gossip.Record.newBuilder().setOpId(le.getOpId())
+                .setPrev(Gossip.VecTimestamp.newBuilder().addAllTimestamps(le.getPrev().getValues()))
+                .setTs(Gossip.VecTimestamp.newBuilder().addAllTimestamps(le.getTs().getValues()))
+                .setReplicaId(le.getReplicaId())
+                .build();
+        // to use one of, we need to check the instance of the command
+        return le.getCommand().commandToGRPC(record);
     }
 
 }

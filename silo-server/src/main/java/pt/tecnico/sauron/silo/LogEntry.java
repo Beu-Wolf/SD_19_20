@@ -1,39 +1,50 @@
 package pt.tecnico.sauron.silo;
 
+import pt.tecnico.sauron.silo.commands.Command;
+import pt.tecnico.sauron.silo.contract.VectorTimestamp;
+
 public class LogEntry {
-    private int instance;
-    private int[] ts;
-    //private Command command;
-    private int[] prev;
+    private int replicaId;
+    private VectorTimestamp ts;
+    private Command command;
+    private VectorTimestamp prev;
     private String opId;
 
-    public LogEntry() {};
-    public LogEntry(int instance, int[] ts) {
-        this.instance = instance;
+    public LogEntry() {}
+    public LogEntry(int replicaId, VectorTimestamp ts) {
+        this.replicaId = replicaId;
         this.ts = ts;
     }
 
-    public int getInstance() {
-        return instance;
+    public int getReplicaId() {
+        return replicaId;
     }
 
-    public void setInstance(int instance) {
-        this.instance = instance;
+    public void setReplicaId(int replicaId) {
+        this.replicaId = replicaId;
     }
 
-    public int[] getTs() {
+    public VectorTimestamp getTs() {
         return ts;
     }
 
-    public void setTs(int[] ts) {
+    public void setTs(VectorTimestamp ts) {
         this.ts = ts;
     }
 
-    public int[] getPrev() {
+    public Command getCommand() {
+        return command;
+    }
+
+    public void setCommand(Command command) {
+        this.command = command;
+    }
+
+    public VectorTimestamp getPrev() {
         return prev;
     }
 
-    public void setPrev(int[] prev) {
+    public void setPrev(VectorTimestamp prev) {
         this.prev = prev;
     }
 
