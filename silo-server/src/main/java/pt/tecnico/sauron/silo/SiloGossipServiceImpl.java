@@ -30,7 +30,11 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
             //merge receiver replicaTS with senderReplicaTS
             mergeReplicaTS(request.getReplicaTimeStamp());
             //find and apply updates
+            //applyUpdates();
             // discard updates
+            discardUpdates(vecToArray(request.getReplicaTimeStamp()), request.getSenderId());
+            //maybe discard from execution operations table
+
         } catch (InvalidVectorTimestampException e) {
             System.out.println(e.getMessage());
         }
@@ -56,13 +60,27 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
         gossipStructures.getReplicaTS().merge(senderReplicaTS);
     }
 
-    private VectorTimestamp vecToArray(Gossip.VecTimestamp timestamp) {
-        return new VectorTimestamp(timestamp.getTimestampsList());
+    private void discardUpdates(VectorTimestamp senderReplicaTS, int senderId) {
+        // update tableTimestamp[sender]
+        gossipStructures.setTSofTimestampTable(senderId-1, senderReplicaTS); // We assume an instance starts at one
+        for (LogEntry le: gossipStructures.getUpdateLog()) {
+            for (VectorTimestamp timestampTableTS: gossipStructures.getTimestampTable()) {
+                // If the value of the TS of the replica that recorded the update is greater or equal
+                // then the records replicaTS at that same index, it's safe to remove
+                if (timestampTableTS.get(le.getReplicaId()-1) >= le.getTs().get(le.getReplicaId()-1)) {
+                    gossipStructures.getUpdateLog().remove(le);
+                }
+            }
+        }
     }
 
     //==========================================================
     //                  GRPC to DOMAIN
     //=========================================================
+    private VectorTimestamp vecToArray(Gossip.VecTimestamp timestamp) {
+        return new VectorTimestamp(timestamp.getTimestampsList());
+    }
+
     private LogEntry recordToLogEntry(Gossip.Record record) {
         LogEntry le = new LogEntry();
         le.setOpId(record.getOpId());
