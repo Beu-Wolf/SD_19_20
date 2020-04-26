@@ -50,7 +50,7 @@ public class InitCamsCommand extends Command {
         for (Cam c : camList) {
             siloCam.add(camToGRPC(c));
         }
-        Gossip.InitCamsRequest initCamsRequest = Gossip.InitCamsRequest.newBuilder()
+        pt.tecnico.sauron.silo.grpc.Silo.InitCamsRequest initCamsRequest = pt.tecnico.sauron.silo.grpc.Silo.InitCamsRequest.newBuilder()
                 .addAllCams(siloCam)
                 .build();
         Gossip.InitCamsCommand initCamsCommand = Gossip.InitCamsCommand.newBuilder()

@@ -17,7 +17,6 @@ public abstract class Command {
 
     public abstract Gossip.Record commandToGRPC(Gossip.Record record);
 
-    // public abstract Command GRPCToCommand()
 
     // ===================================================
     // CONVERT BETWEEN DOMAIN AND GRPC
@@ -91,7 +90,7 @@ public abstract class Command {
         return Instant.ofEpochSecond(timestamp.getSeconds());
     }
 
-    protected Report reportFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.InitObservationRequest report) throws SiloInvalidArgumentException, EmptyCameraNameException, InvalidCameraNameException {
+    protected Report reportFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.InitObservationsItem report) throws SiloInvalidArgumentException, EmptyCameraNameException, InvalidCameraNameException {
         try {
             Cam cam = camFromGRPC(report.getCam());
             Observation obs = observationFromGRPC(report.getObservation());

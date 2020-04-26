@@ -25,7 +25,7 @@ public class ReportCommand extends Command {
     public ReportCommand( Silo silo, Gossip.ReportCommand reportCommand) {
         super(silo);
         try {
-            Cam camObj = camFromGRPC(reportCommand.getRequest().getCam());
+            Cam camObj = this.silo.getCam(reportCommand.getRequest().getCamName());
             LinkedList<Observation> obs = new LinkedList<>();
             for (pt.tecnico.sauron.silo.grpc.Silo.Observation o : reportCommand.getRequest().getObservationsList()) {
                 obs.add(observationFromGRPC(o));
@@ -34,7 +34,7 @@ public class ReportCommand extends Command {
             this.cam = camObj;
             this.obs = obs;
             this.observationInstant = instant;
-        } catch (InvalidCameraNameException | EmptyCameraNameException | InvalidCarIdException | InvalidPersonIdException | TypeNotSupportedException e) {
+        } catch (InvalidCarIdException | InvalidPersonIdException | TypeNotSupportedException | NoCameraFoundException e) {
             System.out.println(e.getMessage());
         }
     }
@@ -61,8 +61,8 @@ public class ReportCommand extends Command {
             System.out.println(e.getMessage());
         }
 
-        Gossip.ReportRequest reportRequest = Gossip.ReportRequest.newBuilder().
-                setCam(camToGRPC(this.cam))
+        pt.tecnico.sauron.silo.grpc.Silo.ReportRequest reportRequest = pt.tecnico.sauron.silo.grpc.Silo.ReportRequest.newBuilder().
+                setCamName(this.cam.getName())
                 .addAllObservations(siloObs)
                 .build();
 

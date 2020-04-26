@@ -18,10 +18,16 @@ public class InitObsCommand extends Command {
 
     public InitObsCommand(Silo silo, Gossip.InitObservationsCommand command) {
         super(silo);
-        LinkedList<Report> newReports = new LinkedList<>();
-        for (Gossip.InitObservationItem item: command.getRequest().getItemList()) {
-
+        try {
+            LinkedList<Report> newReports = new LinkedList<>();
+            for (pt.tecnico.sauron.silo.grpc.Silo.InitObservationsItem item: command.getRequest().getObservationsList()) {
+                newReports.add(reportFromGRPC(item));
+            }
+            this.reports = newReports;
+        } catch (SiloInvalidArgumentException | EmptyCameraNameException | InvalidCameraNameException e ) {
+            System.out.println(e.getMessage());
         }
+
 
     }
 
@@ -34,10 +40,10 @@ public class InitObsCommand extends Command {
 
     @Override
     public Gossip.Record commandToGRPC(Gossip.Record record) {
-        LinkedList<Gossip.InitObservationItem> siloInitItem = new LinkedList<>();
+        LinkedList<pt.tecnico.sauron.silo.grpc.Silo.InitObservationsItem> siloInitItem = new LinkedList<>();
         try {
             for (Report r: this.reports) {
-                siloInitItem.add(Gossip.InitObservationItem.newBuilder()
+                siloInitItem.add(pt.tecnico.sauron.silo.grpc.Silo.InitObservationsItem.newBuilder()
                 .setCam(camToGRPC(r.getCam()))
                 .setObservation(observationToGRPC(r.getObservation()))
                 .setTimestamp(timestampToGRPC(r.getTimestamp()))
@@ -48,8 +54,8 @@ public class InitObsCommand extends Command {
             System.out.println(e.getMessage());
         }
 
-        Gossip.InitObservationsRequest initObservationsRequest = Gossip.InitObservationsRequest.newBuilder()
-                .addAllItem(siloInitItem)
+        pt.tecnico.sauron.silo.grpc.Silo.InitObservationsRequest initObservationsRequest = pt.tecnico.sauron.silo.grpc.Silo.InitObservationsRequest.newBuilder()
+                .addAllObservations(siloInitItem)
                 .build();
 
         Gossip.InitObservationsCommand reportCommand = Gossip.InitObservationsCommand.newBuilder()
