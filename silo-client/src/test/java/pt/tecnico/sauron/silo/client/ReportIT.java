@@ -56,20 +56,22 @@ public class ReportIT extends BaseIT {
 
     @Test
     public void invalidPersonId() {
-        FrontendObservation frontendObservation = new FrontendObservation(FrontendObservation.ObservationType.PERSON, "asdf");
+        String invalidId = "asdf";
+        FrontendObservation frontendObservation = new FrontendObservation(FrontendObservation.ObservationType.PERSON, invalidId);
         LinkedList<FrontendObservation> list = new LinkedList<>();
         list.add(frontendObservation);
-        assertEquals("Person ID must be an unsigned long!",
-                assertThrows(InvalidArgumentException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
+        assertEquals(invalidId + ": Person ID must be an unsigned long!",
+                assertThrows(FrontendException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
     }
 
     @Test
     public void invalidCarId() {
-        FrontendObservation frontendObservation = new FrontendObservation(FrontendObservation.ObservationType.CAR, "asdf");
+        String invalidId = "asdf";
+        FrontendObservation frontendObservation = new FrontendObservation(FrontendObservation.ObservationType.CAR, invalidId);
         LinkedList<FrontendObservation> list = new LinkedList<>();
         list.add(frontendObservation);
-        assertEquals("Car ID must be a valid portuguese license plate!",
-                assertThrows(InvalidArgumentException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
+        assertEquals(invalidId + ": Car ID must be a valid portuguese license plate!",
+                assertThrows(FrontendException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
     }
 
     @Test
@@ -78,7 +80,7 @@ public class ReportIT extends BaseIT {
         LinkedList<FrontendObservation> list = new LinkedList<>();
         list.add(frontendObservation);
         assertEquals("Type to observe not supported!",
-                assertThrows(InvalidArgumentException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
+                assertThrows(FrontendException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
     }
 
     @Test

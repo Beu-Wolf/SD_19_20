@@ -41,7 +41,7 @@ public class Car extends Observation {
             }
         }
 
-        if (!valid) throw new InvalidCarIdException();
+        if (!valid) throw new InvalidCarIdException(id);
     }
 
     public boolean matches(ObservationVisitor o) {

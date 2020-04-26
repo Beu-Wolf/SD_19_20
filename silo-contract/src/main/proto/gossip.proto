@@ -15,12 +15,6 @@ message CamJoinCommand {
     JoinRequest request = 1;
 }
 
-// TODO: implement this request in silo.proto
-message ReportRequest {
-    Cam cam = 1;
-    repeated Observation observations = 2;
-}
-
 message ReportCommand {
     ReportRequest request = 1;
     google.protobuf.Timestamp observationInstant = 2;
@@ -30,23 +24,10 @@ message ClearCommand {
     // empty
 }
 
-// TODO: implement this request in silo.proto
-message InitCamsRequest {
-    repeated Cam cams = 1;
-}
 message InitCamsCommand {
     InitCamsRequest request = 1;
 }
 
-// TODO: implement this request in silo.proto
-message InitObservationItem {
-    Observation observation = 1;
-    google.protobuf.Timestamp timestamp = 2;
-    Cam cam = 3;
-}
-message InitObservationsRequest {
-    repeated InitObservationItem item = 1;
-}
 message InitObservationsCommand {
     InitObservationsRequest request = 1;
 }
