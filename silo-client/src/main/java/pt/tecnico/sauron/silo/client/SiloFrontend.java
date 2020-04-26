@@ -206,7 +206,7 @@ public class SiloFrontend {
         Silo.TrackRequest request = createTrackRequest(type, id);
 
         try {
-            return reportFromTrackResponse(queryBlockingStub.track(request));
+            return reportFromGRPC(queryBlockingStub.track(request).getReport());
         } catch(StatusRuntimeException e) {
             Status status = Status.fromThrowable(e);
             if(status.getCode() == Status.Code.UNAVAILABLE) {
@@ -229,9 +229,9 @@ public class SiloFrontend {
         Silo.TrackMatchRequest request = createTrackMatchRequest(type, query);
 
         try {
-            Iterator<Silo.TrackMatchResponse> it = queryBlockingStub.trackMatch(request);
-            while (it.hasNext()) {
-                results.push(reportFromTrackMatchResponse(it.next()));
+            List<Silo.Report> reports = queryBlockingStub.trackMatch(request).getReportsList();
+            for (Silo.Report report : reports) {
+                results.push(reportFromGRPC(report));
             }
             return results;
         } catch(StatusRuntimeException e) {
@@ -256,9 +256,9 @@ public class SiloFrontend {
         Silo.TraceRequest request = createTraceRequest(type, id);
 
         try {
-            Iterator<Silo.TraceResponse> it = queryBlockingStub.trace(request);
-            while (it.hasNext()) {
-                results.addLast(reportFromTraceResponse(it.next()));
+            List<Silo.Report> reports = queryBlockingStub.trace(request).getReportsList();
+            for (Silo.Report report : reports) {
+                results.addLast(reportFromGRPC(report));
             }
             return results;
         } catch(StatusRuntimeException e) {
@@ -349,13 +349,6 @@ public class SiloFrontend {
     // ===================================================
     // CONVERT BETWEEN DTO AND GRPC
     // ===================================================
-    private FrontendReport reportFromTrackResponse(Silo.TrackResponse response) {
-        FrontendObservation frontendObservation = observationFromGRPC(response.getObservation());
-        FrontendCam frontendCam = camFromGRPC(response.getCam());
-        Instant timestamp = timestampFromGRPC(response.getTimestamp());
-
-        return new FrontendReport(frontendObservation, frontendCam, timestamp);
-    }
 
     private Silo.InitObservationsItem reportToGRPC(FrontendReport report) {
         return Silo.InitObservationsItem.newBuilder()
@@ -365,19 +358,10 @@ public class SiloFrontend {
                 .build();
     }
 
-    private FrontendReport reportFromTrackMatchResponse(Silo.TrackMatchResponse response) {
-        FrontendObservation frontendObservation = observationFromGRPC(response.getObservation());
-        FrontendCam frontendCam = camFromGRPC(response.getCam());
-        Instant timestamp = timestampFromGRPC(response.getTimestamp());
-
-        return new FrontendReport(frontendObservation, frontendCam, timestamp);
-    }
-
-    private FrontendReport reportFromTraceResponse(Silo.TraceResponse response) {
-        FrontendObservation frontendObservation = observationFromGRPC(response.getObservation());
-        FrontendCam frontendCam = camFromGRPC(response.getCam());
-        Instant timestamp = timestampFromGRPC(response.getTimestamp());
-
+    private FrontendReport reportFromGRPC(Silo.Report report) {
+        FrontendObservation frontendObservation = observationFromGRPC(report.getObservation());
+        FrontendCam frontendCam = camFromGRPC(report.getCam());
+        Instant timestamp = timestampFromGRPC(report.getTimestamp());
         return new FrontendReport(frontendObservation, frontendCam, timestamp);
     }
 
