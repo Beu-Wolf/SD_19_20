@@ -80,7 +80,7 @@ public class SiloServer {
             sendGossipMessage();
             System.out.println("Sending gossip message!"); // debug
         };
-        this.scheduledFuture = ses.scheduleAtFixedRate(gossip, 30, 30, TimeUnit.SECONDS); // change to be configurable
+        this.scheduledFuture = ses.scheduleAtFixedRate(gossip, 30, 30, TimeUnit.SECONDS); // TODO change to be configurable
     }
 
     private void sendGossipMessage() {
@@ -96,7 +96,7 @@ public class SiloServer {
                     // constructMessage
                     Gossip.GossipRequest request = createGossipRequest(replicaInstance);
                     // send gossipMessage
-                    Gossip.GossipResponse response = gossipBlockingStub.gossip(request);
+                    Gossip.GossipResponse response = gossipBlockingStub.gossip(request); // TODO do we need this response? Should we print something?
                 }
             }
         } catch (ZKNamingException e) {
@@ -110,10 +110,7 @@ public class SiloServer {
     }
 
     private Gossip.GossipRequest createGossipRequest(int replicaInstance) {
-        // Create Records from update Log
-        // Create VecTimestamp
 
-        //add all Timestamps only works with iterables
         Gossip.VecTimestamp vecTimestamp = Gossip.VecTimestamp.newBuilder().addAllTimestamps(gossipStructures.getReplicaTS().getValues()).build();
 
         // add all records

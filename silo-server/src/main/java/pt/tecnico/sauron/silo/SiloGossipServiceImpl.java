@@ -8,7 +8,7 @@ import pt.tecnico.sauron.silo.domain.Silo;
 import pt.tecnico.sauron.silo.grpc.Gossip;
 import pt.tecnico.sauron.silo.grpc.GossipServiceGrpc;
 
-import java.util.List;
+import java.util.*;
 
 
 public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBase {
@@ -30,7 +30,7 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
             //merge receiver replicaTS with senderReplicaTS
             mergeReplicaTS(request.getReplicaTimeStamp());
             //find and apply updates
-            //applyUpdates();
+            applyUpdates(request.getRecordsList());
             // discard updates
             discardUpdates(vectorTimestampFromGRPC(request.getReplicaTimeStamp()), request.getSenderId());
             //maybe discard from execution operations table
@@ -58,6 +58,32 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
     private void mergeReplicaTS(Gossip.VecTimestamp senderReplicaVecTS) throws InvalidVectorTimestampException {
         VectorTimestamp senderReplicaTS = vectorTimestampFromGRPC(senderReplicaVecTS);
         gossipStructures.getReplicaTS().merge(senderReplicaTS);
+    }
+
+    private void applyUpdates(List<Gossip.Record> records) {
+        // Collect stable updates, ordered by prev
+        try {
+            List<LogEntry> stableLogEntries = new ArrayList<>();
+            for (Gossip.Record record : records) {
+                if (vectorTimestampFromGRPC(record.getPrev()).lessOrEqualThan(this.gossipStructures.getValueTS())) {
+                    stableLogEntries.add(recordToLogEntry(record));
+                }
+            }
+            stableLogEntries.sort((logEntry, logEntry2) -> {
+                try {
+                    return logEntry.compareByPrev(logEntry2);
+                } catch (InvalidVectorTimestampException e) {
+                    System.out.println(e.getMessage()); // We need to this because compare doesn't allow any other exceptions to be thrown
+                    throw new ClassCastException(); // If the sizes are different, they are not comparable
+                }
+            });
+            // for each update, merge structures and execute
+            for(LogEntry stableLogEntry: stableLogEntries) {
+                this.gossipStructures.update(stableLogEntry);
+            }
+        } catch (InvalidVectorTimestampException e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     private void discardUpdates(VectorTimestamp senderReplicaTS, int senderId) {
