@@ -51,13 +51,13 @@ public class GossipStructures {
         return timestampTable;
     }
 
-    public VectorTimestamp getTSfromTimestampTable(int index) {return this.timestampTable.get(index);}
+    public VectorTimestamp getTimestampTableRow(int index) {return this.timestampTable.get(index);}
 
     public void setTimestampTable(ArrayList<VectorTimestamp> timestampTable) {
         this.timestampTable = timestampTable;
     }
 
-    public void setTSofTimestampTable(int index, VectorTimestamp newTS) {  this.timestampTable.set(index, newTS); }
+    public void setTimestampTableRow(int index, VectorTimestamp newTS) {  this.timestampTable.set(index, newTS); }
 
     public LinkedList<LogEntry> getUpdateLog() {
         return updateLog;

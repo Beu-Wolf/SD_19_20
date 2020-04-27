@@ -62,7 +62,7 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
 
     private void discardUpdates(VectorTimestamp senderReplicaTS, int senderId) {
         // update tableTimestamp[sender]
-        gossipStructures.setTSofTimestampTable(senderId-1, senderReplicaTS); // We assume an instance starts at one
+        gossipStructures.setTimestampTableRow(senderId-1, senderReplicaTS); // We assume an instance starts at one
         for (LogEntry le: gossipStructures.getUpdateLog()) {
             for (VectorTimestamp timestampTableTS: gossipStructures.getTimestampTable()) {
                 // If the value of the TS of the replica that recorded the update is greater or equal
