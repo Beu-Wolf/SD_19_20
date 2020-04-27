@@ -32,7 +32,7 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
             //find and apply updates
             //applyUpdates();
             // discard updates
-            discardUpdates(vecToArray(request.getReplicaTimeStamp()), request.getSenderId());
+            discardUpdates(vectorTimestampFromGRPC(request.getReplicaTimeStamp()), request.getSenderId());
             //maybe discard from execution operations table
 
         } catch (InvalidVectorTimestampException e) {
@@ -56,7 +56,7 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
     }
 
     private void mergeReplicaTS(Gossip.VecTimestamp senderReplicaVecTS) throws InvalidVectorTimestampException {
-        VectorTimestamp senderReplicaTS = vecToArray(senderReplicaVecTS);
+        VectorTimestamp senderReplicaTS = vectorTimestampFromGRPC(senderReplicaVecTS);
         gossipStructures.getReplicaTS().merge(senderReplicaTS);
     }
 
@@ -77,7 +77,7 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
     //==========================================================
     //                  GRPC to DOMAIN
     //=========================================================
-    private VectorTimestamp vecToArray(Gossip.VecTimestamp timestamp) {
+    private VectorTimestamp vectorTimestampFromGRPC(Gossip.VecTimestamp timestamp) {
         return new VectorTimestamp(timestamp.getTimestampsList());
     }
 
@@ -85,8 +85,8 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
         LogEntry le = new LogEntry();
         le.setOpId(record.getOpId());
         le.setReplicaId(record.getReplicaId());
-        le.setPrev(vecToArray(record.getPrev()));
-        le.setTs(vecToArray(record.getTs()));
+        le.setPrev(vectorTimestampFromGRPC(record.getPrev()));
+        le.setTs(vectorTimestampFromGRPC(record.getTs()));
         // get command
         le.setCommand(getCommandFromGRPC(record));
         return le;
