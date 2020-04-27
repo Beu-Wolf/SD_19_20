@@ -46,7 +46,7 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
         try {
             for (Gossip.Record record : records) {
                 LogEntry logEntry = recordToLogEntry(record);
-                if (logEntry.getTs().greaterThan(gossipStructures.getReplicaTS())) {
+                if (!logEntry.getTs().lessOrEqualThan(gossipStructures.getReplicaTS())) {
                     gossipStructures.addLogEntry(logEntry);
                 }
             }
