@@ -2,6 +2,7 @@ package pt.tecnico.sauron.silo;
 
 import pt.tecnico.sauron.silo.commands.Command;
 import pt.tecnico.sauron.silo.contract.VectorTimestamp;
+import pt.tecnico.sauron.silo.contract.exceptions.InvalidVectorTimestampException;
 
 public class LogEntry {
     private int replicaId;
@@ -54,5 +55,9 @@ public class LogEntry {
 
     public void setOpId(String opId) {
         this.opId = opId;
+    }
+
+    public int compareByPrev(LogEntry le) throws InvalidVectorTimestampException {
+        return this.prev.lessOrEqualThan(le.getPrev()) ? -1 : 0; // If it is less or equal then it comes first
     }
 }
