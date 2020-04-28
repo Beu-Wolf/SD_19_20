@@ -55,7 +55,7 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
         }
     }
 
-    private void mergeReplicaTS(Gossip.VecTimestamp senderReplicaVecTS) throws InvalidVectorTimestampException {
+    private void mergeReplicaTS(pt.tecnico.sauron.silo.grpc.Silo.VecTimestamp senderReplicaVecTS) throws InvalidVectorTimestampException {
         VectorTimestamp senderReplicaTS = vectorTimestampFromGRPC(senderReplicaVecTS);
         gossipStructures.getReplicaTS().merge(senderReplicaTS);
     }
@@ -103,7 +103,7 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
     //==========================================================
     //                  GRPC to DOMAIN
     //=========================================================
-    private VectorTimestamp vectorTimestampFromGRPC(Gossip.VecTimestamp timestamp) {
+    private VectorTimestamp vectorTimestampFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.VecTimestamp timestamp) {
         return new VectorTimestamp(timestamp.getTimestampsList());
     }
 

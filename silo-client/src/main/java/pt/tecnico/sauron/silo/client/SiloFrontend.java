@@ -8,6 +8,7 @@ import pt.tecnico.sauron.silo.client.domain.FrontendCoords;
 import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
 import pt.tecnico.sauron.silo.client.domain.FrontendReport;
 import pt.tecnico.sauron.silo.client.exceptions.*;
+import pt.tecnico.sauron.silo.contract.VectorTimestamp;
 import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.QueryServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
@@ -21,6 +22,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class SiloFrontend {
+    private static final int NUM_REPLICAS = 3; // TODO
+    private VectorTimestamp frontendTS = new VectorTimestamp(NUM_REPLICAS);
     private ManagedChannel channel;
     private ZKNaming zkNaming;
     private ControlServiceGrpc.ControlServiceBlockingStub ctrlBlockingStub;
@@ -329,18 +332,21 @@ public class SiloFrontend {
 
     private Silo.TrackRequest createTrackRequest(FrontendObservation.ObservationType type, String id) {
         return Silo.TrackRequest.newBuilder()
+                .setPrev(vecTimestampToGRPC(this.frontendTS))
                 .setType(observationTypeToGRPC(type))
                 .setId(id).build();
     }
 
     private Silo.TrackMatchRequest createTrackMatchRequest(FrontendObservation.ObservationType type, String pattern) {
         return Silo.TrackMatchRequest.newBuilder()
+                .setPrev(vecTimestampToGRPC(this.frontendTS))
                 .setType(observationTypeToGRPC(type))
                 .setPattern(pattern).build();
     }
 
     private Silo.TraceRequest createTraceRequest(FrontendObservation.ObservationType type, String id) {
         return Silo.TraceRequest.newBuilder()
+                .setPrev(vecTimestampToGRPC(this.frontendTS))
                 .setType(observationTypeToGRPC(type))
                 .setId(id).build();
     }
@@ -349,6 +355,10 @@ public class SiloFrontend {
     // ===================================================
     // CONVERT BETWEEN DTO AND GRPC
     // ===================================================
+
+    private Silo.VecTimestamp vecTimestampToGRPC(VectorTimestamp ts) {
+        return Silo.VecTimestamp.newBuilder().addAllTimestamps(ts.getValues()).build();
+    }
 
     private Silo.InitObservationsItem reportToGRPC(FrontendReport report) {
         return Silo.InitObservationsItem.newBuilder()

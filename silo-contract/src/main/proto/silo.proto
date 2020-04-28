@@ -68,28 +68,34 @@ message Report {
 message TrackRequest {
     ObservationType type = 1;
     string id = 2;
+    VecTimestamp prev = 3;
 }
 
 message TrackResponse {
     Report report = 1;
+    VecTimestamp new = 2;
 }
 
 message TrackMatchRequest {
     ObservationType type = 1;
     string pattern = 2;
+    VecTimestamp prev = 3;
 }
 
 message TrackMatchResponse {
     repeated Report reports = 1;
+    VecTimestamp new = 2;
 }
 
 message TraceRequest {
     ObservationType type = 1;
     string id = 2;
+    VecTimestamp prev = 3;
 }
 
 message TraceResponse {
     repeated Report reports = 1;
+    VecTimestamp new = 2;
 }
 
 service QueryService {

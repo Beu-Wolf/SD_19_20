@@ -111,7 +111,8 @@ public class SiloServer {
 
     private Gossip.GossipRequest createGossipRequest(int replicaInstance) {
 
-        Gossip.VecTimestamp vecTimestamp = Gossip.VecTimestamp.newBuilder().addAllTimestamps(gossipStructures.getReplicaTS().getValues()).build();
+        pt.tecnico.sauron.silo.grpc.Silo.VecTimestamp vecTimestamp =
+                pt.tecnico.sauron.silo.grpc.Silo.VecTimestamp.newBuilder().addAllTimestamps(gossipStructures.getReplicaTS().getValues()).build();
 
         // add all records
         LinkedList<Gossip.Record> listRecords = updatesToSend(replicaInstance);
@@ -142,8 +143,10 @@ public class SiloServer {
 
     private Gossip.Record logEntryToRecord(LogEntry le) {
         Gossip.Record record = Gossip.Record.newBuilder().setOpId(le.getOpId())
-                .setPrev(Gossip.VecTimestamp.newBuilder().addAllTimestamps(le.getPrev().getValues()))
-                .setTs(Gossip.VecTimestamp.newBuilder().addAllTimestamps(le.getTs().getValues()))
+                .setPrev(pt.tecnico.sauron.silo.grpc.Silo.VecTimestamp.newBuilder()
+                        .addAllTimestamps(le.getPrev().getValues()))
+                .setTs(pt.tecnico.sauron.silo.grpc.Silo.VecTimestamp.newBuilder()
+                        .addAllTimestamps(le.getTs().getValues()))
                 .setReplicaId(le.getReplicaId())
                 .build();
         // to use one of, we need to check the instance of the command

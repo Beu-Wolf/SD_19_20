@@ -6,8 +6,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class VectorTimestamp {
-    //Maybe change to Map<instance:value> ?
+    // TODO: Maybe change to Map<instance:value> ?
     ArrayList<Integer> values = new ArrayList<>();
+
+    public VectorTimestamp(int size) {
+        this(new int[size]);
+    }
 
     public VectorTimestamp(Collection<Integer> l) {
         this.values.addAll(l);
