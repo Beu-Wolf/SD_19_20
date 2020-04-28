@@ -7,6 +7,10 @@ package pt.tecnico.sauron.silo.grpc;
 import "google/type/latlng.proto";
 import "google/protobuf/timestamp.proto";
 
+message VecTimestamp {
+    repeated int32 timestamps = 1;
+}
+
 message Cam {
     string name = 1;
     google.type.LatLng coords = 2;

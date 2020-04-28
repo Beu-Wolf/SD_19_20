@@ -7,10 +7,6 @@ package pt.tecnico.sauron.silo.grpc;
 import "google/protobuf/timestamp.proto";
 import "silo.proto";
 
-message VecTimestamp {
-    repeated int32 timestamps = 1;
-}
-
 message CamJoinCommand {
     JoinRequest request = 1;
 }
