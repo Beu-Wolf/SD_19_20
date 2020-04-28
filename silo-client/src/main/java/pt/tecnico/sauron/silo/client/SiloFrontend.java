@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 public class SiloFrontend {
     private static final int NUM_REPLICAS = 3; // TODO
     private VectorTimestamp frontendTS = new VectorTimestamp(NUM_REPLICAS);
+    private int opCount = 0;
+    private String uuid = UUID.randomUUID().toString();
     private ManagedChannel channel;
     private ZKNaming zkNaming;
     private ControlServiceGrpc.ControlServiceBlockingStub ctrlBlockingStub;
@@ -86,7 +88,10 @@ public class SiloFrontend {
         siloInfo(record);
     }
 
-
+    private String genOpID() {
+        this.opCount++;
+        return this.uuid + Integer.toString(this.opCount);
+    }
 
     // ===================================================
     // GRPC FRONTEND
