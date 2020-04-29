@@ -6,8 +6,6 @@ import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 import pt.tecnico.sauron.silo.client.exceptions.PingException;
 import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
-import static io.grpc.Status.Code.INVALID_ARGUMENT;
-
 public class PingIT extends BaseIT{
 
     @Test

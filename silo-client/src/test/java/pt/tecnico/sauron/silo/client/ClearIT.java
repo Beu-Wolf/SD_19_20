@@ -8,6 +8,7 @@ import pt.tecnico.sauron.silo.client.domain.FrontendReport;
 import pt.tecnico.sauron.silo.client.exceptions.ErrorMessages;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 import pt.tecnico.sauron.silo.client.exceptions.NotFoundException;
+import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
 import java.time.Instant;
 import java.util.LinkedList;
@@ -18,7 +19,7 @@ public class ClearIT extends BaseIT {
     @Test //Empty Silo
     public void emptySilo() {
 
-        Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear());
+        Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear(null));
         Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
                 Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(FrontendObservation.ObservationType.CAR, "*"))
                         .getMessage());
@@ -32,16 +33,16 @@ public class ClearIT extends BaseIT {
         try {
             LinkedList<FrontendCam> camList = createCams(5);
             LinkedList<FrontendReport> observations = createReports(5, camList);
-            siloFrontend.ctrlInitCams(camList);
-            siloFrontend.ctrlInitObservations(observations);
-            Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear());
+            siloFrontend.ctrlInitCams(camList, null);
+            siloFrontend.ctrlInitObservations(observations, null);
+            Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear(null));
             Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
                     Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(FrontendObservation.ObservationType.CAR, "*"))
                             .getMessage());
             Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
                     Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(FrontendObservation.ObservationType.PERSON, "*"))
                             .getMessage());
-        } catch (FrontendException e) {
+        } catch (FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }
     }
