@@ -38,7 +38,7 @@ Sistemas Distribuídos 2019-2020, segundo semestre
     * [Último commit da melhoria](https://github.com/tecnico-distsys/A04-Sauron/commit/4101f632e92975d5170ee29e798c154b73eb18da)
 
  * A mensagem usada para fazer pedidos de `Track`, `Trace` e `TrackMatch` foi dividida em diferentes mensagens, uma para cada request.
-    * [Separate QueryRequest/Response](https://github.com/tecnico-distsys/A04-Sauron/commit/9fb98d61550271844a01b61e8fb640826241dbcb))
+    * [Separate QueryRequest/Response](https://github.com/tecnico-distsys/A04-Sauron/commit/9fb98d61550271844a01b61e8fb640826241dbcb)
 
 ## Modelo de faltas
 **TODO: STILL WIP**
