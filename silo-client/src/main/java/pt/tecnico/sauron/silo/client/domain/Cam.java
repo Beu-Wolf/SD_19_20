@@ -1,20 +1,18 @@
 package pt.tecnico.sauron.silo.client.domain;
 
-public class FrontendCam {
+public class Cam {
     private String name;
-    private FrontendCoords coords;
+    private Coords coords;
 
-    public FrontendCam(String name, double lat, double lon) {
+    public Cam(String name, double lat, double lon) {
         this.name = name;
-        this.coords = new FrontendCoords(lat, lon);
+        this.coords = new Coords(lat, lon);
     }
 
     public String getName() { return this.name; }
     public Double getLat() { return this.coords.getLat(); }
     public Double getLon() { return this.coords.getLon(); }
-    public FrontendCoords getCoords() {
-        return coords;
-    }
+    public Coords getCoords() { return coords; }
 
     @Override
     public String toString() {
@@ -23,8 +21,8 @@ public class FrontendCam {
 
     @Override
     public boolean equals(Object o) {
-        if (o instanceof FrontendCam) {
-            FrontendCam c = (FrontendCam) o;
+        if (o instanceof Cam) {
+            Cam c = (Cam) o;
             return this.name.equals(c.getName()) && this.coords.equals(c.getCoords());
         }
         return false;

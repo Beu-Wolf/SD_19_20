@@ -1,10 +1,9 @@
 package pt.tecnico.sauron.silo.client;
 
 import org.junit.jupiter.api.*;
-import pt.tecnico.sauron.silo.client.domain.FrontendCam;
-import pt.tecnico.sauron.silo.client.domain.FrontendCoords;
+import pt.tecnico.sauron.silo.client.domain.Cam;
+import pt.tecnico.sauron.silo.client.domain.Coords;
 import pt.tecnico.sauron.silo.client.exceptions.CameraNotFoundException;
-import pt.tecnico.sauron.silo.client.exceptions.ClearException;
 import pt.tecnico.sauron.silo.client.exceptions.ErrorMessages;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
@@ -18,10 +17,10 @@ public class CamInfoIT extends BaseIT {
     @Test
     public void camInfoOKTest() {
         try {
-            FrontendCam cam = new FrontendCam(name, lat, lon);
+            Cam cam = new Cam(name, lat, lon);
 
             siloFrontend.camJoin(cam);
-            FrontendCoords received = siloFrontend.camInfo(name);
+            Coords received = siloFrontend.camInfo(name);
 
             Assertions.assertEquals(cam.getLat(), received.getLat());
             Assertions.assertEquals(cam.getLon(), received.getLon());

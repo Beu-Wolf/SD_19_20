@@ -1,6 +1,6 @@
-package pt.tecnico.sauron.silo.exceptions;
+package pt.sauron.silo.contract.domain.exceptions;
 
-public class InvalidCarIdException extends SiloInvalidArgumentException {
+public class InvalidCarIdException extends SiloException {
     public InvalidCarIdException() {
         super(ErrorMessages.INVALID_CAR_ID);
     }

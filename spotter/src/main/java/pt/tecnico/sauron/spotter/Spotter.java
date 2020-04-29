@@ -2,10 +2,10 @@ package pt.tecnico.sauron.spotter;
 
 import io.grpc.StatusRuntimeException;
 import pt.tecnico.sauron.silo.client.SiloFrontend;
-import pt.tecnico.sauron.silo.client.domain.FrontendCam;
-import pt.tecnico.sauron.silo.client.domain.FrontendCoords;
-import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
-import pt.tecnico.sauron.silo.client.domain.FrontendReport;
+import pt.tecnico.sauron.silo.client.domain.Cam;
+import pt.tecnico.sauron.silo.client.domain.Coords;
+import pt.tecnico.sauron.silo.client.domain.Observation;
+import pt.tecnico.sauron.silo.client.domain.Report;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
@@ -59,7 +59,7 @@ public class Spotter {
     public void begin() {
         System.out.println("Spotter started, write 'exit' to quit and 'help' for a list of commands");
         Scanner scanner = new Scanner(System.in);
-        List<FrontendReport> reportList;
+        List<Report> reportList;
          try {
              while (true) {
                  System.out.print("> ");
@@ -82,27 +82,27 @@ public class Spotter {
                          initObs(scanner);
                      } else if (Pattern.matches(SPOT_CAR, command)) {
                          String id = getGroupFromPattern(command, spotCar, 1);
-                         FrontendReport frontendReport = siloFrontend.track(FrontendObservation.ObservationType.CAR, id);
-                         System.out.println(frontendReport.toString());
+                         Report report = siloFrontend.track(Observation.ObservationType.CAR, id);
+                         System.out.println(report.toString());
                      } else if (Pattern.matches(SPOT_PERSON, command)) {
                          String id = getGroupFromPattern(command, spotPerson, 1);
-                         FrontendReport frontendReport = siloFrontend.track(FrontendObservation.ObservationType.PERSON, id);
-                         System.out.println(frontendReport.toString());
+                         Report report = siloFrontend.track(Observation.ObservationType.PERSON, id);
+                         System.out.println(report.toString());
                      } else if (Pattern.matches(SPOT_CAR_PARTIAL, command)) {
                          String id = getGroupFromPattern(command, spotCarPartial, 1);
-                         reportList = siloFrontend.trackMatch(FrontendObservation.ObservationType.CAR, id);
+                         reportList = siloFrontend.trackMatch(Observation.ObservationType.CAR, id);
                          showReports(reportList, true);
                      } else if (Pattern.matches(SPOT_PERSON_PARTIAL, command)) {
                          String id = getGroupFromPattern(command, spotPersonPartial, 1);
-                         reportList = siloFrontend.trackMatch(FrontendObservation.ObservationType.PERSON, id);
+                         reportList = siloFrontend.trackMatch(Observation.ObservationType.PERSON, id);
                          showReports(reportList, true);
                      } else if (Pattern.matches(TRACE_CAR, command)) {
                          String id = getGroupFromPattern(command, traceCar, 1);
-                         reportList = siloFrontend.trace(FrontendObservation.ObservationType.CAR, id);
+                         reportList = siloFrontend.trace(Observation.ObservationType.CAR, id);
                          showReports(reportList, false);
                      } else if (Pattern.matches(TRACE_PERSON, command)) {
                          String id = getGroupFromPattern(command, tracePerson, 1);
-                         reportList = siloFrontend.trace(FrontendObservation.ObservationType.PERSON, id);
+                         reportList = siloFrontend.trace(Observation.ObservationType.PERSON, id);
                          showReports(reportList, false);
                      } else {
                          System.out.println("Unrecognized command, try again");
@@ -132,12 +132,12 @@ public class Spotter {
         return m.group(index);
     }
 
-    private void showReports(List<FrontendReport> reportList, boolean orderId) {
+    private void showReports(List<Report> reportList, boolean orderId) {
         if(orderId) {
             Collections.sort(reportList);
         }
-        for(FrontendReport frontendReport : reportList) {
-            System.out.println(frontendReport.toString());
+        for(Report report : reportList) {
+            System.out.println(report.toString());
         }
     }
 
@@ -154,7 +154,7 @@ public class Spotter {
 
     private void initCameras(Scanner scanner) throws ZKNamingException, FrontendException, InterruptedException {
         System.out.println("Insert cameras: name,latitude,longitude . done when finished");
-        LinkedList<FrontendCam> listCams = new LinkedList<>();
+        LinkedList<Cam> listCams = new LinkedList<>();
         while(true) {
             System.out.print("initCams $ ");
 
@@ -167,7 +167,7 @@ public class Spotter {
                     String camName = getGroupFromPattern(command, camsToLoad, 1);
                     double lat = Double.parseDouble(getGroupFromPattern(command, camsToLoad, 2));
                     double lon = Double.parseDouble(getGroupFromPattern(command, camsToLoad, 3));
-                    FrontendCam cam = new FrontendCam(camName, lat, lon);
+                    Cam cam = new Cam(camName, lat, lon);
                     listCams.add(cam);
                 } else {
                     System.out.println("Unrecognized command, try again");
@@ -177,7 +177,7 @@ public class Spotter {
 
     private void initObs(Scanner scanner) throws ZKNamingException, FrontendException, InterruptedException {
         System.out.println("Insert observations: cameraName,type,id . done when finished");
-        LinkedList<FrontendReport> listReports = new LinkedList<>();
+        LinkedList<Report> listReports = new LinkedList<>();
         while(true) {
             System.out.print("initObservations $ ");
 
@@ -188,19 +188,19 @@ public class Spotter {
                 break;
             } else if (Pattern.matches(OBS_TO_LOAD_CAR, command)) {
                 String camName = getGroupFromPattern(command, obsToLoadCar, 1);
-                FrontendCoords coords = siloFrontend.camInfo(camName);
-                FrontendCam cam = new FrontendCam(camName, coords.getLat(), coords.getLon());
+                Coords coords = siloFrontend.camInfo(camName);
+                Cam cam = new Cam(camName, coords.getLat(), coords.getLon());
                 String id = getGroupFromPattern(command, obsToLoadCar, 2);
-                FrontendObservation obs = new FrontendObservation(FrontendObservation.ObservationType.CAR, id);
-                FrontendReport report = new FrontendReport(obs, cam, Instant.now());
+                Observation obs = new Observation(Observation.ObservationType.CAR, id);
+                Report report = new Report(obs, cam, Instant.now());
                 listReports.add(report);
             } else if (Pattern.matches(OBS_TO_LOAD_PERSON, command)) {
                 String camName = getGroupFromPattern(command, obsToLoadPerson, 1);
-                FrontendCoords coords = siloFrontend.camInfo(camName);
-                FrontendCam cam = new FrontendCam(camName, coords.getLat(), coords.getLon());
+                Coords coords = siloFrontend.camInfo(camName);
+                Cam cam = new Cam(camName, coords.getLat(), coords.getLon());
                 String id = getGroupFromPattern(command, obsToLoadPerson, 2);
-                FrontendObservation obs = new FrontendObservation(FrontendObservation.ObservationType.PERSON, id);
-                FrontendReport report = new FrontendReport(obs, cam, Instant.now());
+                Observation obs = new Observation(Observation.ObservationType.PERSON, id);
+                Report report = new Report(obs, cam, Instant.now());
                 listReports.add(report);
             } else {
                 System.out.println("Unrecognized command, try again");

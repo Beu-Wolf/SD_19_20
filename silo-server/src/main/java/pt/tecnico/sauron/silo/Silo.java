@@ -1,9 +1,13 @@
-package pt.tecnico.sauron.silo.domain;
+package pt.tecnico.sauron.silo;
 
-import pt.tecnico.sauron.silo.exceptions.DuplicateCameraNameException;
-import pt.tecnico.sauron.silo.exceptions.InvalidCameraCoordsException;
-import pt.tecnico.sauron.silo.exceptions.NoCameraFoundException;
-import pt.tecnico.sauron.silo.exceptions.ObservationNotFoundException;
+import pt.sauron.silo.contract.domain.Cam;
+import pt.sauron.silo.contract.domain.Coords;
+import pt.sauron.silo.contract.domain.Observation;
+import pt.sauron.silo.contract.domain.Report;
+import pt.tecnico.sauron.silo.exceptions.DuplicateCameraNameServerException;
+import pt.sauron.silo.contract.domain.exceptions.InvalidCameraCoordsException;
+import pt.tecnico.sauron.silo.exceptions.NoCameraFoundServerException;
+import pt.tecnico.sauron.silo.exceptions.ObservationNotFoundServerException;
 
 import java.time.Instant;
 import java.util.Deque;
@@ -17,11 +21,11 @@ public class Silo {
 
     public Silo() {}
 
-    public void registerCam(Cam cam) throws DuplicateCameraNameException, InvalidCameraCoordsException {
+    public void registerCam(Cam cam) throws DuplicateCameraNameServerException, InvalidCameraCoordsException {
         String name = cam.getName();
         if(this.cams.containsKey(name)) {
             if(!cam.equals(this.cams.get(name))) {
-                throw new DuplicateCameraNameException();
+                throw new DuplicateCameraNameServerException();
             }
         } else if (!validCoords(cam.getCoords())) {
             throw new InvalidCameraCoordsException();
@@ -52,20 +56,20 @@ public class Silo {
         reports.clear();
     }
 
-    public Report track(Observation observation) throws ObservationNotFoundException {
+    public Report track(Observation observation) throws ObservationNotFoundServerException {
         for (Report report : reports) {
             if (report.getObservation().equals(observation))
                 return report;
         }
-        throw new ObservationNotFoundException();
+        throw new ObservationNotFoundServerException();
     }
 
     public Deque<Report> getReportsByNew() { return this.reports; }
 
-    public Cam getCam(String name) throws NoCameraFoundException {
+    public Cam getCam(String name) throws NoCameraFoundServerException {
         Cam cam = cams.get(name);
         if (cam == null) {
-            throw new NoCameraFoundException();
+            throw new NoCameraFoundServerException();
         }
         return cam;
     }

@@ -1,6 +1,6 @@
-package pt.tecnico.sauron.silo.domain;
+package pt.sauron.silo.contract.domain;
 
-import pt.tecnico.sauron.silo.exceptions.InvalidCarIdException;
+import pt.sauron.silo.contract.domain.exceptions.InvalidCarIdException;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

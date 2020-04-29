@@ -1,6 +1,6 @@
-package pt.tecnico.sauron.silo.domain;
+package pt.sauron.silo.contract.domain;
 
-import pt.tecnico.sauron.silo.exceptions.InvalidPersonIdException;
+import pt.sauron.silo.contract.domain.exceptions.InvalidPersonIdException;
 
 public class Person extends Observation {
     public Person(String id) throws InvalidPersonIdException {

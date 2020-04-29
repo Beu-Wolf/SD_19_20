@@ -4,8 +4,10 @@ import com.google.protobuf.Timestamp;
 import com.google.type.LatLng;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import pt.tecnico.sauron.silo.domain.*;
+import pt.sauron.silo.contract.domain.*;
+import pt.sauron.silo.contract.domain.exceptions.*;
 import pt.tecnico.sauron.silo.exceptions.*;
+import pt.tecnico.sauron.silo.exceptions.ErrorMessages;
 import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.Silo;
 
@@ -15,9 +17,9 @@ import static io.grpc.Status.INVALID_ARGUMENT;
 
 public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImplBase {
 
-    private pt.tecnico.sauron.silo.domain.Silo silo;
+    private pt.tecnico.sauron.silo.Silo silo;
 
-    public SiloControlServiceImpl(pt.tecnico.sauron.silo.domain.Silo silo) {
+    public SiloControlServiceImpl(pt.tecnico.sauron.silo.Silo silo) {
         this.silo = silo;
     }
 
@@ -52,12 +54,12 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
 
     @Override
     public void initCams(Silo.InitCamsRequest request, StreamObserver<Silo.InitCamsResponse> responseObserver) {
-        CompositeSiloException exceptions = new CompositeSiloException();
+        CompositeSiloServerException exceptions = new CompositeSiloServerException();
         for(Silo.Cam grpcCam : request.getCamsList()) {
             try {
                 Cam cam = camFromGRPC(grpcCam);
                 silo.registerCam(cam);
-            } catch (SiloException e) {
+            } catch (DuplicateCameraNameServerException | EmptyCameraNameException | InvalidCameraNameException | InvalidCameraCoordsException e) {
                exceptions.addException(e);
             }
         }
@@ -74,7 +76,7 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
 
     @Override
     public void initObservations(Silo.InitObservationsRequest request, StreamObserver<Silo.InitObservationsResponse> responseObserver) {
-        CompositeSiloException exceptions = new CompositeSiloException();
+        CompositeSiloServerException exceptions = new CompositeSiloServerException();
         for(Silo.InitObservationsItem observation : request.getObservationsList()) {
             try {
                 Report report = reportFromGRPC(observation);
@@ -119,7 +121,8 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
     // ===================================================
     // CONVERT BETWEEN DOMAIN AND GRPC
     // ===================================================
-    private Report reportFromGRPC(Silo.InitObservationsItem report) throws SiloInvalidArgumentException, EmptyCameraNameException, InvalidCameraNameException {
+    private Report reportFromGRPC(Silo.InitObservationsItem report)
+            throws InvalidPersonIdException, InvalidCarIdException, TypeNotSupportedServerException, EmptyCameraNameException, InvalidCameraNameException {
         Cam cam = camFromGRPC(report.getCam());
         Observation obs = observationFromGRPC(report.getObservation());
         Instant timestamp = instantFromGRPC(report.getTimestamp());
@@ -127,7 +130,7 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
         return new Report(cam, obs, timestamp);
     }
 
-    private Observation observationFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) throws SiloInvalidArgumentException {
+    private Observation observationFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) throws InvalidPersonIdException, InvalidCarIdException, TypeNotSupportedServerException{
         String id = observation.getObservationId();
 
         switch (observation.getType()) {
@@ -136,7 +139,7 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
             case CAR:
                 return new Car(id);
             default:
-                throw new SiloInvalidArgumentException(ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE);
+                throw new TypeNotSupportedServerException();
         }
     }
 

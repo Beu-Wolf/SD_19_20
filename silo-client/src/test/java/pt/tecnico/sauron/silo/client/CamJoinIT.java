@@ -1,8 +1,8 @@
 package pt.tecnico.sauron.silo.client;
 
 import org.junit.jupiter.api.*;
-import pt.tecnico.sauron.silo.client.domain.FrontendCam;
-import pt.tecnico.sauron.silo.client.domain.FrontendCoords;
+import pt.tecnico.sauron.silo.client.domain.Cam;
+import pt.tecnico.sauron.silo.client.domain.Coords;
 import pt.tecnico.sauron.silo.client.exceptions.*;
 import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
@@ -21,11 +21,11 @@ public class CamJoinIT extends BaseIT {
 
     @Test
     public void joinCameraOKTest() {
-        FrontendCam cam = new FrontendCam(name, lat, lon);
+        Cam cam = new Cam(name, lat, lon);
         try {
             siloFrontend.camJoin(cam);
-            FrontendCoords coords = siloFrontend.camInfo(cam.getName());
-            FrontendCam serverCam = new FrontendCam(name, coords.getLat(), coords.getLon());
+            Coords coords = siloFrontend.camInfo(cam.getName());
+            Cam serverCam = new Cam(name, coords.getLat(), coords.getLon());
             Assertions.assertEquals(cam.toString(), serverCam.toString());
         } catch (FrontendException | ZKNamingException e) {
             e.printStackTrace();
@@ -35,8 +35,8 @@ public class CamJoinIT extends BaseIT {
     @Test
     public void joinCameraNameDuplicateTest() {
         try {
-            FrontendCam cam = new FrontendCam(name, lat, lon);
-            FrontendCam duplicate = new FrontendCam(name, newLat , newLon);
+            Cam cam = new Cam(name, lat, lon);
+            Cam duplicate = new Cam(name, newLat , newLon);
             siloFrontend.camJoin(cam);
             Assertions.assertEquals(
                 ErrorMessages.CAMERA_ALREADY_EXISTS,
@@ -55,11 +55,11 @@ public class CamJoinIT extends BaseIT {
     @Test
     public void joinSameCameraTwiceTest() {
         try {
-            FrontendCam cam = new FrontendCam(name, lat, lon);
+            Cam cam = new Cam(name, lat, lon);
             siloFrontend.camJoin(cam);
             Assertions.assertDoesNotThrow(()->siloFrontend.camJoin(cam));
-            FrontendCoords coords =  siloFrontend.camInfo(cam.getName());
-            FrontendCam serverCam = new FrontendCam(name, coords.getLat(), coords.getLon());
+            Coords coords =  siloFrontend.camInfo(cam.getName());
+            Cam serverCam = new Cam(name, coords.getLat(), coords.getLon());
             Assertions.assertEquals(cam,serverCam);
 
         } catch (FrontendException | ZKNamingException e) {
@@ -69,7 +69,7 @@ public class CamJoinIT extends BaseIT {
 
     @Test
     public void camJoinWithBlankName() {
-        FrontendCam cam = new FrontendCam("", lat, lon);
+        Cam cam = new Cam("", lat, lon);
         Assertions.assertEquals("Camera name is empty!", Assertions.assertThrows(
                 CameraRegisterException.class, ()->siloFrontend.camJoin(cam))
                 .getMessage() );
@@ -77,7 +77,7 @@ public class CamJoinIT extends BaseIT {
 
     @Test
     public void camJoinWithShortName() {
-        FrontendCam shortCam = new FrontendCam(shortName, lat, lon);
+        Cam shortCam = new Cam(shortName, lat, lon);
         Assertions.assertEquals("Camera names must be between 3 and 15 characters long!", Assertions.assertThrows(
         CameraRegisterException.class,()->siloFrontend.camJoin(shortCam))
          .getMessage());
@@ -85,7 +85,7 @@ public class CamJoinIT extends BaseIT {
 
     @Test
     public void camJoinWithLongName() {
-        FrontendCam longCam = new FrontendCam(longName, lat, lon);
+        Cam longCam = new Cam(longName, lat, lon);
         Assertions.assertEquals("Camera names must be between 3 and 15 characters long!", Assertions.assertThrows(
         CameraRegisterException.class,()->siloFrontend.camJoin(longCam))
         .getMessage());
@@ -93,11 +93,11 @@ public class CamJoinIT extends BaseIT {
 
     @Test
     public void camJoinInvalidLatitude() {
-        FrontendCam badNegLatCam = new FrontendCam(name, badNegativeLat, lon);
+        Cam badNegLatCam = new Cam(name, badNegativeLat, lon);
         Assertions.assertEquals("Invalid Camera coordinates!", Assertions.assertThrows(
                 CameraRegisterException.class, ()->siloFrontend.camJoin(badNegLatCam))
                 .getMessage());
-        FrontendCam badPosLatCam = new FrontendCam(name, badPositiveLat, lon);
+        Cam badPosLatCam = new Cam(name, badPositiveLat, lon);
         Assertions.assertEquals("Invalid Camera coordinates!", Assertions.assertThrows(
                 CameraRegisterException.class, ()->siloFrontend.camJoin(badPosLatCam))
                 .getMessage());
@@ -105,11 +105,11 @@ public class CamJoinIT extends BaseIT {
 
     @Test
     public void camJoinInvalidLongitude() {
-        FrontendCam badNegLonCam = new FrontendCam(name, lat, badNegativeLon);
+        Cam badNegLonCam = new Cam(name, lat, badNegativeLon);
         Assertions.assertEquals("Invalid Camera coordinates!", Assertions.assertThrows(
                 CameraRegisterException.class, ()->siloFrontend.camJoin(badNegLonCam))
                 .getMessage());
-        FrontendCam badPosLonCam = new FrontendCam(name, lat, badPositiveLon);
+        Cam badPosLonCam = new Cam(name, lat, badPositiveLon);
         Assertions.assertEquals("Invalid Camera coordinates!", Assertions.assertThrows(
                 CameraRegisterException.class, ()->siloFrontend.camJoin(badPosLonCam))
                 .getMessage());

@@ -2,20 +2,17 @@ package pt.tecnico.sauron.silo;
 
 import com.google.protobuf.Timestamp;
 import com.google.type.LatLng;
-import io.grpc.stub.StreamObserver;
 import io.grpc.Status;
-import pt.tecnico.sauron.silo.domain.*;
-import pt.tecnico.sauron.silo.exceptions.ErrorMessages;
-import pt.tecnico.sauron.silo.exceptions.ObservationNotFoundException;
-import pt.tecnico.sauron.silo.exceptions.SiloInvalidArgumentException;
+import io.grpc.stub.StreamObserver;
+import pt.sauron.silo.contract.domain.Cam;
+import pt.sauron.silo.contract.domain.Observation;
+import pt.sauron.silo.contract.domain.*;
+import pt.sauron.silo.contract.domain.exceptions.InvalidCarIdException;
+import pt.sauron.silo.contract.domain.exceptions.InvalidPersonIdException;
+import pt.tecnico.sauron.silo.exceptions.ObservationNotFoundServerException;
+import pt.tecnico.sauron.silo.exceptions.TypeNotSupportedServerException;
 import pt.tecnico.sauron.silo.grpc.QueryServiceGrpc;
-import pt.tecnico.sauron.silo.grpc.Silo.TrackRequest;
-import pt.tecnico.sauron.silo.grpc.Silo.TrackResponse;
-import pt.tecnico.sauron.silo.grpc.Silo.TrackMatchRequest;
-import pt.tecnico.sauron.silo.grpc.Silo.TrackMatchResponse;
-import pt.tecnico.sauron.silo.grpc.Silo.TraceRequest;
-import pt.tecnico.sauron.silo.grpc.Silo.TraceResponse;
-import pt.tecnico.sauron.silo.grpc.Silo.ObservationType;
+import pt.tecnico.sauron.silo.grpc.Silo.*;
 
 import java.time.Instant;
 import java.util.TreeSet;
@@ -46,11 +43,13 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
             responseObserver.onNext(response);
             responseObserver.onCompleted();
 
-        } catch (SiloInvalidArgumentException e) {
+        } catch (InvalidPersonIdException
+                |InvalidCarIdException
+                |TypeNotSupportedServerException e) {
             responseObserver.onError(Status.INVALID_ARGUMENT
                     .withDescription(e.getMessage())
                     .asRuntimeException());
-        } catch (ObservationNotFoundException e) {
+        } catch (ObservationNotFoundServerException e) {
             responseObserver.onError(Status.NOT_FOUND.withDescription(e.getMessage()).asRuntimeException());
         }
     }
@@ -81,7 +80,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
             } else {
                 responseObserver.onCompleted();
             }
-        } catch (SiloInvalidArgumentException e) {
+        } catch (TypeNotSupportedServerException e) {
             responseObserver.onError(Status.INVALID_ARGUMENT
                     .withDescription(e.getMessage())
                     .asRuntimeException());
@@ -106,7 +105,9 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
                     responseObserver.onNext(reportToTraceResponse(report));
                 }
             }
-        } catch (SiloInvalidArgumentException e) {
+        } catch (InvalidPersonIdException
+                |TypeNotSupportedServerException
+                |InvalidCarIdException e) {
             responseObserver.onError(Status.INVALID_ARGUMENT
                     .withDescription(e.getMessage())
                     .asRuntimeException());
@@ -123,7 +124,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
     // ===================================================
     // CONVERT BETWEEN DOMAIN AND GRPC
     // ===================================================
-    private TrackResponse reportToTrackResponse(Report report) throws SiloInvalidArgumentException {
+    private TrackResponse reportToTrackResponse(Report report) throws TypeNotSupportedServerException {
         return TrackResponse.newBuilder()
                 .setCam(camFromGRPC(report.getCam()))
                 .setObservation(observationToGRPC(report.getObservation()))
@@ -131,7 +132,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
                 .build();
     }
 
-    private TrackMatchResponse reportToTrackMatchResponse(Report report) throws SiloInvalidArgumentException {
+    private TrackMatchResponse reportToTrackMatchResponse(Report report) throws TypeNotSupportedServerException {
         return TrackMatchResponse.newBuilder()
                 .setCam(camFromGRPC(report.getCam()))
                 .setObservation(observationToGRPC(report.getObservation()))
@@ -139,7 +140,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
                 .build();
     }
 
-    private TraceResponse reportToTraceResponse(Report report) throws SiloInvalidArgumentException {
+    private TraceResponse reportToTraceResponse(Report report) throws TypeNotSupportedServerException {
         return TraceResponse.newBuilder()
                 .setCam(camFromGRPC(report.getCam()))
                 .setObservation(observationToGRPC(report.getObservation()))
@@ -147,19 +148,19 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
                 .build();
     }
 
-    private pt.tecnico.sauron.silo.grpc.Silo.Observation observationToGRPC(Observation observation) throws SiloInvalidArgumentException {
+    private pt.tecnico.sauron.silo.grpc.Silo.Observation observationToGRPC(Observation observation) throws TypeNotSupportedServerException {
         return pt.tecnico.sauron.silo.grpc.Silo.Observation.newBuilder()
                 .setType(domainObservationToTypeGRPC(observation))
                 .setObservationId(observation.getId()).build();
     }
 
-    private ObservationType domainObservationToTypeGRPC(Observation observation) throws SiloInvalidArgumentException {
+    private ObservationType domainObservationToTypeGRPC(Observation observation) throws TypeNotSupportedServerException {
         if (observation instanceof Car) {
             return ObservationType.CAR;
         } else if (observation instanceof Person) {
             return ObservationType.PERSON;
         } else {
-            throw new SiloInvalidArgumentException(ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE);
+            throw new TypeNotSupportedServerException();
         }
     }
 
@@ -171,17 +172,19 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
                 .setName(cam.getName()).build();
     }
 
-    private Observation observationFromGRPC(ObservationType type, String id) throws SiloInvalidArgumentException {
+    private Observation observationFromGRPC(ObservationType type, String id)
+            throws InvalidPersonIdException, InvalidCarIdException, TypeNotSupportedServerException {
         switch (type) {
             case PERSON:
                 return new Person(id);
             case CAR:
                 return new Car(id);
             default:
-                throw new SiloInvalidArgumentException(ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE);
+                throw new TypeNotSupportedServerException();
         }
     }
-    private Observation observationFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) throws SiloInvalidArgumentException {
+    private Observation observationFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.Observation observation)
+            throws InvalidPersonIdException, InvalidCarIdException, TypeNotSupportedServerException {
         return observationFromGRPC(observation.getType(), observation.getObservationId());
     }
 
@@ -203,9 +206,9 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         Pattern p;
         ObservationType type;
 
-        TrackMatchComparator(ObservationType type, String pattern) throws SiloInvalidArgumentException {
+        TrackMatchComparator(ObservationType type, String pattern) throws TypeNotSupportedServerException {
             if(type == ObservationType.UNSPEC) {
-                throw new SiloInvalidArgumentException(ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE);
+                throw new TypeNotSupportedServerException();
             }
             pattern = Pattern.quote(pattern);
             pattern = pattern.replace("*", "\\E.*\\Q");

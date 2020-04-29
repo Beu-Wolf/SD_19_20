@@ -1,4 +1,4 @@
-package pt.tecnico.sauron.silo.domain;
+package pt.sauron.silo.contract.domain;
 
 public class Coords {
     private double lat;

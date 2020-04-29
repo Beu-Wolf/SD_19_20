@@ -3,10 +3,10 @@ package pt.tecnico.sauron.silo.client;
 import com.google.protobuf.Timestamp;
 import com.google.type.LatLng;
 import io.grpc.*;
-import pt.tecnico.sauron.silo.client.domain.FrontendCam;
-import pt.tecnico.sauron.silo.client.domain.FrontendCoords;
-import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
-import pt.tecnico.sauron.silo.client.domain.FrontendReport;
+import pt.tecnico.sauron.silo.client.domain.Cam;
+import pt.tecnico.sauron.silo.client.domain.Coords;
+import pt.tecnico.sauron.silo.client.domain.Observation;
+import pt.tecnico.sauron.silo.client.domain.Report;
 import pt.tecnico.sauron.silo.client.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.ControlServiceGrpc;
 import pt.tecnico.sauron.silo.grpc.QueryServiceGrpc;
@@ -104,7 +104,7 @@ public class SiloFrontend {
     }
 
 
-    public void ctrlInitCams(List<FrontendCam> cams) throws RuntimeException, FrontendException {
+    public void ctrlInitCams(List<Cam> cams) throws RuntimeException, FrontendException {
         Silo.InitCamsRequest request = createInitCamsRequest(cams);
 
         try {
@@ -114,7 +114,7 @@ public class SiloFrontend {
         }
     }
 
-    public void ctrlInitObservations(List<FrontendReport> reports) throws FrontendException {
+    public void ctrlInitObservations(List<Report> reports) throws FrontendException {
         Silo.InitObservationsRequest request = createInitObservationsRequest(reports);
 
         try {
@@ -138,7 +138,7 @@ public class SiloFrontend {
     }
 
 
-    public void camJoin(FrontendCam cam) throws ZKNamingException, FrontendException {
+    public void camJoin(Cam cam) throws ZKNamingException, FrontendException {
         Silo.JoinRequest request = createJoinRequest(cam);
 
         try {
@@ -159,12 +159,12 @@ public class SiloFrontend {
         }
     }
 
-    public FrontendCoords camInfo(String name) throws FrontendException, ZKNamingException {
+    public Coords camInfo(String name) throws FrontendException, ZKNamingException {
         Silo.InfoRequest request = createInfoRequest(name);
 
         try {
             Silo.InfoResponse response = this.reportBlockingStub.camInfo(request);
-            return new FrontendCoords(response.getCoords().getLatitude(), response.getCoords().getLongitude());
+            return new Coords(response.getCoords().getLatitude(), response.getCoords().getLongitude());
         } catch (RuntimeException e) {
             Status status = Status.fromThrowable(e);
             if (status.getCode() == Status.Code.UNAVAILABLE) {
@@ -178,7 +178,7 @@ public class SiloFrontend {
         }
     }
 
-    public int report(String name, List<FrontendObservation> observations)
+    public int report(String name, List<Observation> observations)
             throws CameraNotFoundException, ReportException, InvalidArgumentException {
         if(observations.size() == 0) return 0;
         Silo.ReportRequest request = createReportRequest(name, observations);
@@ -202,7 +202,7 @@ public class SiloFrontend {
     }
 
 
-    public FrontendReport track(FrontendObservation.ObservationType type, String id) throws FrontendException, ZKNamingException {
+    public Report track(Observation.ObservationType type, String id) throws FrontendException, ZKNamingException {
         Silo.TrackRequest request = createTrackRequest(type, id);
 
         try {
@@ -224,8 +224,8 @@ public class SiloFrontend {
         }
     }
 
-    public List<FrontendReport> trackMatch(FrontendObservation.ObservationType type, String query) throws FrontendException, ZKNamingException {
-        LinkedList<FrontendReport> results = new LinkedList<>();
+    public List<Report> trackMatch(Observation.ObservationType type, String query) throws FrontendException, ZKNamingException {
+        LinkedList<Report> results = new LinkedList<>();
         Silo.TrackMatchRequest request = createTrackMatchRequest(type, query);
 
         try {
@@ -251,8 +251,8 @@ public class SiloFrontend {
         }
     }
 
-    public List<FrontendReport> trace(FrontendObservation.ObservationType type, String id) throws FrontendException, ZKNamingException {
-        LinkedList<FrontendReport> results = new LinkedList<>();
+    public List<Report> trace(Observation.ObservationType type, String id) throws FrontendException, ZKNamingException {
+        LinkedList<Report> results = new LinkedList<>();
         Silo.TraceRequest request = createTraceRequest(type, id);
 
         try {
@@ -288,7 +288,7 @@ public class SiloFrontend {
         return Silo.PingRequest.newBuilder().setText(sentence).build();
     }
 
-    private Silo.InitCamsRequest createInitCamsRequest(List<FrontendCam> cams) {
+    private Silo.InitCamsRequest createInitCamsRequest(List<Cam> cams) {
         return Silo.InitCamsRequest.newBuilder()
                 .addAllCams(cams.stream()
                         .map(this::camToGRPC)
@@ -296,7 +296,7 @@ public class SiloFrontend {
                 .build();
     }
 
-    private Silo.InitObservationsRequest createInitObservationsRequest(List<FrontendReport> reports) {
+    private Silo.InitObservationsRequest createInitObservationsRequest(List<Report> reports) {
         return Silo.InitObservationsRequest.newBuilder()
                 .addAllObservations(reports.stream()
                         .map(this::reportToGRPC)
@@ -309,7 +309,7 @@ public class SiloFrontend {
     }
 
 
-    private Silo.JoinRequest createJoinRequest(FrontendCam cam) {
+    private Silo.JoinRequest createJoinRequest(Cam cam) {
         return Silo.JoinRequest.newBuilder()
                 .setCam(camToGRPC(cam))
                 .build();
@@ -319,7 +319,7 @@ public class SiloFrontend {
         return Silo.InfoRequest.newBuilder().setName(name).build();
     }
 
-    private Silo.ReportRequest createReportRequest(String camName, List<FrontendObservation> observations) {
+    private Silo.ReportRequest createReportRequest(String camName, List<Observation> observations) {
         return Silo.ReportRequest.newBuilder()
                 .setCamName(camName)
                 .addAllObservations(observations.stream().map(this::observationToGRPC).collect(Collectors.toList()))
@@ -327,19 +327,19 @@ public class SiloFrontend {
     }
 
 
-    private Silo.TrackRequest createTrackRequest(FrontendObservation.ObservationType type, String id) {
+    private Silo.TrackRequest createTrackRequest(Observation.ObservationType type, String id) {
         return Silo.TrackRequest.newBuilder()
                 .setType(observationTypeToGRPC(type))
                 .setId(id).build();
     }
 
-    private Silo.TrackMatchRequest createTrackMatchRequest(FrontendObservation.ObservationType type, String pattern) {
+    private Silo.TrackMatchRequest createTrackMatchRequest(Observation.ObservationType type, String pattern) {
         return Silo.TrackMatchRequest.newBuilder()
                 .setType(observationTypeToGRPC(type))
                 .setPattern(pattern).build();
     }
 
-    private Silo.TraceRequest createTraceRequest(FrontendObservation.ObservationType type, String id) {
+    private Silo.TraceRequest createTraceRequest(Observation.ObservationType type, String id) {
         return Silo.TraceRequest.newBuilder()
                 .setType(observationTypeToGRPC(type))
                 .setId(id).build();
@@ -349,15 +349,15 @@ public class SiloFrontend {
     // ===================================================
     // CONVERT BETWEEN DTO AND GRPC
     // ===================================================
-    private FrontendReport reportFromTrackResponse(Silo.TrackResponse response) {
-        FrontendObservation frontendObservation = observationFromGRPC(response.getObservation());
-        FrontendCam frontendCam = camFromGRPC(response.getCam());
+    private Report reportFromTrackResponse(Silo.TrackResponse response) {
+        Observation observation = observationFromGRPC(response.getObservation());
+        Cam cam = camFromGRPC(response.getCam());
         Instant timestamp = timestampFromGRPC(response.getTimestamp());
 
-        return new FrontendReport(frontendObservation, frontendCam, timestamp);
+        return new Report(observation, cam, timestamp);
     }
 
-    private Silo.InitObservationsItem reportToGRPC(FrontendReport report) {
+    private Silo.InitObservationsItem reportToGRPC(Report report) {
         return Silo.InitObservationsItem.newBuilder()
                 .setCam(camToGRPC(report.getCam()))
                 .setObservation(observationToGRPC(report.getObservation()))
@@ -365,34 +365,34 @@ public class SiloFrontend {
                 .build();
     }
 
-    private FrontendReport reportFromTrackMatchResponse(Silo.TrackMatchResponse response) {
-        FrontendObservation frontendObservation = observationFromGRPC(response.getObservation());
-        FrontendCam frontendCam = camFromGRPC(response.getCam());
+    private Report reportFromTrackMatchResponse(Silo.TrackMatchResponse response) {
+        Observation observation = observationFromGRPC(response.getObservation());
+        Cam cam = camFromGRPC(response.getCam());
         Instant timestamp = timestampFromGRPC(response.getTimestamp());
 
-        return new FrontendReport(frontendObservation, frontendCam, timestamp);
+        return new Report(observation, cam, timestamp);
     }
 
-    private FrontendReport reportFromTraceResponse(Silo.TraceResponse response) {
-        FrontendObservation frontendObservation = observationFromGRPC(response.getObservation());
-        FrontendCam frontendCam = camFromGRPC(response.getCam());
+    private Report reportFromTraceResponse(Silo.TraceResponse response) {
+        Observation observation = observationFromGRPC(response.getObservation());
+        Cam cam = camFromGRPC(response.getCam());
         Instant timestamp = timestampFromGRPC(response.getTimestamp());
 
-        return new FrontendReport(frontendObservation, frontendCam, timestamp);
+        return new Report(observation, cam, timestamp);
     }
 
-    private Silo.Observation observationToGRPC(FrontendObservation observation) {
+    private Silo.Observation observationToGRPC(Observation observation) {
         return Silo.Observation.newBuilder()
                 .setObservationId(observation.getId())
                 .setType(observationTypeToGRPC(observation.getType()))
                 .build();
     }
-    private FrontendObservation observationFromGRPC(Silo.Observation observation) {
-        return new FrontendObservation(observationTypeFromGRPC(observation.getType()),
+    private Observation observationFromGRPC(Silo.Observation observation) {
+        return new Observation(observationTypeFromGRPC(observation.getType()),
                 observation.getObservationId());
     }
 
-    private Silo.ObservationType observationTypeToGRPC(FrontendObservation.ObservationType type) {
+    private Silo.ObservationType observationTypeToGRPC(Observation.ObservationType type) {
         switch(type) {
             case CAR:
                 return Silo.ObservationType.CAR;
@@ -402,31 +402,31 @@ public class SiloFrontend {
                 return Silo.ObservationType.UNSPEC;
         }
     }
-    private FrontendObservation.ObservationType observationTypeFromGRPC(Silo.ObservationType type) {
+    private Observation.ObservationType observationTypeFromGRPC(Silo.ObservationType type) {
         switch(type) {
             case CAR:
-                return FrontendObservation.ObservationType.CAR;
+                return Observation.ObservationType.CAR;
             case PERSON:
-                return FrontendObservation.ObservationType.PERSON;
+                return Observation.ObservationType.PERSON;
             default:
-                return FrontendObservation.ObservationType.UNSPEC;
+                return Observation.ObservationType.UNSPEC;
         }
     }
 
-    private Silo.Cam camToGRPC(FrontendCam cam) {
+    private Silo.Cam camToGRPC(Cam cam) {
         return Silo.Cam.newBuilder()
                 .setName(cam.getName())
                 .setCoords(coordsToGRPC(cam.getCoords()))
                 .build();
     }
-    private FrontendCam camFromGRPC(Silo.Cam cam) {
+    private Cam camFromGRPC(Silo.Cam cam) {
         String name = cam.getName();
         LatLng coords = cam.getCoords();
 
-        return new FrontendCam(name, coords.getLatitude(), coords.getLongitude());
+        return new Cam(name, coords.getLatitude(), coords.getLongitude());
     }
 
-    private LatLng coordsToGRPC(FrontendCoords coords) {
+    private LatLng coordsToGRPC(Coords coords) {
         return LatLng.newBuilder()
                 .setLatitude(coords.getLat())
                 .setLongitude(coords.getLon())

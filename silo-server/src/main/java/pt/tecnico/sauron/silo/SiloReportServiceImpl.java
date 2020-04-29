@@ -2,15 +2,16 @@ package pt.tecnico.sauron.silo;
 
 import com.google.type.LatLng;
 import io.grpc.Status;
-import pt.tecnico.sauron.silo.domain.*;
+import pt.sauron.silo.contract.domain.*;
+import pt.sauron.silo.contract.domain.exceptions.*;
 import pt.tecnico.sauron.silo.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.ReportServiceGrpc;
 
 public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBase {
 
-    private pt.tecnico.sauron.silo.domain.Silo silo;
+    private Silo silo;
 
-    SiloReportServiceImpl(pt.tecnico.sauron.silo.domain.Silo silo) {
+    SiloReportServiceImpl(Silo silo) {
         this.silo = silo;
     }
 
@@ -25,7 +26,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
             pt.tecnico.sauron.silo.grpc.Silo.JoinResponse response = createJoinResponse();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch(DuplicateCameraNameException e) {
+        } catch(DuplicateCameraNameServerException e) {
             responseObserver.onError(Status.ALREADY_EXISTS.asRuntimeException());
         } catch(EmptyCameraNameException | InvalidCameraNameException | InvalidCameraCoordsException e) {
             responseObserver.onError(Status.INVALID_ARGUMENT
@@ -44,7 +45,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
 
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch(NoCameraFoundException e) {
+        } catch(NoCameraFoundServerException e) {
             responseObserver.onError(Status.NOT_FOUND.asRuntimeException());
         }
     }
@@ -55,13 +56,13 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
         try {
             final String name = request.getCamName();
             cam = this.silo.getCam(name);
-        } catch (NoCameraFoundException e) {
+        } catch (NoCameraFoundServerException e) {
             responseObserver.onError(Status.NOT_FOUND.withDescription(e.getMessage()).asRuntimeException());
             return;
         }
 
         // convert repeated observation to observation List
-        CompositeSiloException exceptions = new CompositeSiloException();
+        CompositeSiloServerException exceptions = new CompositeSiloServerException();
         int numAcked = 0;
         for(pt.tecnico.sauron.silo.grpc.Silo.Observation observation : request.getObservationsList()) {
             try {
@@ -70,7 +71,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
                 numAcked += 1;
             } catch (InvalidCarIdException
                     |InvalidPersonIdException
-                    |TypeNotSupportedException e) {
+                    | TypeNotSupportedServerException e) {
                 exceptions.addException(e);
             }
         }
@@ -110,7 +111,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
     // ===================================================
     // CONVERT BETWEEN DOMAIN AND GRPC
     // ===================================================
-    private Observation observationFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) throws InvalidCarIdException, InvalidPersonIdException, TypeNotSupportedException {
+    private Observation observationFromGRPC(pt.tecnico.sauron.silo.grpc.Silo.Observation observation) throws InvalidCarIdException, InvalidPersonIdException, TypeNotSupportedServerException {
         pt.tecnico.sauron.silo.grpc.Silo.ObservationType type = observation.getType();
         String id = observation.getObservationId();
         switch (type) {
@@ -119,7 +120,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
             case PERSON:
                 return new Person(id);
             default:
-                throw new TypeNotSupportedException();
+                throw new TypeNotSupportedServerException();
         }
     }
 

@@ -1,4 +1,4 @@
-package pt.tecnico.sauron.silo.exceptions;
+package pt.sauron.silo.contract.domain.exceptions;
 
 public class EmptyCameraNameException extends SiloException {
     public EmptyCameraNameException() { super(ErrorMessages.EMPTY_CAMERA_NAME); }

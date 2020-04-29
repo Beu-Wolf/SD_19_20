@@ -3,21 +3,21 @@ package pt.tecnico.sauron.silo.client.domain;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-public class FrontendReport implements Comparable<FrontendReport> {
-    private FrontendCam cam;
-    private FrontendObservation observation;
+public class Report implements Comparable<Report> {
+    private Cam cam;
+    private Observation observation;
     private Instant timestamp;
 
-    public FrontendReport(FrontendObservation observation, FrontendCam cam, Instant timestamp) {
+    public Report(Observation observation, Cam cam, Instant timestamp) {
         this.observation = observation;
         this.cam = cam;
         this.timestamp = timestamp;
     }
 
 
-    public FrontendObservation getObservation() { return this.observation; }
+    public Observation getObservation() { return this.observation; }
 
-    public FrontendCam getCam() {return this.cam; }
+    public Cam getCam() {return this.cam; }
     public Instant getTimestamp() { return this.timestamp; }
 
     @Override
@@ -29,14 +29,14 @@ public class FrontendReport implements Comparable<FrontendReport> {
     }
 
     @Override
-    public int compareTo(FrontendReport r) {
+    public int compareTo(Report r) {
         return this.observation.compareTo(r.getObservation());
     }
 
     @Override
     public boolean equals(Object o) {
-        if(o instanceof FrontendReport) {
-            FrontendReport r = (FrontendReport) o;
+        if(o instanceof Report) {
+            Report r = (Report) o;
             return this.observation.equals(r.getObservation()) && this.cam.equals(r.getCam()) && this.timestamp.equals(r.getTimestamp());
         }
         return false;

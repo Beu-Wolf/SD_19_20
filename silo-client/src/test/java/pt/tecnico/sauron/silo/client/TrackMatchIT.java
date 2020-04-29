@@ -4,9 +4,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import pt.tecnico.sauron.silo.client.domain.FrontendCam;
-import pt.tecnico.sauron.silo.client.domain.FrontendObservation;
-import pt.tecnico.sauron.silo.client.domain.FrontendReport;
+import pt.tecnico.sauron.silo.client.domain.Cam;
+import pt.tecnico.sauron.silo.client.domain.Observation;
+import pt.tecnico.sauron.silo.client.domain.Report;
 import pt.tecnico.sauron.silo.client.exceptions.*;
 import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 
@@ -45,9 +45,9 @@ public class TrackMatchIT extends BaseIT {
             "AA11AA"
     };
 
-    private static final FrontendCam[] cams = {
-            new FrontendCam("First", 0, 0),
-            new FrontendCam("Second", 1, 1)
+    private static final Cam[] cams = {
+            new Cam("First", 0, 0),
+            new Cam("Second", 1, 1)
     };
 
     @BeforeAll
@@ -55,30 +55,30 @@ public class TrackMatchIT extends BaseIT {
         Instant instant = Instant.now();
 
         // old observations by cams[0]
-        List<FrontendReport> reports = new LinkedList<>();
+        List<Report> reports = new LinkedList<>();
         for(String id : seenPersonIds) {
-            reports.add(new FrontendReport(
-                    new FrontendObservation(FrontendObservation.ObservationType.PERSON, id),
+            reports.add(new Report(
+                    new Observation(Observation.ObservationType.PERSON, id),
                     cams[0],
                     instant.minus(1, DAYS)));
         }
         for(String id : seenCarIds) {
-            reports.add(new FrontendReport(
-                    new FrontendObservation(FrontendObservation.ObservationType.CAR, id),
+            reports.add(new Report(
+                    new Observation(Observation.ObservationType.CAR, id),
                     cams[0],
                     instant.minus(1, DAYS)));
         }
 
         // most recent observations by cams[1]
         for(String id : seenPersonIds) {
-            reports.add(new FrontendReport(
-                    new FrontendObservation(FrontendObservation.ObservationType.PERSON, id),
+            reports.add(new Report(
+                    new Observation(Observation.ObservationType.PERSON, id),
                     cams[1],
                     instant));
         }
         for(String id : seenCarIds) {
-            reports.add(new FrontendReport(
-                    new FrontendObservation(FrontendObservation.ObservationType.CAR, id),
+            reports.add(new Report(
+                    new Observation(Observation.ObservationType.CAR, id),
                     cams[1],
                     instant));
         }
@@ -94,9 +94,9 @@ public class TrackMatchIT extends BaseIT {
     @Test
     public void trackMatchNonExistingTypeTest() {
         Assertions.assertEquals(
-                "Can't handle observation type!",
+                "Type to observe not supported!",
                 Assertions.assertThrows(InvalidArgumentException.class, () -> {
-                    this.siloFrontend.track(FrontendObservation.ObservationType.UNSPEC, "1337_5p34k");
+                    this.siloFrontend.track(Observation.ObservationType.UNSPEC, "1337_5p34k");
                 }).getMessage()
         );
     }
@@ -107,7 +107,7 @@ public class TrackMatchIT extends BaseIT {
             Assertions.assertEquals(
                 ErrorMessages.OBSERVATION_NOT_FOUND,
                 Assertions.assertThrows(NotFoundException.class, () -> {
-                    this.siloFrontend.trackMatch(FrontendObservation.ObservationType.PERSON, invalidId);
+                    this.siloFrontend.trackMatch(Observation.ObservationType.PERSON, invalidId);
                 }).getMessage()
             );
         }
@@ -119,7 +119,7 @@ public class TrackMatchIT extends BaseIT {
             Assertions.assertEquals(
                 ErrorMessages.OBSERVATION_NOT_FOUND,
                 Assertions.assertThrows(NotFoundException.class, () -> {
-                    this.siloFrontend.trackMatch(FrontendObservation.ObservationType.CAR, invalidId);
+                    this.siloFrontend.trackMatch(Observation.ObservationType.CAR, invalidId);
                 }).getMessage()
             );
         }
@@ -131,7 +131,7 @@ public class TrackMatchIT extends BaseIT {
         Assertions.assertEquals(
             ErrorMessages.OBSERVATION_NOT_FOUND,
             Assertions.assertThrows(NotFoundException.class, () -> {
-                siloFrontend.track(FrontendObservation.ObservationType.CAR, notSeenCarId);
+                siloFrontend.track(Observation.ObservationType.CAR, notSeenCarId);
             }).getMessage()
         );
     }
@@ -141,7 +141,7 @@ public class TrackMatchIT extends BaseIT {
         Assertions.assertEquals(
             ErrorMessages.OBSERVATION_NOT_FOUND,
             Assertions.assertThrows(NotFoundException.class, () -> {
-                siloFrontend.trackMatch(FrontendObservation.ObservationType.PERSON, notSeenPersonId);
+                siloFrontend.trackMatch(Observation.ObservationType.PERSON, notSeenPersonId);
             }).getMessage()
         );
     }
@@ -149,9 +149,9 @@ public class TrackMatchIT extends BaseIT {
     @Test
     public void trackMatchPeople() {
         Assertions.assertDoesNotThrow(() -> {
-            List<FrontendReport> results = siloFrontend.trackMatch(FrontendObservation.ObservationType.PERSON, seenPeoplePatternId);
+            List<Report> results = siloFrontend.trackMatch(Observation.ObservationType.PERSON, seenPeoplePatternId);
             Assertions.assertEquals(results.size(), 2);
-            for(FrontendReport report : results) {
+            for(Report report : results) {
                 Assertions.assertEquals(report.getCam(), cams[1]);
                 Assertions.assertTrue(Arrays.asList(seenPersonIds).contains(report.getId()));
             }
@@ -161,9 +161,9 @@ public class TrackMatchIT extends BaseIT {
     @Test
     public void trackMatchCars() {
         Assertions.assertDoesNotThrow(() -> {
-            List<FrontendReport> results = siloFrontend.trackMatch(FrontendObservation.ObservationType.CAR, seenCarsPatternId);
+            List<Report> results = siloFrontend.trackMatch(Observation.ObservationType.CAR, seenCarsPatternId);
             Assertions.assertEquals(results.size(), 2);
-            for(FrontendReport report : results) {
+            for(Report report : results) {
                 Assertions.assertEquals(report.getCam(), cams[1]);
                 Assertions.assertTrue(Arrays.asList(seenCarIds).contains(report.getId()));
             }
@@ -173,9 +173,9 @@ public class TrackMatchIT extends BaseIT {
     @Test
     public void trackMatchPersonNoPattern() {
         Assertions.assertDoesNotThrow(() -> {
-            List<FrontendReport> results = siloFrontend.trackMatch(FrontendObservation.ObservationType.PERSON, seenPersonIds[0]);
+            List<Report> results = siloFrontend.trackMatch(Observation.ObservationType.PERSON, seenPersonIds[0]);
             Assertions.assertEquals(results.size(), 1);
-            FrontendReport report = results.get(0);
+            Report report = results.get(0);
             Assertions.assertEquals(report.getCam(), cams[1]);
             Assertions.assertTrue(report.getId().equals(seenPersonIds[0]));
         });
@@ -184,9 +184,9 @@ public class TrackMatchIT extends BaseIT {
     @Test
     public void trackMatchCarNoPattern() {
         Assertions.assertDoesNotThrow(() -> {
-            List<FrontendReport> results = siloFrontend.trackMatch(FrontendObservation.ObservationType.CAR, seenCarIds[0]);
+            List<Report> results = siloFrontend.trackMatch(Observation.ObservationType.CAR, seenCarIds[0]);
             Assertions.assertEquals(results.size(), 1);
-            FrontendReport report = results.get(0);
+            Report report = results.get(0);
             Assertions.assertEquals(report.getCam(), cams[1]);
             Assertions.assertTrue(report.getId().equals(seenCarIds[0]));
         });

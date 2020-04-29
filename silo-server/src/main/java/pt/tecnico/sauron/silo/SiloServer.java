@@ -4,7 +4,6 @@ import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.ServerInterceptors;
-import pt.tecnico.sauron.silo.domain.Silo;
 
 import java.io.IOException;
 import java.util.NoSuchElementException;

@@ -1,7 +1,6 @@
-package pt.tecnico.sauron.silo.domain;
+package pt.sauron.silo.contract.domain;
 
-import pt.tecnico.sauron.silo.exceptions.EmptyCameraNameException;
-import pt.tecnico.sauron.silo.exceptions.InvalidCameraNameException;
+import pt.sauron.silo.contract.domain.exceptions.*;
 
 public class Cam {
     private String name;
@@ -18,16 +17,15 @@ public class Cam {
         this.coords = coords;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public Coords getCoords() {
-        return coords;
-    }
-
+    public String getName() { return name; }
     public Double getLat() { return this.coords.getLat(); }
     public Double getLon() { return this.coords.getLon(); }
+    public Coords getCoords() { return coords; }
+
+    @Override
+    public String toString() {
+        return this.name + ',' + this.getLat() + ',' + this.coords.getLon();
+    }
 
     @Override
     public boolean equals(Object o) {
