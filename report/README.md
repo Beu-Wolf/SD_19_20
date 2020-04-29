@@ -15,9 +15,8 @@ Sistemas Distribuídos 2019-2020, segundo semestre
 | 89427  | Daniel Seara      | <https://github.com/Beu-Wolf>    | <mailto:daniel.g.seara@tecnico.ulisboa.pt>                |
 | 89496  | Marcelo Santos    | <https://github.com/tosmarcel>   | <mailto:marcelocmsantos@tecnico.ulisboa.pt>               |
 
-
-*(usar imagens com 150px de altura; e depois apagar esta linha)*  
-![Alice](alice.png) ![Bob](bob.png) ![Charlie](charlie.png)
+ 
+![Afonso](ist189399.png) ![Daniel](ist189427.png) ![Marcelo](ist189496.png)
 
 ## Melhorias da primeira parte
 *(que correções ou melhorias foram feitas ao código da primeira parte -- incluir link para commits no GitHub onde a alteração foi feita)*
