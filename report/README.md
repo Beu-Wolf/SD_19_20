@@ -19,6 +19,9 @@ Sistemas Distribuídos 2019-2020, segundo semestre
 *(usar imagens com 150px de altura; e depois apagar esta linha)*  
 ![Alice](alice.png) ![Bob](bob.png) ![Charlie](charlie.png)
 
+## Melhorias da primeira parte
+*(que correções ou melhorias foram feitas ao código da primeira parte -- incluir link para commits no GitHub onde a alteração foi feita)*
+
 ## Modelo de faltas
 
 _(que faltas são toleradas, que faltas não são toleradas)_
