@@ -58,6 +58,7 @@ public class LogEntry {
     }
 
     public int compareByPrev(LogEntry le) throws InvalidVectorTimestampException {
-        return this.prev.lessOrEqualThan(le.getPrev()) ? -1 : 0; // If it is less or equal then it comes first
+        return this.prev.lessOrEqualThan(le.getPrev()) ? -1 : // If it is less or equal then it comes first
+                this.prev.greaterThan(le.getPrev()) ? 1 : 0;
     }
 }

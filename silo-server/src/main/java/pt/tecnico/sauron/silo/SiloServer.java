@@ -77,10 +77,11 @@ public class SiloServer {
     private void gossipMessageSchedule() {
         ScheduledExecutorService ses = Executors.newScheduledThreadPool(1);
         Runnable gossip = () -> {
+            System.err.println("Sending gossip message!"); // debug
             sendGossipMessage();
-            System.out.println("Sending gossip message!"); // debug
+            System.out.println("Gossip message sent!");    // debug
         };
-        this.scheduledFuture = ses.scheduleAtFixedRate(gossip, 30, 30, TimeUnit.SECONDS); // TODO change to be configurable
+        this.scheduledFuture = ses.scheduleAtFixedRate(gossip, 30, 5, TimeUnit.SECONDS); // TODO change to be configurable
     }
 
     private void sendGossipMessage() {
@@ -89,6 +90,7 @@ public class SiloServer {
         try {
             for (ZKRecord record: zkNaming.listRecords(SERVER_PATH)) {
                 if ( (replicaInstance = getZKRecordInstance(record)) != this.instance) {
+                    System.out.println("Sending to " + replicaInstance);
                     // make stubs for each one
                     ManagedChannel channel = ManagedChannelBuilder.forTarget(record.getURI()).usePlaintext().build();
                     GossipServiceGrpc.GossipServiceBlockingStub gossipBlockingStub = GossipServiceGrpc.newBlockingStub(channel);
@@ -96,7 +98,16 @@ public class SiloServer {
                     // constructMessage
                     Gossip.GossipRequest request = createGossipRequest(replicaInstance);
                     // send gossipMessage
-                    Gossip.GossipResponse response = gossipBlockingStub.gossip(request); // TODO do we need this response? Should we print something?
+                    try {
+                        Gossip.GossipResponse response = gossipBlockingStub.gossip(request); // TODO do we need this response? Should we print something?
+                    } catch (StatusRuntimeException e) {
+                        Status status = Status.fromThrowable(e);
+                        if (status.getCode() == Status.Code.UNAVAILABLE) {
+                            System.out.println("Can't connect to " + replicaInstance);
+                            continue;
+                        }
+                        throw new StatusRuntimeException(e.getStatus());
+                    }
                 }
             }
         } catch (ZKNamingException e) {
@@ -116,7 +127,7 @@ public class SiloServer {
 
         // add all records
         LinkedList<Gossip.Record> listRecords = updatesToSend(replicaInstance);
-        return Gossip.GossipRequest.newBuilder().addAllRecords(listRecords).setReplicaTimeStamp(vecTimestamp).build();
+        return Gossip.GossipRequest.newBuilder().addAllRecords(listRecords).setReplicaTimeStamp(vecTimestamp).setSenderId(this.instance).build();
 
     }
 

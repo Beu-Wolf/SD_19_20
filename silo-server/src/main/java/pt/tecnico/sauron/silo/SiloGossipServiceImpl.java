@@ -26,6 +26,7 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
     public void gossip(Gossip.GossipRequest request, StreamObserver<Gossip.GossipResponse> responseObserver) {
         try {
             //merge with receiver update log
+            System.out.println("Got gossip from " + request.getSenderId());
             mergeLogs(request.getRecordsList());
             //merge receiver replicaTS with senderReplicaTS
             mergeReplicaTS(request.getReplicaTimeStamp());
@@ -34,6 +35,8 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
             // discard updates
             discardUpdates(vectorTimestampFromGRPC(request.getReplicaTimeStamp()), request.getSenderId());
             //maybe discard from execution operations table
+            responseObserver.onNext(Gossip.GossipResponse.getDefaultInstance());
+            responseObserver.onCompleted();
 
         } catch (InvalidVectorTimestampException e) {
             System.out.println(e.getMessage());
