@@ -3,6 +3,7 @@ package pt.tecnico.sauron.silo;
 
 import pt.tecnico.sauron.silo.contract.VectorTimestamp;
 import pt.tecnico.sauron.silo.contract.exceptions.InvalidVectorTimestampException;
+import pt.tecnico.sauron.silo.exceptions.SiloException;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -18,6 +19,7 @@ public class GossipStructures {
     // Maybe change to Map<instance, VectorTimestamp>
     private ArrayList<VectorTimestamp> timestampTable = new ArrayList<>();
     private LinkedList<LogEntry> updateLog = new LinkedList<>();
+    private int instance;
 
     public GossipStructures() {
         for (int i = 0; i < NUM_REPLICAS; i++) {
@@ -73,11 +75,25 @@ public class GossipStructures {
         this.updateLog.add(le);
     }
 
-    public void update(LogEntry stableLogEntry) {
+    public int getInstance() {
+        return instance;
+    }
+
+    public void setInstance(int instance) {
+        this.instance = instance;
+    }
+
+    public void updateStructuresAndExec(LogEntry stableLogEntry) throws SiloException {
         // aplly update to silo
+        if (!this.executedOperations.contains(stableLogEntry.getOpId())) {
+            stableLogEntry.getCommand().execute();
+            updateStructures(stableLogEntry);
+        }
+    }
+
+    public void updateStructures(LogEntry stableLogEntry) {
         try {
             if (!this.executedOperations.contains(stableLogEntry.getOpId())) {
-                stableLogEntry.getCommand().execute();
                 // merge valueTS
                 this.valueTS.merge(stableLogEntry.getTs());
                 // add the opId to the table

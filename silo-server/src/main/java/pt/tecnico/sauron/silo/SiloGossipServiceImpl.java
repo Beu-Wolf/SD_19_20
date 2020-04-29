@@ -5,6 +5,7 @@ import pt.tecnico.sauron.silo.commands.*;
 import pt.tecnico.sauron.silo.contract.VectorTimestamp;
 import pt.tecnico.sauron.silo.contract.exceptions.InvalidVectorTimestampException;
 import pt.tecnico.sauron.silo.domain.Silo;
+import pt.tecnico.sauron.silo.exceptions.SiloException;
 import pt.tecnico.sauron.silo.grpc.Gossip;
 import pt.tecnico.sauron.silo.grpc.GossipServiceGrpc;
 
@@ -82,9 +83,12 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
             });
             // for each update, merge structures and execute
             for(LogEntry stableLogEntry: stableLogEntries) {
-                this.gossipStructures.update(stableLogEntry);
+                this.gossipStructures.updateStructuresAndExec(stableLogEntry);
             }
         } catch (InvalidVectorTimestampException e) {
+            System.out.println(e.getMessage());
+        } catch (SiloException e) {
+            // should never happen, all updates should be good
             System.out.println(e.getMessage());
         }
     }
@@ -122,19 +126,24 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
     }
 
     private Command getCommandFromGRPC(Gossip.Record record) {
-        switch (record.getCommandsCase()) {
-            case CLEAR:
-                return new ClearCommand(this.silo);
-            case REPORT:
-                return new ReportCommand(this.silo, record.getReport());
-            case CAMJOIN:
-                return new CamJoinCommand(this.silo, record.getCamJoin());
-            case INITCAMS:
-                return new InitCamsCommand(this.silo, record.getInitCams());
-            case INITOBSERVATIONS:
-                return new InitObsCommand(this.silo, record.getInitObservations());
-            default:
-                return null;
+        try {
+            switch (record.getCommandsCase()) {
+                case CLEAR:
+                    return new ClearCommand(this.silo);
+                case REPORT:
+                    return new ReportCommand(this.silo, record.getReport());
+                case CAMJOIN:
+                    return new CamJoinCommand(this.silo, record.getCamJoin());
+                case INITCAMS:
+                    return new InitCamsCommand(this.silo, record.getInitCams());
+                case INITOBSERVATIONS:
+                    return new InitObsCommand(this.silo, record.getInitObservations());
+                default:
+                    return null;
+            }
+        } catch (SiloException e) {
+            System.out.println(e.getMessage());
         }
+        return null;
     }
 }

@@ -22,21 +22,18 @@ public class ReportCommand extends Command {
         this.observationInstant = observationInstant;
     }
 
-    public ReportCommand( Silo silo, Gossip.ReportCommand reportCommand) {
+    public ReportCommand( Silo silo, Gossip.ReportCommand reportCommand) throws SiloException {
         super(silo);
-        try {
-            Cam camObj = this.silo.getCam(reportCommand.getRequest().getCamName());
-            LinkedList<Observation> obs = new LinkedList<>();
-            for (pt.tecnico.sauron.silo.grpc.Silo.Observation o : reportCommand.getRequest().getObservationsList()) {
-                obs.add(observationFromGRPC(o));
-            }
-            Instant instant = timestampFromGRPC(reportCommand.getObservationInstant());
-            this.cam = camObj;
-            this.obs = obs;
-            this.observationInstant = instant;
-        } catch (InvalidCarIdException | InvalidPersonIdException | TypeNotSupportedException | NoCameraFoundException e) {
-            System.out.println(e.getMessage());
+        Cam camObj = this.silo.getCam(reportCommand.getRequest().getCamName());
+        LinkedList<Observation> obs = new LinkedList<>();
+        for (pt.tecnico.sauron.silo.grpc.Silo.Observation o : reportCommand.getRequest().getObservationsList()) {
+            obs.add(observationFromGRPC(o));
         }
+        Instant instant = timestampFromGRPC(reportCommand.getObservationInstant());
+        this.cam = camObj;
+        this.obs = obs;
+        this.observationInstant = instant;
+
     }
 
     public void addObs(Observation o) {

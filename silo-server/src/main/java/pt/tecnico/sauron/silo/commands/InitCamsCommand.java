@@ -2,10 +2,7 @@ package pt.tecnico.sauron.silo.commands;
 
 import pt.tecnico.sauron.silo.domain.Cam;
 import pt.tecnico.sauron.silo.domain.Silo;
-import pt.tecnico.sauron.silo.exceptions.DuplicateCameraNameException;
-import pt.tecnico.sauron.silo.exceptions.EmptyCameraNameException;
-import pt.tecnico.sauron.silo.exceptions.InvalidCameraCoordsException;
-import pt.tecnico.sauron.silo.exceptions.InvalidCameraNameException;
+import pt.tecnico.sauron.silo.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.Gossip;
 
 import java.util.LinkedList;
@@ -19,29 +16,21 @@ public class InitCamsCommand extends Command {
         this.camList = camList;
     }
 
-    public InitCamsCommand(Silo silo, Gossip.InitCamsCommand command) {
+    public InitCamsCommand(Silo silo, Gossip.InitCamsCommand command) throws SiloException {
         super(silo);
-        try {
-            LinkedList<Cam> newCamList = new LinkedList<>();
-            for (pt.tecnico.sauron.silo.grpc.Silo.Cam c : command.getRequest().getCamsList()) {
-                newCamList.add(camFromGRPC(c));
-            }
-            this.camList = newCamList;
-        } catch (InvalidCameraNameException | EmptyCameraNameException e) {
-            System.out.println(e.getMessage());
+        LinkedList<Cam> newCamList = new LinkedList<>();
+        for (pt.tecnico.sauron.silo.grpc.Silo.Cam c : command.getRequest().getCamsList()) {
+            newCamList.add(camFromGRPC(c));
         }
-
+        this.camList = newCamList;
     }
 
     @Override
-    public void execute() {
-        try {
-            for (Cam cam: camList) {
-                silo.registerCam(cam);
-            }
-        } catch (DuplicateCameraNameException | InvalidCameraCoordsException e) {
-            System.out.println(e.getMessage());
+    public void execute() throws SiloException{
+        for (Cam cam: camList) {
+            silo.registerCam(cam);
         }
+
     }
 
     @Override

@@ -22,7 +22,6 @@ public class SiloServer {
     private final int port;
     private final Server server;
     private final Silo silo = new Silo();
-    private final int instance;
 
     // timer
     ScheduledFuture<?> scheduledFuture;
@@ -32,9 +31,9 @@ public class SiloServer {
 
     private final ZKNaming zkNaming;
 
-    final BindableService controlImpl = new SiloControlServiceImpl(silo);
-    final BindableService reportImpl = new SiloReportServiceImpl(silo);
-    final BindableService queryImpl = new SiloQueryServiceImpl(silo);
+    final BindableService controlImpl = new SiloControlServiceImpl(silo, gossipStructures);
+    final BindableService reportImpl = new SiloReportServiceImpl(silo, gossipStructures);
+    final BindableService queryImpl = new SiloQueryServiceImpl(silo, gossipStructures);
     final BindableService gossipImpl = new SiloGossipServiceImpl(silo, gossipStructures);
 
     public SiloServer(int port, ZKNaming zkNaming, int instance){
@@ -49,7 +48,7 @@ public class SiloServer {
                 .addService(this.gossipImpl)
                 .build();
         this.zkNaming = zkNaming;
-        this.instance = instance;
+        gossipStructures.setInstance(instance);
     }
 
     public void start() throws IOException {
@@ -67,7 +66,7 @@ public class SiloServer {
                 System.out.println("Got EOF");
             }
             System.out.println("Shutting down");
-            this.scheduledFuture.cancel(true);
+            //this.scheduledFuture.cancel(true);
             server.shutdown();
         }).start();
 
@@ -89,7 +88,7 @@ public class SiloServer {
         int replicaInstance;
         try {
             for (ZKRecord record: zkNaming.listRecords(SERVER_PATH)) {
-                if ( (replicaInstance = getZKRecordInstance(record)) != this.instance) {
+                if ( (replicaInstance = getZKRecordInstance(record)) != this.gossipStructures.getInstance()) {
                     System.out.println("Sending to " + replicaInstance);
                     // make stubs for each one
                     ManagedChannel channel = ManagedChannelBuilder.forTarget(record.getURI()).usePlaintext().build();
@@ -127,7 +126,7 @@ public class SiloServer {
 
         // add all records
         LinkedList<Gossip.Record> listRecords = updatesToSend(replicaInstance);
-        return Gossip.GossipRequest.newBuilder().addAllRecords(listRecords).setReplicaTimeStamp(vecTimestamp).setSenderId(this.instance).build();
+        return Gossip.GossipRequest.newBuilder().addAllRecords(listRecords).setReplicaTimeStamp(vecTimestamp).setSenderId(this.gossipStructures.getInstance()).build();
 
     }
 

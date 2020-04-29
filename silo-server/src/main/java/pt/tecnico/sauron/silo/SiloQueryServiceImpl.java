@@ -4,6 +4,7 @@ import com.google.protobuf.Timestamp;
 import com.google.type.LatLng;
 import io.grpc.stub.StreamObserver;
 import io.grpc.Status;
+import pt.tecnico.sauron.silo.contract.VectorTimestamp;
 import pt.tecnico.sauron.silo.domain.*;
 import pt.tecnico.sauron.silo.exceptions.ErrorMessages;
 import pt.tecnico.sauron.silo.exceptions.ObservationNotFoundException;
@@ -24,9 +25,11 @@ import java.util.regex.Pattern;
 
 public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase {
     private Silo silo;
+    private GossipStructures gossipStructures;
 
-    public SiloQueryServiceImpl(Silo silo) {
+    public SiloQueryServiceImpl(Silo silo, GossipStructures structures) {
         this.silo = silo;
+        this.gossipStructures = structures;
     }
 
 
@@ -43,7 +46,8 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
             Observation observation = observationFromGRPC(type, id);
             Report report = silo.track(observation);
 
-            TrackResponse response = TrackResponse.newBuilder().setReport(reportToGRPC(report)).build();
+            TrackResponse response = TrackResponse.newBuilder()
+                    .setReport(reportToGRPC(report)).setNew(vecTimestampToGRPC(this.gossipStructures.getValueTS())).build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
 
@@ -80,7 +84,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
                 responseObserver.onError(Status.NOT_FOUND.asRuntimeException());
             } else {
                 TrackMatchResponse response = TrackMatchResponse.newBuilder()
-                        .addAllReports(reports).build();
+                        .addAllReports(reports).setNew(vecTimestampToGRPC(this.gossipStructures.getValueTS())).build();
                 responseObserver.onNext(response);
                 responseObserver.onCompleted();
             }
@@ -120,7 +124,7 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
             responseObserver.onError(Status.NOT_FOUND.asRuntimeException());
         } else {
             TraceResponse response = TraceResponse.newBuilder()
-                    .addAllReports(reports).build();
+                    .addAllReports(reports).setNew(vecTimestampToGRPC(this.gossipStructures.getValueTS())).build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         }
@@ -129,6 +133,10 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
     // ===================================================
     // CONVERT BETWEEN DOMAIN AND GRPC
     // ===================================================
+
+    private pt.tecnico.sauron.silo.grpc.Silo.VecTimestamp vecTimestampToGRPC(VectorTimestamp ts) {
+        return pt.tecnico.sauron.silo.grpc.Silo.VecTimestamp.newBuilder().addAllTimestamps(ts.getValues()).build();
+    }
 
     private pt.tecnico.sauron.silo.grpc.Silo.Report reportToGRPC(Report report) throws SiloInvalidArgumentException {
         return pt.tecnico.sauron.silo.grpc.Silo.Report.newBuilder()
