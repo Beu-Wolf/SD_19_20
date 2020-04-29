@@ -1,7 +1,10 @@
 package pt.tecnico.sauron.eye;
 
+import pt.sauron.silo.contract.domain.Cam;
+import pt.sauron.silo.contract.domain.Coords;
+import pt.sauron.silo.contract.domain.exceptions.EmptyCameraNameException;
+import pt.sauron.silo.contract.domain.exceptions.InvalidCameraNameException;
 import pt.tecnico.sauron.silo.client.SiloFrontend;
-import pt.tecnico.sauron.silo.client.domain.Cam;
 import pt.tecnico.sauron.silo.client.domain.Observation;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
 import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
@@ -32,11 +35,16 @@ public class Eye {
     private List<Observation> observationBuffer = new LinkedList<>();
 
     public Eye(SiloFrontend siloFrontend, String name, double lat, double lon) throws FrontendException, ZKNamingException {
-        this.siloFrontend = siloFrontend;
-        this.cam = new Cam(name, lat, lon);
+        try {
+            this.siloFrontend = siloFrontend;
+            this.cam = new Cam(name, new Coords(lat, lon));
 
-        this.siloFrontend.camJoin(this.cam);
-        System.out.println("Registered Successfully!");
+            this.siloFrontend.camJoin(this.cam);
+            System.out.println("Registered Successfully!");
+        } catch (InvalidCameraNameException
+                |EmptyCameraNameException e) {
+            System.err.println("Invalid camera arguments");
+        }
     }
 
     public void interactive() {

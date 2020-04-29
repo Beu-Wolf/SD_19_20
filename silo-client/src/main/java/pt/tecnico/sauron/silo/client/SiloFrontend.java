@@ -3,8 +3,10 @@ package pt.tecnico.sauron.silo.client;
 import com.google.protobuf.Timestamp;
 import com.google.type.LatLng;
 import io.grpc.*;
-import pt.tecnico.sauron.silo.client.domain.Cam;
-import pt.tecnico.sauron.silo.client.domain.Coords;
+import pt.sauron.silo.contract.domain.Cam;
+import pt.sauron.silo.contract.domain.Coords;
+import pt.sauron.silo.contract.domain.exceptions.EmptyCameraNameException;
+import pt.sauron.silo.contract.domain.exceptions.InvalidCameraNameException;
 import pt.tecnico.sauron.silo.client.domain.Observation;
 import pt.tecnico.sauron.silo.client.domain.Report;
 import pt.tecnico.sauron.silo.client.exceptions.*;
@@ -221,6 +223,12 @@ public class SiloFrontend {
             }
 
             throw new QueryException();
+
+        } catch (InvalidCameraNameException
+                |EmptyCameraNameException e) {
+            // WILL NOT HAPPEN: cams from GRPC always have good names
+            e.printStackTrace();
+            throw new QueryException();
         }
     }
 
@@ -248,8 +256,14 @@ public class SiloFrontend {
             }
 
             throw new QueryException();
+
+        } catch (InvalidCameraNameException
+                |EmptyCameraNameException e) {
+            // WILL NOT HAPPEN: cams from GRPC always have good names
+            e.printStackTrace();
+            throw new QueryException();
         }
-    }
+}
 
     public List<Report> trace(Observation.ObservationType type, String id) throws FrontendException, ZKNamingException {
         LinkedList<Report> results = new LinkedList<>();
@@ -274,6 +288,12 @@ public class SiloFrontend {
                 throw new InvalidArgumentException(status.getDescription());
             }
 
+            throw new QueryException();
+
+        } catch (InvalidCameraNameException
+                |EmptyCameraNameException e) {
+            // WILL NOT HAPPEN: cams from GRPC always have good names
+            e.printStackTrace();
             throw new QueryException();
         }
     }
@@ -349,7 +369,7 @@ public class SiloFrontend {
     // ===================================================
     // CONVERT BETWEEN DTO AND GRPC
     // ===================================================
-    private Report reportFromTrackResponse(Silo.TrackResponse response) {
+    private Report reportFromTrackResponse(Silo.TrackResponse response) throws InvalidCameraNameException, EmptyCameraNameException {
         Observation observation = observationFromGRPC(response.getObservation());
         Cam cam = camFromGRPC(response.getCam());
         Instant timestamp = timestampFromGRPC(response.getTimestamp());
@@ -365,7 +385,7 @@ public class SiloFrontend {
                 .build();
     }
 
-    private Report reportFromTrackMatchResponse(Silo.TrackMatchResponse response) {
+    private Report reportFromTrackMatchResponse(Silo.TrackMatchResponse response) throws InvalidCameraNameException, EmptyCameraNameException {
         Observation observation = observationFromGRPC(response.getObservation());
         Cam cam = camFromGRPC(response.getCam());
         Instant timestamp = timestampFromGRPC(response.getTimestamp());
@@ -373,7 +393,7 @@ public class SiloFrontend {
         return new Report(observation, cam, timestamp);
     }
 
-    private Report reportFromTraceResponse(Silo.TraceResponse response) {
+    private Report reportFromTraceResponse(Silo.TraceResponse response) throws InvalidCameraNameException, EmptyCameraNameException {
         Observation observation = observationFromGRPC(response.getObservation());
         Cam cam = camFromGRPC(response.getCam());
         Instant timestamp = timestampFromGRPC(response.getTimestamp());
@@ -419,11 +439,15 @@ public class SiloFrontend {
                 .setCoords(coordsToGRPC(cam.getCoords()))
                 .build();
     }
-    private Cam camFromGRPC(Silo.Cam cam) {
+    private Cam camFromGRPC(Silo.Cam cam) throws InvalidCameraNameException, EmptyCameraNameException {
         String name = cam.getName();
-        LatLng coords = cam.getCoords();
+        Coords coords = coordsFromGRPC(cam.getCoords());
 
-        return new Cam(name, coords.getLatitude(), coords.getLongitude());
+        return new Cam(name, coords);
+    }
+
+    private Coords coordsFromGRPC(LatLng coords) {
+        return new Coords(coords.getLatitude(), coords.getLongitude());
     }
 
     private LatLng coordsToGRPC(Coords coords) {

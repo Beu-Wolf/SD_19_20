@@ -2,7 +2,10 @@ package pt.tecnico.sauron.silo.client;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import pt.tecnico.sauron.silo.client.domain.Cam;
+import pt.sauron.silo.contract.domain.Cam;
+import pt.sauron.silo.contract.domain.Coords;
+import pt.sauron.silo.contract.domain.exceptions.EmptyCameraNameException;
+import pt.sauron.silo.contract.domain.exceptions.InvalidCameraNameException;
 import pt.tecnico.sauron.silo.client.domain.Observation;
 import pt.tecnico.sauron.silo.client.domain.Report;
 import pt.tecnico.sauron.silo.client.exceptions.ErrorMessages;
@@ -41,18 +44,20 @@ public class ClearIT extends BaseIT {
             Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
                     Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(Observation.ObservationType.PERSON, "*"))
                             .getMessage());
-        } catch (FrontendException e) {
+        } catch (FrontendException
+                |InvalidCameraNameException
+                |EmptyCameraNameException e) {
             e.printStackTrace();
         }
     }
 
 
-    public LinkedList<Cam> createCams(int count) {
+    public LinkedList<Cam> createCams(int count) throws InvalidCameraNameException, EmptyCameraNameException {
         LinkedList<Cam> list = new LinkedList<>();
         for(int i = 1; i <= count; i++) {
             double lat = i*1.2;
             double lon = i*-1.2;
-            Cam cam = new Cam("Camera "+i, lat, lon);
+            Cam cam = new Cam("Camera "+i, new Coords(lat, lon));
             list.add(cam);
         }
         return list;

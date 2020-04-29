@@ -1,7 +1,10 @@
 package pt.tecnico.sauron.silo.client;
 
 import org.junit.jupiter.api.*;
-import pt.tecnico.sauron.silo.client.domain.Cam;
+import pt.sauron.silo.contract.domain.Cam;
+import pt.sauron.silo.contract.domain.Coords;
+import pt.sauron.silo.contract.domain.exceptions.EmptyCameraNameException;
+import pt.sauron.silo.contract.domain.exceptions.InvalidCameraNameException;
 import pt.tecnico.sauron.silo.client.domain.Observation;
 import pt.tecnico.sauron.silo.client.domain.Report;
 import pt.tecnico.sauron.silo.client.exceptions.*;
@@ -45,10 +48,20 @@ public class TrackIT extends BaseIT {
             "Second"
     };
 
-    private static final Cam[] cams = {
-            new Cam(camNames[0], 0, 0),
-            new Cam(camNames[1], 1, 1)
-    };
+    private static Cam[] cams;
+
+    static {
+        try {
+            cams = new Cam[]{
+                new Cam(camNames[0], new Coords(0, 0)),
+                new Cam(camNames[1], new Coords(1, 1))
+            };
+        } catch (EmptyCameraNameException e) {
+            e.printStackTrace();
+        } catch (InvalidCameraNameException e) {
+            e.printStackTrace();
+        }
+    }
 
     @BeforeAll
     public static void setupTrack () {

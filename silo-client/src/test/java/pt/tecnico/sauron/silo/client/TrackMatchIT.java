@@ -4,7 +4,10 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import pt.tecnico.sauron.silo.client.domain.Cam;
+import pt.sauron.silo.contract.domain.Cam;
+import pt.sauron.silo.contract.domain.Coords;
+import pt.sauron.silo.contract.domain.exceptions.EmptyCameraNameException;
+import pt.sauron.silo.contract.domain.exceptions.InvalidCameraNameException;
 import pt.tecnico.sauron.silo.client.domain.Observation;
 import pt.tecnico.sauron.silo.client.domain.Report;
 import pt.tecnico.sauron.silo.client.exceptions.*;
@@ -45,10 +48,21 @@ public class TrackMatchIT extends BaseIT {
             "AA11AA"
     };
 
-    private static final Cam[] cams = {
-            new Cam("First", 0, 0),
-            new Cam("Second", 1, 1)
-    };
+    private static
+    Cam[] cams;
+
+    static {
+        try {
+            cams = new Cam[]{
+                        new Cam("First", new Coords(0, 0)),
+                        new Cam("Second", new Coords(1, 1))
+                };
+        } catch (EmptyCameraNameException e) {
+            e.printStackTrace();
+        } catch (InvalidCameraNameException e) {
+            e.printStackTrace();
+        }
+    }
 
     @BeforeAll
     public static void setupTrackMatch () {

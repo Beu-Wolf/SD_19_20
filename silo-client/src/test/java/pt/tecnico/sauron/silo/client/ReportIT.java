@@ -3,7 +3,10 @@ package pt.tecnico.sauron.silo.client;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import pt.tecnico.sauron.silo.client.domain.Cam;
+import pt.sauron.silo.contract.domain.Cam;
+import pt.sauron.silo.contract.domain.Coords;
+import pt.sauron.silo.contract.domain.exceptions.EmptyCameraNameException;
+import pt.sauron.silo.contract.domain.exceptions.InvalidCameraNameException;
 import pt.tecnico.sauron.silo.client.domain.Observation;
 import pt.tecnico.sauron.silo.client.exceptions.*;
 import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
@@ -18,12 +21,14 @@ public class ReportIT extends BaseIT {
 
     @BeforeAll
     public static void registerCamera() {
-        Cam cam = new Cam(cameraName, 10, 10);
         try {
+            Cam cam = new Cam(cameraName, new Coords(10, 10));
             siloFrontend.camJoin(cam);
-        } catch(CameraAlreadyExistsException e) {
-            // ignore
-        } catch(FrontendException | ZKNamingException e) {
+
+        } catch(InvalidCameraNameException
+               |EmptyCameraNameException
+               |FrontendException
+               |ZKNamingException e) {
             e.printStackTrace();
         }
     }

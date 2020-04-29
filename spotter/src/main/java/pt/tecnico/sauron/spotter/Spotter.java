@@ -1,9 +1,11 @@
 package pt.tecnico.sauron.spotter;
 
 import io.grpc.StatusRuntimeException;
+import pt.sauron.silo.contract.domain.exceptions.EmptyCameraNameException;
+import pt.sauron.silo.contract.domain.exceptions.InvalidCameraNameException;
 import pt.tecnico.sauron.silo.client.SiloFrontend;
-import pt.tecnico.sauron.silo.client.domain.Cam;
-import pt.tecnico.sauron.silo.client.domain.Coords;
+import pt.sauron.silo.contract.domain.Cam;
+import pt.sauron.silo.contract.domain.Coords;
 import pt.tecnico.sauron.silo.client.domain.Observation;
 import pt.tecnico.sauron.silo.client.domain.Report;
 import pt.tecnico.sauron.silo.client.exceptions.FrontendException;
@@ -112,9 +114,6 @@ public class Spotter {
                      System.err.println(e.getStatus().getDescription());
                  } catch (FrontendException e) {
                      System.err.println(e.getMessage());
-                 } catch (InterruptedException e) {
-                     Thread.currentThread().interrupt();
-                     System.err.println(e.getMessage());
                  } catch (ZKNamingException e) {
                      System.err.println("Could not find server in given path. Make sure the server is up and running.");
                  }
@@ -152,7 +151,7 @@ public class Spotter {
                 "trail [car|person] [id]: find all observations of person or car, must use a valid id\n");
     }
 
-    private void initCameras(Scanner scanner) throws ZKNamingException, FrontendException, InterruptedException {
+    private void initCameras(Scanner scanner) throws FrontendException {
         System.out.println("Insert cameras: name,latitude,longitude . done when finished");
         LinkedList<Cam> listCams = new LinkedList<>();
         while(true) {
@@ -164,18 +163,24 @@ public class Spotter {
                         siloFrontend.ctrlInitCams(listCams);
                     break;
                 } else if (Pattern.matches(CAMS_TO_LOAD, command)) {
-                    String camName = getGroupFromPattern(command, camsToLoad, 1);
-                    double lat = Double.parseDouble(getGroupFromPattern(command, camsToLoad, 2));
-                    double lon = Double.parseDouble(getGroupFromPattern(command, camsToLoad, 3));
-                    Cam cam = new Cam(camName, lat, lon);
-                    listCams.add(cam);
+                    try {
+                        String camName = getGroupFromPattern(command, camsToLoad, 1);
+                        double lat = Double.parseDouble(getGroupFromPattern(command, camsToLoad, 2));
+                        double lon = Double.parseDouble(getGroupFromPattern(command, camsToLoad, 3));
+                        Cam cam = new Cam(camName, new Coords(lat, lon));
+                        listCams.add(cam);
+                    } catch (EmptyCameraNameException
+                            |InvalidCameraNameException e) {
+                        System.err.println(e.getMessage());
+                    }
+
                 } else {
                     System.out.println("Unrecognized command, try again");
                 }
         }
     }
 
-    private void initObs(Scanner scanner) throws ZKNamingException, FrontendException, InterruptedException {
+    private void initObs(Scanner scanner) throws ZKNamingException, FrontendException {
         System.out.println("Insert observations: cameraName,type,id . done when finished");
         LinkedList<Report> listReports = new LinkedList<>();
         while(true) {
@@ -187,21 +192,35 @@ public class Spotter {
                     siloFrontend.ctrlInitObservations(listReports);
                 break;
             } else if (Pattern.matches(OBS_TO_LOAD_CAR, command)) {
-                String camName = getGroupFromPattern(command, obsToLoadCar, 1);
-                Coords coords = siloFrontend.camInfo(camName);
-                Cam cam = new Cam(camName, coords.getLat(), coords.getLon());
-                String id = getGroupFromPattern(command, obsToLoadCar, 2);
-                Observation obs = new Observation(Observation.ObservationType.CAR, id);
-                Report report = new Report(obs, cam, Instant.now());
-                listReports.add(report);
+
+                try {
+                    String camName = getGroupFromPattern(command, obsToLoadCar, 1);
+                    Coords coords = siloFrontend.camInfo(camName);
+                    Cam cam = new Cam(camName, coords);
+                    String id = getGroupFromPattern(command, obsToLoadCar, 2);
+                    Observation obs = new Observation(Observation.ObservationType.CAR, id);
+                    Report report = new Report(obs, cam, Instant.now());
+                    listReports.add(report);
+                } catch (EmptyCameraNameException
+                        |InvalidCameraNameException e) {
+                    System.err.println(e.getMessage());
+                }
+
             } else if (Pattern.matches(OBS_TO_LOAD_PERSON, command)) {
-                String camName = getGroupFromPattern(command, obsToLoadPerson, 1);
-                Coords coords = siloFrontend.camInfo(camName);
-                Cam cam = new Cam(camName, coords.getLat(), coords.getLon());
-                String id = getGroupFromPattern(command, obsToLoadPerson, 2);
-                Observation obs = new Observation(Observation.ObservationType.PERSON, id);
-                Report report = new Report(obs, cam, Instant.now());
-                listReports.add(report);
+
+                try {
+                    String camName = getGroupFromPattern(command, obsToLoadPerson, 1);
+                    Coords coords = siloFrontend.camInfo(camName);
+                    Cam cam = new Cam(camName, coords);
+                    String id = getGroupFromPattern(command, obsToLoadPerson, 2);
+                    Observation obs = new Observation(Observation.ObservationType.PERSON, id);
+                    Report report = new Report(obs, cam, Instant.now());
+                    listReports.add(report);
+                } catch (EmptyCameraNameException
+                        |InvalidCameraNameException e) {
+                    System.err.println(e.getMessage());
+                }
+
             } else {
                 System.out.println("Unrecognized command, try again");
             }

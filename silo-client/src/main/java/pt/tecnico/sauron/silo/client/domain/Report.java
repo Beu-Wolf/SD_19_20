@@ -1,5 +1,7 @@
 package pt.tecnico.sauron.silo.client.domain;
 
+import pt.sauron.silo.contract.domain.Cam;
+
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
