@@ -81,7 +81,7 @@ public class SiloServer {
             sendGossipMessage();
             System.out.println("Gossip message sent!");    // debug
         };
-        this.scheduledFuture = ses.scheduleAtFixedRate(gossip, 30, 5, TimeUnit.SECONDS); // TODO change to be configurable
+        this.scheduledFuture = ses.scheduleAtFixedRate(gossip, 30, 30, TimeUnit.SECONDS); // TODO change to be configurable
     }
 
     private void sendGossipMessage() {
