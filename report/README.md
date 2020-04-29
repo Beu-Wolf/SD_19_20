@@ -22,18 +22,19 @@ Sistemas Distribuídos 2019-2020, segundo semestre
 
  * O conjunto de testes foi melhorado.
     * [Added load test to report](https://github.com/tecnico-distsys/A04-Sauron/commit/70a1cda17eb81cea50e55d32ae13052a0b54d1af)
-    * [Added verification of coordinates](https://github.com/tecnico-distsys/A04-Sauron/commit/a7f573348f1d560f1c656fc5e5258a5a4123c529))
+    * [Added verification of coordinates](https://github.com/tecnico-distsys/A04-Sauron/commit/a7f573348f1d560f1c656fc5e5258a5a4123c529)
 
- * A resposta ao `CamInfo` passa a retornar apenas as coordenadas da câmara, em vez da câmara em si
+ * A resposta ao `CamInfo` passa a retornar apenas as coordenadas da câmara, em vez de retornar a câmara em si.
     * [Update proto to send coords in cam info](https://github.com/tecnico-distsys/A04-Sauron/commit/c7bc13b00d9e540ea367eb94c47af874e8a7642b))
 
- * Os objetos de representação de informação usados no cliente (`...DTO`) foram renomeados para objetos do domínio. Os objetos do domínio do cliente e servidor não foram unificados para manter abstração e isolamento dos dois.
+ * Os objetos de representação de informação usados no cliente (`...DTO`) foram renomeados para objetos do domínio (`Frontend...`). Os objetos do domínio do cliente e servidor não foram unificados para manter a abstração e o isolamento dos dois.
     * [Rename DTO](https://github.com/tecnico-distsys/A04-Sauron/commit/1146664b562161ba149b6084e0632dc6340382a5)
     * [DTO package to domain](https://github.com/tecnico-distsys/A04-Sauron/commit/e77937cbea6a4430804c80e63f7396d58b455a6f)
 
- * Os requests de gRPC que eram feitos usando streams e metadados foram alterados para usar campos normais e `repeated`. Todos os argumentos passaram a ser explicitamente passados dentro do corpo da mensagem.
+ * Os requests de gRPC que eram feitos usando streams e metadados foram alterados para usar campos `repeated`. Todos os argumentos passaram a ser explicitamente passados dentro do corpo da mensagem.
     * *As alterações foram desenvolvidas incrementalmente ao longo de vários commits, no branch `grpcRefactor`.*
     * [Histórico de commits](https://github.com/tecnico-distsys/A04-Sauron/commits/grpcRefactor)
+    * [Primeiro commit da melhoria](https://github.com/tecnico-distsys/A04-Sauron/commit/6776f84bb2e991349f311d1f313ab7afc59ec12a)
     * [Último commit da melhoria](https://github.com/tecnico-distsys/A04-Sauron/commit/4101f632e92975d5170ee29e798c154b73eb18da)
 
  * A mensagem usada para fazer pedidos de `Track`, `Trace` e `TrackMatch` foi dividida em diferentes mensagens, uma para cada request.
