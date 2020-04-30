@@ -74,4 +74,9 @@ public class VectorTimestamp {
 
         return true;
     }
+
+    @Override
+    public String toString() {
+        return this.values.toString();
+    }
 }

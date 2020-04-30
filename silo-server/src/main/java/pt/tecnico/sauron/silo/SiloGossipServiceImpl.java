@@ -32,7 +32,7 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
             //merge receiver replicaTS with senderReplicaTS
             mergeReplicaTS(request.getReplicaTimeStamp());
             //find and apply updates
-            applyUpdates(request.getRecordsList());
+            applyUpdates();
             // discard updates
             discardUpdates(vectorTimestampFromGRPC(request.getReplicaTimeStamp()), request.getSenderId());
             //maybe discard from execution operations table
@@ -64,16 +64,10 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
         gossipStructures.getReplicaTS().merge(senderReplicaTS);
     }
 
-    private void applyUpdates(List<Gossip.Record> records) {
-        // Collect stable updates, ordered by prev
+    private void applyUpdates() {
+        // Order updates by prev, and execute stable ones
         try {
-            List<LogEntry> stableLogEntries = new ArrayList<>();
-            for (Gossip.Record record : records) {
-                if (vectorTimestampFromGRPC(record.getPrev()).lessOrEqualThan(this.gossipStructures.getValueTS())) {
-                    stableLogEntries.add(recordToLogEntry(record));
-                }
-            }
-            stableLogEntries.sort((logEntry, logEntry2) -> {
+            this.gossipStructures.getUpdateLog().sort((logEntry, logEntry2) -> {
                 try {
                     return logEntry.compareByPrev(logEntry2);
                 } catch (InvalidVectorTimestampException e) {
@@ -82,8 +76,10 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
                 }
             });
             // for each update, merge structures and execute
-            for(LogEntry stableLogEntry: stableLogEntries) {
-                this.gossipStructures.updateStructuresAndExec(stableLogEntry);
+            for(LogEntry logEntry: this.gossipStructures.getUpdateLog()) {
+                if (logEntry.getPrev().lessOrEqualThan(this.gossipStructures.getValueTS())) {
+                    this.gossipStructures.updateStructuresAndExec(logEntry);
+                }
             }
         } catch (InvalidVectorTimestampException e) {
             System.out.println(e.getMessage());
@@ -96,13 +92,18 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
     private void discardUpdates(VectorTimestamp senderReplicaTS, int senderId) {
         // update tableTimestamp[sender]
         gossipStructures.setTimestampTableRow(senderId-1, senderReplicaTS); // We assume an instance starts at one
-        for (LogEntry le: gossipStructures.getUpdateLog()) {
-            for (VectorTimestamp timestampTableTS: gossipStructures.getTimestampTable()) {
+
+        // Iterate over the original and remove safely
+        for (LogEntry le: new LinkedList<>(gossipStructures.getUpdateLog())) {
+            for (int i = 0; i < this.gossipStructures.getTimestampTable().size(); i++) {
                 // If the value of the TS of the replica that recorded the update is greater or equal
                 // then the records replicaTS at that same index, it's safe to remove
-                if (timestampTableTS.get(le.getReplicaId()-1) >= le.getTs().get(le.getReplicaId()-1)) {
-                    gossipStructures.getUpdateLog().remove(le);
+                if (i != this.gossipStructures.getInstance()-1) {
+                    if (this.gossipStructures.getTimestampTableRow(i).get(le.getReplicaId()-1) >= le.getTs().get(le.getReplicaId()-1)) {
+                        gossipStructures.getUpdateLog().remove(le);
+                    }
                 }
+
             }
         }
     }

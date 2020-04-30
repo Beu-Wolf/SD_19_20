@@ -29,13 +29,21 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
     @Override
     public void camJoin(pt.tecnico.sauron.silo.grpc.Silo.JoinRequest request, io.grpc.stub.StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.JoinResponse> responseObserver) {
         LogEntry le = receiveUpdate(request.getOpId(), request.getPrev());
-
+        // If it has not been executed before
         if (le != null) {
             try {
                 Cam cam = camFromGRPC(request.getCam());
-                this.silo.registerCam(cam);
+
+                // If is stable
+                if (vectorTimestampFromGRPC(request.getPrev()).lessOrEqualThan(this.gossipStructures.getValueTS())) {
+                    this.silo.registerCam(cam);
+                    this.gossipStructures.updateStructures(le);
+                }
+
+                // add to update log
                 le.setCommand(new CamJoinCommand(this.silo, cam));
-                this.gossipStructures.updateStructures(le);
+                this.gossipStructures.addLogEntry(le);
+                System.out.println( "Added: " + this.gossipStructures.getUpdateLog());
 
             } catch(DuplicateCameraNameException e) {
                 responseObserver.onError(Status.ALREADY_EXISTS.asRuntimeException());
@@ -45,6 +53,8 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
                         .withDescription(e.getMessage())
                         .asRuntimeException());
                 return;
+            } catch (InvalidVectorTimestampException e) {
+                System.out.println(e.getMessage());
             }
         }
         pt.tecnico.sauron.silo.grpc.Silo.JoinResponse response = createJoinResponse();
@@ -71,6 +81,8 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
     public void report(pt.tecnico.sauron.silo.grpc.Silo.ReportRequest request, io.grpc.stub.StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.ReportResponse> responseObserver) {
         LogEntry le = receiveUpdate(request.getOpId(), request.getPrev());
         int numAcked = 0;
+
+        // If has not been executed before
         if (le != null) {
 
             Cam cam;
@@ -86,24 +98,37 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
             CompositeSiloException exceptions = new CompositeSiloException();
 
             LinkedList<Observation> obsList = new LinkedList<>();
-            Instant regInstant = null;
+
+            //add to helper list
             for (pt.tecnico.sauron.silo.grpc.Silo.Observation observation : request.getObservationsList()) {
                 try {
                     Observation o = observationFromGRPC(observation);
                     obsList.add(o);
-                    silo.registerObservation(cam, o);
-                    regInstant = Instant.now();
-                    numAcked += 1;
                 } catch (InvalidCarIdException
                         | InvalidPersonIdException
                         | TypeNotSupportedException e) {
                     exceptions.addException(e);
                 }
-
-                le.setCommand(new ReportCommand(this.silo, cam, obsList, regInstant));
-                this.gossipStructures.updateStructures(le);
             }
 
+            //if is stable, execute
+            Instant instant = Instant.now();
+            try {
+                if (vectorTimestampFromGRPC(request.getPrev()).lessOrEqualThan(this.gossipStructures.getValueTS())) {
+                    for (Observation o : obsList) {
+                        this.silo.registerObservation(cam, o);
+                        numAcked++;
+                    }
+                    this.gossipStructures.updateStructures(le);
+                }
+            }catch (InvalidVectorTimestampException e) {
+                System.out.println(e.getMessage());
+            }
+
+            // add to update log
+            le.setCommand(new ReportCommand(this.silo, cam, obsList, instant));
+            this.gossipStructures.addLogEntry(le);
+            System.out.println( "Added: " + this.gossipStructures.getUpdateLog());
 
             if (!exceptions.isEmpty()) {
                 responseObserver.onError(Status.INVALID_ARGUMENT

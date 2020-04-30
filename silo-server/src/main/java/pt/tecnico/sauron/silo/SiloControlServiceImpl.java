@@ -57,9 +57,18 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
         if (newLe != null) {
             // add command
             newLe.setCommand(new ClearCommand(this.silo));
-            this.silo.clearObservations();
-            this.silo.clearCams();
-            this.gossipStructures.updateStructures(newLe);
+            // add to update log
+            this.gossipStructures.addLogEntry(newLe);
+            // execute only if stable
+            try {
+                if (vectorTimestampFromGRPC(request.getPrev()).lessOrEqualThan(this.gossipStructures.getValueTS())) {
+                    this.silo.clearObservations();
+                    this.silo.clearCams();
+                    this.gossipStructures.updateStructures(newLe);
+                }
+            } catch (InvalidVectorTimestampException e) {
+                System.out.println(e.getMessage());
+            }
         }
 
         responseObserver.onNext(Silo.ClearResponse.getDefaultInstance());
@@ -70,19 +79,37 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
     public void initCams(Silo.InitCamsRequest request, StreamObserver<Silo.InitCamsResponse> responseObserver) {
         CompositeSiloException exceptions = new CompositeSiloException();
         LogEntry newLe = receiveUpdate(request.getOpId(), request.getPrev());
+
+        // if is not executed yet
         if (newLe != null) {
             LinkedList<Cam> camList = new LinkedList<>();
+
+            // add cam to a helper list
             for(Silo.Cam grpcCam : request.getCamsList()) {
                 try {
-                    Cam cam = camFromGRPC(grpcCam);
-                    camList.add(cam);
-                    this.silo.registerCam(cam);
+                    camList.add(camFromGRPC(grpcCam));
                 } catch (SiloException e) {
                     exceptions.addException(e);
                 }
             }
+
+            // Check if is stable to execute
+            try {
+                if (vectorTimestampFromGRPC(request.getPrev()).lessOrEqualThan(this.gossipStructures.getValueTS())) {
+                    for(Cam cam : camList) {
+                        this.silo.registerCam(cam);
+                    }
+                    this.gossipStructures.updateStructures(newLe);
+                }
+            } catch (InvalidVectorTimestampException e) {
+                System.out.println(e.getMessage());
+            } catch (SiloException e) {
+                exceptions.addException(e);
+            }
+
+            // add to update log
             newLe.setCommand(new InitCamsCommand(this.silo, camList));
-            this.gossipStructures.updateStructures(newLe);
+            this.gossipStructures.addLogEntry(newLe);
         }
 
         if(!exceptions.isEmpty()) {
@@ -102,19 +129,35 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
     public void initObservations(Silo.InitObservationsRequest request, StreamObserver<Silo.InitObservationsResponse> responseObserver) {
         CompositeSiloException exceptions = new CompositeSiloException();
         LogEntry newLe = receiveUpdate(request.getOpId(), request.getPrev());
+
+        // If is not executed yet
         if (newLe != null) {
             LinkedList<Report> reportList = new LinkedList<>();
+
+            // put in helper list
             for (Silo.InitObservationsItem observation : request.getObservationsList()) {
                 try {
-                    Report report = reportFromGRPC(observation);
-                    reportList.add(report);
-                    this.silo.recordReport(report);
+                    reportList.add(reportFromGRPC(observation));
                 } catch (SiloException e) {
                     exceptions.addException(e);
                 }
             }
+
+            // Check if is stable
+            try {
+                if (vectorTimestampFromGRPC(request.getPrev()).lessOrEqualThan(this.gossipStructures.getValueTS())) {
+                    for (Report report : reportList) {
+                        this.silo.recordReport(report);
+                    }
+                    this.gossipStructures.updateStructures(newLe);
+                }
+            } catch (InvalidVectorTimestampException e) {
+                System.out.println(e.getMessage());
+            }
+
+            // add to update Log
             newLe.setCommand(new InitObsCommand(this.silo, reportList));
-            this.gossipStructures.updateStructures(newLe);
+            this.gossipStructures.addLogEntry(newLe);
         }
 
 

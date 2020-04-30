@@ -61,4 +61,15 @@ public class LogEntry {
         return this.prev.lessOrEqualThan(le.getPrev()) ? -1 : // If it is less or equal then it comes first
                 this.prev.greaterThan(le.getPrev()) ? 1 : 0;
     }
+
+    @Override
+    public String toString() {
+        return "LogEntry{" +
+                "replicaId=" + replicaId +
+                ", ts=" + ts +
+                ", command=" + command.getClass().getName() +
+                ", prev=" + prev +
+                ", opId='" + opId + '\'' +
+                '}';
+    }
 }

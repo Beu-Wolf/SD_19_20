@@ -66,7 +66,7 @@ public class SiloServer {
                 System.out.println("Got EOF");
             }
             System.out.println("Shutting down");
-            //this.scheduledFuture.cancel(true);
+            this.scheduledFuture.cancel(true);
             server.shutdown();
         }).start();
 
@@ -135,9 +135,10 @@ public class SiloServer {
             LinkedList<Gossip.Record> recordList = new LinkedList<>();
             for (LogEntry le : gossipStructures.getUpdateLog()) {
                 // if the timestamp in the table is lower, we need to send the update
-                if (gossipStructures.getTimestampTable().get(replicaInstance-1).lessOrEqualThan(le.getTs()))
+                if (!gossipStructures.getTimestampTable().get(replicaInstance-1).greaterThan(le.getTs()))
                     recordList.add(logEntryToRecord(le));
             }
+            System.out.println("Sendind these records " + recordList.toString());
             return recordList;
         } catch (InvalidVectorTimestampException e) {
             System.out.println(e.getMessage());
