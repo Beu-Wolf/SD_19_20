@@ -72,7 +72,8 @@ public class GossipStructures {
     }
 
     public void addLogEntry(LogEntry le) {
-        this.updateLog.add(le);
+        if (!this.updateLog.contains(le))
+            this.updateLog.add(le);
     }
 
     public int getInstance() {
