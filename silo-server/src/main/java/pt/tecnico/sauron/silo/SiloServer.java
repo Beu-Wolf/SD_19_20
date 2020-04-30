@@ -43,7 +43,7 @@ public class SiloServer {
     public SiloServer(ServerBuilder<?> serverBuilder, int port, ZKNaming zkNaming, int instance) {
         this.port = port;
         this.server = serverBuilder.addService(this.controlImpl)
-                .addService(ServerInterceptors.intercept(this.reportImpl, new SiloReportServiceInterceptor()))
+                .addService(this.reportImpl)
                 .addService(this.queryImpl)
                 .addService(this.gossipImpl)
                 .build();

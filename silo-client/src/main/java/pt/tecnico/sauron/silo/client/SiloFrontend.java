@@ -35,7 +35,6 @@ public class SiloFrontend {
     private QueryServiceGrpc.QueryServiceStub queryStub;
     private QueryServiceGrpc.QueryServiceBlockingStub queryBlockingStub;
     private ReportServiceGrpc.ReportServiceBlockingStub reportBlockingStub;
-    public static final Metadata.Key<String> METADATA_CAM_NAME = Metadata.Key.of("name", Metadata.ASCII_STRING_MARSHALLER);
 
     public static final String SERVER_PATH = "/grpc/sauron/silo";
 
