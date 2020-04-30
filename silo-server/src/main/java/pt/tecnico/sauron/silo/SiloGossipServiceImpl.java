@@ -5,6 +5,7 @@ import pt.tecnico.sauron.silo.commands.*;
 import pt.tecnico.sauron.silo.contract.VectorTimestamp;
 import pt.tecnico.sauron.silo.contract.exceptions.InvalidVectorTimestampException;
 import pt.tecnico.sauron.silo.domain.Silo;
+import pt.tecnico.sauron.silo.exceptions.SiloException;
 import pt.tecnico.sauron.silo.grpc.Gossip;
 import pt.tecnico.sauron.silo.grpc.GossipServiceGrpc;
 
@@ -31,9 +32,8 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
             //merge receiver replicaTS with senderReplicaTS
             mergeReplicaTS(request.getReplicaTimeStamp());
             //find and apply updates
-            applyUpdates(request.getRecordsList());
-            // discard updates
-            discardUpdates(vectorTimestampFromGRPC(request.getReplicaTimeStamp()), request.getSenderId());
+            applyUpdates();
+
             //maybe discard from execution operations table
             responseObserver.onNext(Gossip.GossipResponse.getDefaultInstance());
             responseObserver.onCompleted();
@@ -63,16 +63,10 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
         gossipStructures.getReplicaTS().merge(senderReplicaTS);
     }
 
-    private void applyUpdates(List<Gossip.Record> records) {
-        // Collect stable updates, ordered by prev
+    private void applyUpdates() {
+        // Order updates by prev, and execute stable ones
         try {
-            List<LogEntry> stableLogEntries = new ArrayList<>();
-            for (Gossip.Record record : records) {
-                if (vectorTimestampFromGRPC(record.getPrev()).lessOrEqualThan(this.gossipStructures.getValueTS())) {
-                    stableLogEntries.add(recordToLogEntry(record));
-                }
-            }
-            stableLogEntries.sort((logEntry, logEntry2) -> {
+            this.gossipStructures.getUpdateLog().sort((logEntry, logEntry2) -> {
                 try {
                     return logEntry.compareByPrev(logEntry2);
                 } catch (InvalidVectorTimestampException e) {
@@ -81,28 +75,19 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
                 }
             });
             // for each update, merge structures and execute
-            for(LogEntry stableLogEntry: stableLogEntries) {
-                this.gossipStructures.update(stableLogEntry);
+            for(LogEntry logEntry: this.gossipStructures.getUpdateLog()) {
+                if (logEntry.getPrev().lessOrEqualThan(this.gossipStructures.getValueTS())) {
+                    this.gossipStructures.updateStructuresAndExec(logEntry);
+                }
             }
         } catch (InvalidVectorTimestampException e) {
             System.out.println(e.getMessage());
+        } catch (SiloException e) {
+            // should never happen, all updates should be good
+            System.out.println(e.getMessage());
         }
     }
-
-    private void discardUpdates(VectorTimestamp senderReplicaTS, int senderId) {
-        // update tableTimestamp[sender]
-        gossipStructures.setTimestampTableRow(senderId-1, senderReplicaTS); // We assume an instance starts at one
-        for (LogEntry le: gossipStructures.getUpdateLog()) {
-            for (VectorTimestamp timestampTableTS: gossipStructures.getTimestampTable()) {
-                // If the value of the TS of the replica that recorded the update is greater or equal
-                // then the records replicaTS at that same index, it's safe to remove
-                if (timestampTableTS.get(le.getReplicaId()-1) >= le.getTs().get(le.getReplicaId()-1)) {
-                    gossipStructures.getUpdateLog().remove(le);
-                }
-            }
-        }
-    }
-
+    
     //==========================================================
     //                  GRPC to DOMAIN
     //=========================================================
@@ -122,19 +107,24 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
     }
 
     private Command getCommandFromGRPC(Gossip.Record record) {
-        switch (record.getCommandsCase()) {
-            case CLEAR:
-                return new ClearCommand(this.silo);
-            case REPORT:
-                return new ReportCommand(this.silo, record.getReport());
-            case CAMJOIN:
-                return new CamJoinCommand(this.silo, record.getCamJoin());
-            case INITCAMS:
-                return new InitCamsCommand(this.silo, record.getInitCams());
-            case INITOBSERVATIONS:
-                return new InitObsCommand(this.silo, record.getInitObservations());
-            default:
-                return null;
+        try {
+            switch (record.getCommandsCase()) {
+                case CLEAR:
+                    return new ClearCommand(this.silo);
+                case REPORT:
+                    return new ReportCommand(this.silo, record.getReport());
+                case CAMJOIN:
+                    return new CamJoinCommand(this.silo, record.getCamJoin());
+                case INITCAMS:
+                    return new InitCamsCommand(this.silo, record.getInitCams());
+                case INITOBSERVATIONS:
+                    return new InitObsCommand(this.silo, record.getInitObservations());
+                default:
+                    return null;
+            }
+        } catch (SiloException e) {
+            System.out.println(e.getMessage());
         }
+        return null;
     }
 }

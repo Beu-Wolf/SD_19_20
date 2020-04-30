@@ -18,10 +18,11 @@ message Cam {
 
 message JoinRequest {
     Cam cam = 1;
+    string opId = 2;
+    VecTimestamp prev = 3;
 }
 
 message JoinResponse {
-    // empty
     // On error, status message will be sent
 }
 
@@ -31,6 +32,7 @@ message InfoRequest {
 
 message InfoResponse {
     google.type.LatLng coords = 1;
+    VecTimestamp new = 2;
 }
 
 enum ObservationType {
@@ -47,6 +49,8 @@ message Observation {
 message ReportRequest {
     string camName = 1;
     repeated Observation observations = 2;
+    string opId = 3;
+    VecTimestamp prev = 4;
 }
 
 message ReportResponse {
@@ -113,7 +117,8 @@ message PingResponse {
 }
 
 message ClearRequest {
-    // empty
+    string opId = 1;
+    VecTimestamp prev = 2;
 }
 
 message ClearResponse {
@@ -122,6 +127,8 @@ message ClearResponse {
 
 message InitCamsRequest {
     repeated Cam cams = 1;
+    string opId = 2;
+    VecTimestamp prev = 3;
 }
 
 message InitCamsResponse {
@@ -136,6 +143,8 @@ message InitObservationsItem {
 
 message InitObservationsRequest {
     repeated InitObservationsItem observations = 1;
+    string opId = 2;
+    VecTimestamp prev = 3;
 }
 
 message InitObservationsResponse {

@@ -22,7 +22,6 @@ public class SiloServer {
     private final int port;
     private final Server server;
     private final Silo silo = new Silo();
-    private final int instance;
 
     // Timer to send gossip messages regularly
     ScheduledFuture<?> scheduledFuture;
@@ -32,14 +31,13 @@ public class SiloServer {
 
     private final ZKNaming zkNaming;
 
-    // gossip message interface
-    final BindableService gossipImpl  = new SiloGossipServiceImpl(silo, gossipStructures);
+    // gossip messages
+    final BindableService gossipImpl = new SiloGossipServiceImpl(silo, gossipStructures);
 
-    // server services
-    final BindableService controlImpl = new SiloControlServiceImpl(silo);
-    final BindableService reportImpl  = new SiloReportServiceImpl(silo);
-    final BindableService queryImpl   = new SiloQueryServiceImpl(silo);
-
+    // silo services
+    final BindableService controlImpl = new SiloControlServiceImpl(silo, gossipStructures);
+    final BindableService reportImpl = new SiloReportServiceImpl(silo, gossipStructures);
+    final BindableService queryImpl = new SiloQueryServiceImpl(silo, gossipStructures);
 
     public SiloServer(int port, ZKNaming zkNaming, int instance){
         this(ServerBuilder.forPort(port), port, zkNaming, instance);
@@ -49,12 +47,12 @@ public class SiloServer {
     public SiloServer(ServerBuilder<?> serverBuilder, int port, ZKNaming zkNaming, int instance) {
         this.port = port;
         this.server = serverBuilder.addService(this.controlImpl)
-                .addService(ServerInterceptors.intercept(this.reportImpl, new SiloReportServiceInterceptor()))
+                .addService(this.reportImpl)
                 .addService(this.queryImpl)
                 .addService(this.gossipImpl)
                 .build();
         this.zkNaming = zkNaming;
-        this.instance = instance;
+        gossipStructures.setInstance(instance);
     }
 
     public void start() throws IOException {
@@ -85,9 +83,7 @@ public class SiloServer {
     private void gossipMessageSchedule() {
         ScheduledExecutorService ses = Executors.newScheduledThreadPool(1);
         Runnable gossip = () -> {
-            System.err.println("Sending gossip message!"); // debug
             sendGossipMessage();
-            System.out.println("Gossip message sent!");    // debug
         };
         this.scheduledFuture = ses.scheduleAtFixedRate(gossip, 30, 30, TimeUnit.SECONDS); // TODO change to be configurable
     }
@@ -98,7 +94,7 @@ public class SiloServer {
         try {
             // send to all possible replicas. do not block waiting for one
             for (ZKRecord record: zkNaming.listRecords(SERVER_PATH)) {
-                if ( (replicaInstance = getZKRecordInstance(record)) != this.instance) {
+                if ( (replicaInstance = getZKRecordInstance(record)) != this.gossipStructures.getInstance()) {
                     System.out.println("Sending to " + replicaInstance);
 
                     // create stub for target replica
@@ -145,7 +141,7 @@ public class SiloServer {
 
         // add records to send
         LinkedList<Gossip.Record> listRecords = updatesToSend(replicaInstance);
-        return Gossip.GossipRequest.newBuilder().addAllRecords(listRecords).setReplicaTimeStamp(vecTimestamp).setSenderId(this.instance).build();
+        return Gossip.GossipRequest.newBuilder().addAllRecords(listRecords).setReplicaTimeStamp(vecTimestamp).setSenderId(this.gossipStructures.getInstance()).build();
     }
 
     private LinkedList<Gossip.Record> updatesToSend(int replicaInstance) {
@@ -153,9 +149,11 @@ public class SiloServer {
             LinkedList<Gossip.Record> recordList = new LinkedList<>();
             for (LogEntry le : gossipStructures.getUpdateLog()) {
                 // if the timestamp in the table is lower, we need to send the update
-                if (gossipStructures.getTimestampTable().get(replicaInstance-1).lessOrEqualThan(le.getTs()))
+                if (!gossipStructures.getTimestampTable().get(replicaInstance-1).greaterThan(le.getTs()))
                     recordList.add(logEntryToRecord(le));
             }
+            System.out.println("Update log is: " + this.gossipStructures.getUpdateLog());
+            System.out.println("Sendind " + recordList.size() + " updates" );
             return recordList;
         } catch (InvalidVectorTimestampException e) {
             System.out.println(e.getMessage());

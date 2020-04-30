@@ -16,19 +16,13 @@ public class InitObsCommand extends Command {
         this.reports = reports;
     }
 
-    public InitObsCommand(Silo silo, Gossip.InitObservationsCommand command) {
+    public InitObsCommand(Silo silo, Gossip.InitObservationsCommand command) throws SiloException{
         super(silo);
-        try {
-            LinkedList<Report> newReports = new LinkedList<>();
-            for (pt.tecnico.sauron.silo.grpc.Silo.InitObservationsItem item: command.getRequest().getObservationsList()) {
-                newReports.add(reportFromGRPC(item));
-            }
-            this.reports = newReports;
-        } catch (SiloInvalidArgumentException | EmptyCameraNameException | InvalidCameraNameException e ) {
-            System.out.println(e.getMessage());
+        LinkedList<Report> newReports = new LinkedList<>();
+        for (pt.tecnico.sauron.silo.grpc.Silo.InitObservationsItem item: command.getRequest().getObservationsList()) {
+            newReports.add(reportFromGRPC(item));
         }
-
-
+        this.reports = newReports;
     }
 
     @Override

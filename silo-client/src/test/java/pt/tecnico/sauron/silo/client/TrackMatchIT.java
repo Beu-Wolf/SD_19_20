@@ -84,8 +84,8 @@ public class TrackMatchIT extends BaseIT {
         }
 
         try {
-            siloFrontend.ctrlInitCams(new LinkedList<>(Arrays.asList(cams)));
-            siloFrontend.ctrlInitObservations(reports);
+            siloFrontend.ctrlInitCams(new LinkedList<>(Arrays.asList(cams)), null);
+            siloFrontend.ctrlInitObservations(reports, null);
         } catch(Exception e) {
             System.err.println(e);
         }
@@ -195,7 +195,7 @@ public class TrackMatchIT extends BaseIT {
     @AfterAll
     public static void tearDown() {
         try {
-            siloFrontend.ctrlClear();
+            siloFrontend.ctrlClear(null);
         } catch(FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }

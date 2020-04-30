@@ -35,7 +35,7 @@ public class Eye {
         this.siloFrontend = siloFrontend;
         this.cam = new FrontendCam(name, lat, lon);
 
-        this.siloFrontend.camJoin(this.cam);
+        this.siloFrontend.camJoin(this.cam, null);
         System.out.println("Registered Successfully!");
     }
 
@@ -91,10 +91,12 @@ public class Eye {
     private void sendObservations() {
         if(observationBuffer.size() > 0) {
             try {
-                int numAcked = this.siloFrontend.report(this.cam.getName(), observationBuffer);
+                int numAcked = this.siloFrontend.report(this.cam.getName(), observationBuffer, null);
                 System.out.printf("Successfully reported %d observations!%n", numAcked);
             } catch (FrontendException e) {
                 System.err.println("Could not add all observations:\n" + e.getMessage());
+            } catch (ZKNamingException e) {
+                System.err.println("Could not find server in given path. Make sure the server is up and running.");
             }
         }
     }

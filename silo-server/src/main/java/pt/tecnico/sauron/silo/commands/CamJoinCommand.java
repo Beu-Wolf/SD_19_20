@@ -2,10 +2,7 @@ package pt.tecnico.sauron.silo.commands;
 
 import pt.tecnico.sauron.silo.domain.Cam;
 import pt.tecnico.sauron.silo.domain.Silo;
-import pt.tecnico.sauron.silo.exceptions.DuplicateCameraNameException;
-import pt.tecnico.sauron.silo.exceptions.EmptyCameraNameException;
-import pt.tecnico.sauron.silo.exceptions.InvalidCameraCoordsException;
-import pt.tecnico.sauron.silo.exceptions.InvalidCameraNameException;
+import pt.tecnico.sauron.silo.exceptions.*;
 import pt.tecnico.sauron.silo.grpc.Gossip;
 
 public class CamJoinCommand extends Command {
@@ -17,22 +14,15 @@ public class CamJoinCommand extends Command {
         this.cam = cam;
     }
 
-    public CamJoinCommand(Silo silo, Gossip.CamJoinCommand command) {
+    public CamJoinCommand(Silo silo, Gossip.CamJoinCommand command) throws SiloException {
         super(silo);
-        try {
-            this.cam = camFromGRPC(command.getRequest().getCam());
-        } catch (EmptyCameraNameException | InvalidCameraNameException e) {
-            System.out.println(e.getMessage());
-        }
+        this.cam = camFromGRPC(command.getRequest().getCam());
+
     }
 
     @Override
-    public void execute() {
-        try {
-            this.silo.registerCam(this.cam);
-        } catch (DuplicateCameraNameException | InvalidCameraCoordsException e) {
-            e.printStackTrace(); // Should we change this??
-        }
+    public void execute() throws SiloException{
+        this.silo.registerCam(this.cam);
     }
 
     @Override

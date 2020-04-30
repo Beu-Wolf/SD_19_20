@@ -13,7 +13,7 @@ public abstract class Command {
 
     public Command(Silo silo) { this.silo = silo; }
 
-    public abstract void execute();
+    public abstract void execute() throws SiloException;
 
     public abstract Gossip.Record commandToGRPC(Gossip.Record record);
 
