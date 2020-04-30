@@ -220,7 +220,7 @@ public class SiloFrontend {
             try {
                 executeCamJoin(cam, newOpId);
                 return;
-            } catch(RuntimeException e) {
+            } catch (RuntimeException e) {
                 Status status = Status.fromThrowable(e);
                 if (status.getCode() == Status.Code.UNAVAILABLE) {
                     makeNewConnection();
@@ -232,14 +232,17 @@ public class SiloFrontend {
                 } else {
                     throw new CameraRegisterException(status.getDescription());
                 }
+            } catch (InvalidVectorTimestampException e) {
+                throw new FrontendException(ErrorMessages.INVALID_VECTOR_TIMESTAMP);
             }
         }
-
+        throw new FrontendException(ErrorMessages.NO_ONLINE_SERVERS);
     }
 
-    private void executeCamJoin(FrontendCam cam, String opID) {
+    private void executeCamJoin(FrontendCam cam, String opID) throws InvalidVectorTimestampException {
         Silo.JoinRequest request = createJoinRequest(cam, opID);
-        this.reportBlockingStub.camJoin(request);
+        Silo.JoinResponse response = this.reportBlockingStub.camJoin(request);
+        this.frontendTS.merge(vectorTimestampFromGRPC(response.getNew()));
     }
 
     public FrontendCoords camInfo(String name) throws FrontendException, ZKNamingException {
@@ -293,14 +296,18 @@ public class SiloFrontend {
                     default:
                         throw new ReportException(status.getDescription());
                 }
+            } catch (InvalidVectorTimestampException e) {
+                throw new FrontendException(ErrorMessages.INVALID_VECTOR_TIMESTAMP);
             }
         }
         throw new FrontendException(ErrorMessages.NO_ONLINE_SERVERS);
     }
 
-    private int executeReport(String name, List<FrontendObservation> observations, String opID) {
+    private int executeReport(String name, List<FrontendObservation> observations, String opID)
+        throws InvalidVectorTimestampException {
         Silo.ReportRequest request = createReportRequest(name, observations, opID);
         Silo.ReportResponse response = this.reportBlockingStub.report(request);
+        this.frontendTS.merge(vectorTimestampFromGRPC(response.getNew()));
         return response.getNumAcked();
     }
 

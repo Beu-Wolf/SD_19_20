@@ -57,7 +57,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
                 System.out.println(e.getMessage());
             }
         }
-        pt.tecnico.sauron.silo.grpc.Silo.JoinResponse response = createJoinResponse();
+        pt.tecnico.sauron.silo.grpc.Silo.JoinResponse response = createJoinResponse(le.getTs());
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
@@ -138,7 +138,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
             }
         }
 
-        responseObserver.onNext(createReportResponse(numAcked));
+        responseObserver.onNext(createReportResponse(numAcked, le.getTs()));
         responseObserver.onCompleted();
     }
 
@@ -172,8 +172,10 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
     // ===================================================
     // CREATE GRPC RESPONSES
     // ===================================================
-    private pt.tecnico.sauron.silo.grpc.Silo.JoinResponse createJoinResponse() {
-        return pt.tecnico.sauron.silo.grpc.Silo.JoinResponse.getDefaultInstance();
+    private pt.tecnico.sauron.silo.grpc.Silo.JoinResponse createJoinResponse(VectorTimestamp newTS) {
+        return pt.tecnico.sauron.silo.grpc.Silo.JoinResponse.newBuilder()
+                .setNew(vecTimestampToGRPC(newTS))
+                .build();
     }
 
     private pt.tecnico.sauron.silo.grpc.Silo.InfoResponse createInfoResponse(Cam cam) {
@@ -183,9 +185,10 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
                 .build();
     }
 
-    private pt.tecnico.sauron.silo.grpc.Silo.ReportResponse createReportResponse(int numAcked) {
+    private pt.tecnico.sauron.silo.grpc.Silo.ReportResponse createReportResponse(int numAcked, VectorTimestamp newTS) {
         return pt.tecnico.sauron.silo.grpc.Silo.ReportResponse.newBuilder()
                 .setNumAcked(numAcked)
+                .setNew(vecTimestampToGRPC(newTS))
                 .build();
     }
 
