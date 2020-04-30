@@ -39,8 +39,23 @@ public class SiloFrontend {
 
     public static final String SERVER_PATH = "/grpc/sauron/silo";
 
+    private HashMap<FrontendObservation.ObservationType, HashMap<String, FrontendReport>> trackCache = new HashMap<>();
+    private HashMap<FrontendObservation.ObservationType, HashMap<String, List<FrontendReport>>> trackMatchCache = new HashMap<>();
+    private HashMap<FrontendObservation.ObservationType, HashMap<String, List<FrontendReport>>> traceCache = new HashMap<>();
+
+    private void initCache() {
+        trackCache.put(FrontendObservation.ObservationType.CAR, new HashMap<>());
+        trackCache.put(FrontendObservation.ObservationType.PERSON, new HashMap<>());
+
+        trackMatchCache.put(FrontendObservation.ObservationType.CAR, new HashMap<>());
+        trackMatchCache.put(FrontendObservation.ObservationType.PERSON, new HashMap<>());
+
+        traceCache.put(FrontendObservation.ObservationType.CAR, new HashMap<>());
+        traceCache.put(FrontendObservation.ObservationType.PERSON, new HashMap<>());
+    }
 
     public SiloFrontend(String zooHost, String zooPort) throws ZKNamingException, FrontendException {
+        initCache();
         zkNaming = new ZKNaming(zooHost,zooPort);
         Collection<ZKRecord> records = zkNaming.listRecords(SERVER_PATH);
         Optional<ZKRecord> optRecord = getRandomRecord(records);
@@ -53,6 +68,7 @@ public class SiloFrontend {
     }
 
     public SiloFrontend(String zooHost, String zooPort, Integer instance) throws ZKNamingException {
+        initCache();
         zkNaming = new ZKNaming(zooHost, zooPort);
         String path = SERVER_PATH + "/" + instance.toString();
         ZKRecord record = zkNaming.lookup(path);
@@ -238,8 +254,16 @@ public class SiloFrontend {
 
         try {
             Silo.TrackResponse response = queryBlockingStub.track(request);
-            this.frontendTS.merge(vectorTimestampFromGRPC(response.getNew()));
-            return reportFromGRPC(response.getReport());
+            VectorTimestamp newTS = vectorTimestampFromGRPC(response.getNew());
+            if (newTS.lessOrEqualThan(frontendTS)) {
+                if (trackCache.get(type).containsKey(id)) // don't && with above condition.
+                    return trackCache.get(type).get(id);
+            } else {
+                frontendTS.merge(newTS);
+            }
+            FrontendReport result = reportFromGRPC(response.getReport());
+            trackCache.get(type).put(id, result);
+            return result;
         } catch(StatusRuntimeException e) {
             Status status = Status.fromThrowable(e);
             if(status.getCode() == Status.Code.UNAVAILABLE) {
@@ -265,11 +289,18 @@ public class SiloFrontend {
 
         try {
             Silo.TrackMatchResponse response = queryBlockingStub.trackMatch(request);
-            this.frontendTS.merge(vectorTimestampFromGRPC(response.getNew()));
+            VectorTimestamp newTS = vectorTimestampFromGRPC(response.getNew());
+            if (newTS.lessOrEqualThan(this.frontendTS)) {
+                if (trackMatchCache.get(type).containsKey(query))
+                    return trackMatchCache.get(type).get(query);
+            } else {
+                this.frontendTS.merge(newTS);
+            }
             List<Silo.Report> reports = response.getReportsList();
             for (Silo.Report report : reports) {
                 results.push(reportFromGRPC(report));
             }
+            trackMatchCache.get(type).put(query, results);
             return results;
         } catch(StatusRuntimeException e) {
             Status status = Status.fromThrowable(e);
@@ -296,11 +327,18 @@ public class SiloFrontend {
 
         try {
             Silo.TraceResponse response = queryBlockingStub.trace(request);
-            this.frontendTS.merge(vectorTimestampFromGRPC(response.getNew()));
+            VectorTimestamp newTS = vectorTimestampFromGRPC(response.getNew());
+            if (newTS.lessOrEqualThan(this.frontendTS)) {
+                if (traceCache.get(type).containsKey(id))
+                    return traceCache.get(type).get(id);
+            } else {
+                this.frontendTS.merge(newTS);
+            }
             List<Silo.Report> reports = response.getReportsList();
             for (Silo.Report report : reports) {
                 results.addLast(reportFromGRPC(report));
             }
+            traceCache.get(type).put(id, results);
             return results;
         } catch(StatusRuntimeException e) {
             Status status = Status.fromThrowable(e);
