@@ -33,8 +33,7 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
             mergeReplicaTS(request.getReplicaTimeStamp());
             //find and apply updates
             applyUpdates();
-            // discard updates
-            discardUpdates(vectorTimestampFromGRPC(request.getReplicaTimeStamp()), request.getSenderId());
+
             //maybe discard from execution operations table
             responseObserver.onNext(Gossip.GossipResponse.getDefaultInstance());
             responseObserver.onCompleted();
@@ -88,26 +87,7 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
             System.out.println(e.getMessage());
         }
     }
-
-    private void discardUpdates(VectorTimestamp senderReplicaTS, int senderId) {
-        // update tableTimestamp[sender]
-        gossipStructures.setTimestampTableRow(senderId-1, senderReplicaTS); // We assume an instance starts at one
-
-        // Iterate over the original and remove safely
-        for (LogEntry le: new LinkedList<>(gossipStructures.getUpdateLog())) {
-            for (int i = 0; i < this.gossipStructures.getTimestampTable().size(); i++) {
-                // If the value of the TS of the replica that recorded the update is greater or equal
-                // then the records replicaTS at that same index, it's safe to remove
-                if (i != this.gossipStructures.getInstance()-1) {
-                    if (this.gossipStructures.getTimestampTableRow(i).get(le.getReplicaId()-1) >= le.getTs().get(le.getReplicaId()-1)) {
-                        gossipStructures.getUpdateLog().remove(le);
-                    }
-                }
-
-            }
-        }
-    }
-
+    
     //==========================================================
     //                  GRPC to DOMAIN
     //=========================================================

@@ -76,9 +76,7 @@ public class SiloServer {
     private void gossipMessageSchedule() {
         ScheduledExecutorService ses = Executors.newScheduledThreadPool(1);
         Runnable gossip = () -> {
-            System.err.println("Sending gossip message!"); // debug
             sendGossipMessage();
-            System.out.println("Gossip message sent!");    // debug
         };
         this.scheduledFuture = ses.scheduleAtFixedRate(gossip, 30, 30, TimeUnit.SECONDS); // TODO change to be configurable
     }
@@ -138,7 +136,8 @@ public class SiloServer {
                 if (!gossipStructures.getTimestampTable().get(replicaInstance-1).greaterThan(le.getTs()))
                     recordList.add(logEntryToRecord(le));
             }
-            System.out.println("Sendind these records " + recordList.toString());
+            System.out.println("Update log is: " + this.gossipStructures.getUpdateLog());
+            System.out.println("Sendind " + recordList.size() + " updates" );
             return recordList;
         } catch (InvalidVectorTimestampException e) {
             System.out.println(e.getMessage());
