@@ -214,7 +214,6 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
             return this.type == ObservationType.CAR && this.p.matcher(car.getId()).find();
         }
 
-
         public boolean visit(Person person) {
             return this.type == ObservationType.PERSON && this.p.matcher(person.getId()).find();
         }

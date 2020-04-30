@@ -17,14 +17,14 @@ import java.util.concurrent.*;
 
 public class SiloServer {
 
-    private final String SERVER_PATH = "/grpc/sauron/silo";
+    private static final String SERVER_PATH = "/grpc/sauron/silo";
 
     private final int port;
     private final Server server;
     private final Silo silo = new Silo();
     private final int instance;
 
-    // timer
+    // Timer to send gossip messages regularly
     ScheduledFuture<?> scheduledFuture;
 
     // Gossip architecture specific structures
