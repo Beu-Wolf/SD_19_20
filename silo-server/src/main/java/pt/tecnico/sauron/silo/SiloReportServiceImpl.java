@@ -147,8 +147,9 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
     // ===================================================
 
     private LogEntry receiveUpdate(String opID, pt.tecnico.sauron.silo.grpc.Silo.VecTimestamp prev) {
-        // Check if it has been executed before
-        if (!this.gossipStructures.getExecutedOperations().contains(opID)) {
+        // Check if it has been received before
+        if (!this.gossipStructures.getExecutedOperations().contains(opID) &&
+                !this.gossipStructures.logContainsOp(opID)) {
             LogEntry newLe = new LogEntry();
             int instance = this.gossipStructures.getInstance();
             newLe.setReplicaId(instance);

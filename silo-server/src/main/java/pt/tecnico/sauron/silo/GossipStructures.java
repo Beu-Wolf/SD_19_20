@@ -104,6 +104,14 @@ public class GossipStructures {
         }
     }
 
+    public boolean logContainsOp(String opId) {
+        for (LogEntry le : this.updateLog) {
+            if (le.getOpId().equals(opId))
+                return true;
+        }
+        return false;
+    }
+
     public void clearAll() {
         this.setReplicaTS(new VectorTimestamp(new int[NUM_REPLICAS]));
         this.setValueTS(new VectorTimestamp(new int[NUM_REPLICAS]));
