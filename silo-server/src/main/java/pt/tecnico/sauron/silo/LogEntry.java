@@ -55,6 +55,13 @@ public class LogEntry {
     }
 
     @Override
+    public boolean equals(Object obj) {
+        LogEntry le = (LogEntry) obj;
+        return obj instanceof LogEntry &&
+                le.opId.equals(this.opId) && le.replicaId == this.replicaId;
+    }
+
+    @Override
     public String toString() {
         return "LogEntry{" +
                 "replicaId=" + replicaId +

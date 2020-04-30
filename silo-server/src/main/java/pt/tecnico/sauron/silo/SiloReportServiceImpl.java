@@ -31,7 +31,8 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
 
 
         // If it has not been executed before
-        if (!this.gossipStructures.getExecutedOperations().contains(request.getOpId())) {
+        if (!this.gossipStructures.getExecutedOperations().contains(request.getOpId()) &&
+                !this.gossipStructures.logContainsOp(request.getOpId())) {
             LogEntry le = receiveUpdateAndSetLogEntry(request.getOpId(), request.getPrev());
             try {
                 Cam cam = camFromGRPC(request.getCam());
@@ -85,7 +86,8 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
     public void report(pt.tecnico.sauron.silo.grpc.Silo.ReportRequest request, io.grpc.stub.StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.ReportResponse> responseObserver) {
         // If has not been executed before
         int numAcked = 0;
-        if (!this.gossipStructures.getExecutedOperations().contains(request.getOpId())) {
+        if (!this.gossipStructures.getExecutedOperations().contains(request.getOpId()) &&
+                !this.gossipStructures.logContainsOp(request.getOpId())) {
             LogEntry le = receiveUpdateAndSetLogEntry(request.getOpId(), request.getPrev());
 
             Cam cam;
@@ -152,7 +154,8 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
     // HELPER FUNCTIONS
     // ===================================================
 
-    private LogEntry receiveUpdateAndSetLogEntry(String opID, pt.tecnico.sauron.silo.grpc.Silo.VecTimestamp prev) {
+
+    private synchronized LogEntry receiveUpdateAndSetLogEntry(String opID, pt.tecnico.sauron.silo.grpc.Silo.VecTimestamp prev) {
         // Check if it has been executed before
         int instance = this.gossipStructures.getInstance();
         // increment replicaTS

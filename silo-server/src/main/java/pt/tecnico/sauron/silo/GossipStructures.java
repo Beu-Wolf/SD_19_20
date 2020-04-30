@@ -72,7 +72,8 @@ public class GossipStructures {
     }
 
     public void addLogEntry(LogEntry le) {
-        this.updateLog.add(le);
+        if (!this.updateLog.contains(le))
+            this.updateLog.add(le);
     }
 
     public int getInstance() {
@@ -102,6 +103,14 @@ public class GossipStructures {
         } catch (InvalidVectorTimestampException e) {
             System.out.println(e.getMessage());
         }
+    }
+
+    public boolean logContainsOp(String opId) {
+        for (LogEntry le : this.updateLog) {
+            if (le.getOpId().equals(opId))
+                return true;
+        }
+        return false;
     }
 
     public void clearAll() {
