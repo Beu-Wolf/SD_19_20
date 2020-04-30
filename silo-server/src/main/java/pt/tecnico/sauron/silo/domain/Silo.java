@@ -19,12 +19,18 @@ public class Silo {
 
     public void registerCam(Cam cam) throws DuplicateCameraNameException, InvalidCameraCoordsException {
         String name = cam.getName();
+        // check if camname alrady exists
         if(this.cams.containsKey(name)) {
+            // if it does, it must be the same camera
             if(!cam.equals(this.cams.get(name))) {
                 throw new DuplicateCameraNameException();
             }
+
+        // check coordinates
         } else if (!validCoords(cam.getCoords())) {
             throw new InvalidCameraCoordsException();
+
+        // add camera
         } else {
             cams.put(cam.getName(), cam);
         }

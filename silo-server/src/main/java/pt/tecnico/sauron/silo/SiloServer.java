@@ -17,13 +17,13 @@ import java.util.concurrent.*;
 
 public class SiloServer {
 
-    private final String SERVER_PATH = "/grpc/sauron/silo";
+    private static final String SERVER_PATH = "/grpc/sauron/silo";
 
     private final int port;
     private final Server server;
     private final Silo silo = new Silo();
 
-    // timer
+    // Timer to send gossip messages regularly
     ScheduledFuture<?> scheduledFuture;
 
     // Gossip architecture specific structures
@@ -31,15 +31,19 @@ public class SiloServer {
 
     private final ZKNaming zkNaming;
 
+    // gossip messages
+    final BindableService gossipImpl = new SiloGossipServiceImpl(silo, gossipStructures);
+
+    // silo services
     final BindableService controlImpl = new SiloControlServiceImpl(silo, gossipStructures);
     final BindableService reportImpl = new SiloReportServiceImpl(silo, gossipStructures);
     final BindableService queryImpl = new SiloQueryServiceImpl(silo, gossipStructures);
-    final BindableService gossipImpl = new SiloGossipServiceImpl(silo, gossipStructures);
 
     public SiloServer(int port, ZKNaming zkNaming, int instance){
         this(ServerBuilder.forPort(port), port, zkNaming, instance);
     }
-    /** Create a Silo server using serverBuilder as a base. */
+
+    // Create a Silo server using serverBuilder as a base
     public SiloServer(ServerBuilder<?> serverBuilder, int port, ZKNaming zkNaming, int instance) {
         this.port = port;
         this.server = serverBuilder.addService(this.controlImpl)
@@ -53,8 +57,11 @@ public class SiloServer {
 
     public void start() throws IOException {
         server.start();
-        System.out.println("Server started, listening on " + port);
+
+        // schedule gossip message sending
         gossipMessageSchedule();
+
+        System.out.println("Server started, listening on port " + port);
     }
 
     public void awaitTermination() throws InterruptedException {
@@ -85,22 +92,25 @@ public class SiloServer {
         // find available connections
         int replicaInstance;
         try {
+            // send to all possible replicas. do not block waiting for one
             for (ZKRecord record: zkNaming.listRecords(SERVER_PATH)) {
                 if ( (replicaInstance = getZKRecordInstance(record)) != this.gossipStructures.getInstance()) {
                     System.out.println("Sending to " + replicaInstance);
-                    // make stubs for each one
+
+                    // create stub for target replica
                     ManagedChannel channel = ManagedChannelBuilder.forTarget(record.getURI()).usePlaintext().build();
                     GossipServiceGrpc.GossipServiceBlockingStub gossipBlockingStub = GossipServiceGrpc.newBlockingStub(channel);
 
-                    // constructMessage
+                    // create gossip message
                     Gossip.GossipRequest request = createGossipRequest(replicaInstance);
-                    // send gossipMessage
                     try {
-                        Gossip.GossipResponse response = gossipBlockingStub.gossip(request); // TODO do we need this response? Should we print something?
+                        // send gRPC gossip message
+                        gossipBlockingStub.gossip(request);
+
                     } catch (StatusRuntimeException e) {
                         Status status = Status.fromThrowable(e);
                         if (status.getCode() == Status.Code.UNAVAILABLE) {
-                            System.out.println("Can't connect to " + replicaInstance);
+                            System.out.println("Could not connect to replica #" + replicaInstance);
                             continue;
                         }
                         throw new StatusRuntimeException(e.getStatus());
@@ -108,11 +118,13 @@ public class SiloServer {
                 }
             }
         } catch (ZKNamingException e) {
-            System.out.println(e.getMessage()); // Is this the best policy?
+            System.err.println("Name Server error: " + e.getMessage());
         }
     }
 
+    // receives record path and returns record instance number
     private int getZKRecordInstance(ZKRecord record) {
+        // instance is the last member of the path
         String[] pathSplit = record.getPath().split("/");
         return Integer.parseInt(pathSplit[pathSplit.length-1]);
     }
@@ -120,12 +132,16 @@ public class SiloServer {
     private Gossip.GossipRequest createGossipRequest(int replicaInstance) {
 
         pt.tecnico.sauron.silo.grpc.Silo.VecTimestamp vecTimestamp =
-                pt.tecnico.sauron.silo.grpc.Silo.VecTimestamp.newBuilder().addAllTimestamps(gossipStructures.getReplicaTS().getValues()).build();
+            pt.tecnico.sauron.silo.grpc.Silo.VecTimestamp.newBuilder()
+                .addAllTimestamps(
+                    gossipStructures
+                    .getReplicaTS()
+                    .getValues()
+                ).build();
 
-        // add all records
+        // add records to send
         LinkedList<Gossip.Record> listRecords = updatesToSend(replicaInstance);
         return Gossip.GossipRequest.newBuilder().addAllRecords(listRecords).setReplicaTimeStamp(vecTimestamp).setSenderId(this.gossipStructures.getInstance()).build();
-
     }
 
     private LinkedList<Gossip.Record> updatesToSend(int replicaInstance) {

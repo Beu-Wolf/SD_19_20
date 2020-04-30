@@ -44,14 +44,14 @@ Sistemas Distribuídos 2019-2020, segundo semestre
 **TODO: STILL WIP**
 _(que faltas são toleradas, que faltas não são toleradas)_
 
-As faltas toleradas são as requeridas pelo Modelo de interação de faltas do enunciado deste projeto:
+Esta solução tolera as faltas requeridas pelo Modelo de Interação de Faltas do enunciado deste projeto:
 
- * Crash de uma réplica sem updates críticos para o estado de outras réplicas
- * Updates enviados fora de ordem
- * Crash no fronted de cada cliente
+ * Crash de uma réplica sem updates críticos para o estado de outras réplicas;
+ * Updates enviados fora de ordem;
+ * Crash no fronted de cada cliente;
  
-Por outro lado, não toleramos:
- * Falha no ZooKeeper
+Contudo, esta solução não tolera:
+ * Falhas no ZooKeeper
  * Crash numa réplica com updates críticos para o estado de outras réplicas
  * Instâncias de réplicas atribuídas de forma não incremental
 

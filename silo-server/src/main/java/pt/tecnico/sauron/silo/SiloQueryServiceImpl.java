@@ -206,8 +206,13 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
             if(type == ObservationType.UNSPEC) {
                 throw new SiloInvalidArgumentException(ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE);
             }
+            // escape every regex character
             pattern = Pattern.quote(pattern);
+
+            // un-escape *
             pattern = pattern.replace("*", "\\E.*\\Q");
+
+            // make pattern match the entire string
             pattern = "^" + pattern + "$";
             this.p = Pattern.compile(pattern);
             this.type = type;
@@ -216,7 +221,6 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
         public boolean visit(Car car) {
             return this.type == ObservationType.CAR && this.p.matcher(car.getId()).find();
         }
-
 
         public boolean visit(Person person) {
             return this.type == ObservationType.PERSON && this.p.matcher(person.getId()).find();
