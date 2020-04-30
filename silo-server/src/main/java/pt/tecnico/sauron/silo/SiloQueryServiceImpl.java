@@ -198,8 +198,13 @@ public class SiloQueryServiceImpl extends QueryServiceGrpc.QueryServiceImplBase 
             if(type == ObservationType.UNSPEC) {
                 throw new SiloInvalidArgumentException(ErrorMessages.UNIMPLEMENTED_OBSERVATION_TYPE);
             }
+            // escape every regex character
             pattern = Pattern.quote(pattern);
+
+            // un-escape *
             pattern = pattern.replace("*", "\\E.*\\Q");
+
+            // make pattern match the entire string
             pattern = "^" + pattern + "$";
             this.p = Pattern.compile(pattern);
             this.type = type;
