@@ -270,7 +270,10 @@ public class SiloFrontend {
                 throw new FrontendException(ErrorMessages.NO_CONNECTION);
             }
             if (status.getCode() == Status.Code.NOT_FOUND) {
-                throw new NotFoundException();
+                if (trackCache.get(type).containsKey(id))
+                    return trackCache.get(type).get(id);
+                else
+                    throw new NotFoundException();
             }
             if(status.getCode() == Status.Code.INVALID_ARGUMENT) {
                 throw new InvalidArgumentException(status.getDescription());
@@ -308,7 +311,10 @@ public class SiloFrontend {
                 throw new FrontendException(ErrorMessages.NO_CONNECTION);
             }
             if (status.getCode() == Status.Code.NOT_FOUND) {
-                throw new NotFoundException();
+                if (trackMatchCache.get(type).containsKey(query))
+                    return trackMatchCache.get(type).get(query);
+                else
+                    throw new NotFoundException();
             }
             if (status.getCode() == Status.Code.INVALID_ARGUMENT) {
                 throw new InvalidArgumentException(status.getDescription());
@@ -346,7 +352,10 @@ public class SiloFrontend {
                 throw new FrontendException(ErrorMessages.NO_CONNECTION);
             }
             if (status.getCode() == Status.Code.NOT_FOUND) {
-                throw new NotFoundException();
+                if (traceCache.get(type).containsKey(id))
+                    return traceCache.get(type).get(id);
+                else
+                    throw new NotFoundException();
             }
             if (status.getCode() == Status.Code.INVALID_ARGUMENT) {
                 throw new InvalidArgumentException(status.getDescription());
