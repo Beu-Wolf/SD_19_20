@@ -19,7 +19,7 @@ public class ClearIT extends BaseIT {
     @Test //Empty Silo
     public void emptySilo() {
 
-        Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear(null));
+        Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear());
         Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
                 Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(FrontendObservation.ObservationType.CAR, "*"))
                         .getMessage());
@@ -33,9 +33,9 @@ public class ClearIT extends BaseIT {
         try {
             LinkedList<FrontendCam> camList = createCams(5);
             LinkedList<FrontendReport> observations = createReports(5, camList);
-            siloFrontend.ctrlInitCams(camList, null);
-            siloFrontend.ctrlInitObservations(observations, null);
-            Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear(null));
+            siloFrontend.ctrlInitCams(camList);
+            siloFrontend.ctrlInitObservations(observations);
+            Assertions.assertDoesNotThrow(()->siloFrontend.ctrlClear());
             Assertions.assertEquals(ErrorMessages.OBSERVATION_NOT_FOUND,
                     Assertions.assertThrows(NotFoundException.class, () -> siloFrontend.trackMatch(FrontendObservation.ObservationType.CAR, "*"))
                             .getMessage());
@@ -72,4 +72,5 @@ public class ClearIT extends BaseIT {
         }
         return list;
     }
+
 }

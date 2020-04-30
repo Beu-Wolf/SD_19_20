@@ -33,8 +33,10 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
             mergeReplicaTS(request.getReplicaTimeStamp());
             //find and apply updates
             applyUpdates();
+            //Update timestampTable
+            this.gossipStructures.setTimestampTableRow(request.getSenderId()-1, vectorTimestampFromGRPC(request.getReplicaTimeStamp()));
 
-            //maybe discard from execution operations table
+
             responseObserver.onNext(Gossip.GossipResponse.getDefaultInstance());
             responseObserver.onCompleted();
 
@@ -87,7 +89,7 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
             System.out.println(e.getMessage());
         }
     }
-    
+
     //==========================================================
     //                  GRPC to DOMAIN
     //=========================================================
@@ -109,8 +111,6 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
     private Command getCommandFromGRPC(Gossip.Record record) {
         try {
             switch (record.getCommandsCase()) {
-                case CLEAR:
-                    return new ClearCommand(this.silo);
                 case REPORT:
                     return new ReportCommand(this.silo, record.getReport());
                 case CAMJOIN:

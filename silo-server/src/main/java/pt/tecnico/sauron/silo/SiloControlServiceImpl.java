@@ -4,8 +4,6 @@ import com.google.protobuf.Timestamp;
 import com.google.type.LatLng;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import pt.tecnico.sauron.silo.commands.ClearCommand;
-import pt.tecnico.sauron.silo.commands.Command;
 import pt.tecnico.sauron.silo.commands.InitCamsCommand;
 import pt.tecnico.sauron.silo.commands.InitObsCommand;
 import pt.tecnico.sauron.silo.contract.VectorTimestamp;
@@ -52,25 +50,9 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
 
     @Override
     public void clear(Silo.ClearRequest request, StreamObserver<Silo.ClearResponse> responseObserver) {
-        LogEntry newLe = receiveUpdate(request.getOpId(), request.getPrev());
-
-        if (newLe != null) {
-            // add command
-            newLe.setCommand(new ClearCommand(this.silo));
-            // add to update log
-            this.gossipStructures.addLogEntry(newLe);
-            // execute only if stable
-            try {
-                if (vectorTimestampFromGRPC(request.getPrev()).lessOrEqualThan(this.gossipStructures.getValueTS())) {
-                    this.silo.clearObservations();
-                    this.silo.clearCams();
-                    this.gossipStructures.updateStructures(newLe);
-                }
-            } catch (InvalidVectorTimestampException e) {
-                System.out.println(e.getMessage());
-            }
-        }
-
+        this.silo.clearObservations();
+        this.silo.clearCams();
+        this.gossipStructures.clearAll();
         responseObserver.onNext(Silo.ClearResponse.getDefaultInstance());
         responseObserver.onCompleted();
     }

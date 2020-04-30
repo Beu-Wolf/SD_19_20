@@ -133,7 +133,9 @@ public class SiloServer {
             LinkedList<Gossip.Record> recordList = new LinkedList<>();
             for (LogEntry le : gossipStructures.getUpdateLog()) {
                 // if the timestamp in the table is lower, we need to send the update
-                if (!gossipStructures.getTimestampTable().get(replicaInstance-1).greaterThan(le.getTs()))
+                System.out.println("TS: " + gossipStructures.getTimestampTable().get(replicaInstance-1));
+                System.out.println("le: " + le.getTs());
+                if (!gossipStructures.getTimestampTable().get(replicaInstance-1).greaterOrEqualThan(le.getTs()))
                     recordList.add(logEntryToRecord(le));
             }
             System.out.println("Update log is: " + this.gossipStructures.getUpdateLog());

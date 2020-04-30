@@ -117,8 +117,7 @@ message PingResponse {
 }
 
 message ClearRequest {
-    string opId = 1;
-    VecTimestamp prev = 2;
+    // empty
 }
 
 message ClearResponse {

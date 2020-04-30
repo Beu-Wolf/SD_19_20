@@ -19,7 +19,7 @@ public class CamInfoIT extends BaseIT {
         try {
             FrontendCam cam = new FrontendCam(name, lat, lon);
 
-            siloFrontend.camJoin(cam, null);
+            siloFrontend.camJoin(cam);
             FrontendCoords received = siloFrontend.camInfo(name);
 
             Assertions.assertEquals(cam.getLat(), received.getLat());
@@ -43,7 +43,7 @@ public class CamInfoIT extends BaseIT {
     @AfterEach
     public void clear() {
         try {
-            siloFrontend.ctrlClear(null);
+            siloFrontend.ctrlClear();
         } catch (FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }

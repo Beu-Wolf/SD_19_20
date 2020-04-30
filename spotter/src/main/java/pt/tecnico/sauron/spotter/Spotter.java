@@ -71,7 +71,7 @@ public class Spotter {
                      } else if (Pattern.matches(HELP, command)) {
                          showHelp();
                      } else if (Pattern.matches(CLEAR, command)) {
-                         siloFrontend.ctrlClear(null);
+                         siloFrontend.ctrlClear();
                      } else if (Pattern.matches(PING, command)) {
                          String message = getGroupFromPattern(command, pingPattern, 1);
                          System.out.println(siloFrontend.ctrlPing(message));
@@ -161,7 +161,7 @@ public class Spotter {
                 String command = scanner.nextLine().trim();
                 if(Pattern.matches(DONE, command)) {
                     if(!listCams.isEmpty())
-                        siloFrontend.ctrlInitCams(listCams, null);
+                        siloFrontend.ctrlInitCams(listCams);
                     break;
                 } else if (Pattern.matches(CAMS_TO_LOAD, command)) {
                     String camName = getGroupFromPattern(command, camsToLoad, 1);
@@ -184,7 +184,7 @@ public class Spotter {
             String command = scanner.nextLine().trim();
             if(Pattern.matches(DONE, command)) {
                 if(!listReports.isEmpty())
-                    siloFrontend.ctrlInitObservations(listReports, null);
+                    siloFrontend.ctrlInitObservations(listReports);
                 break;
             } else if (Pattern.matches(OBS_TO_LOAD_CAR, command)) {
                 String camName = getGroupFromPattern(command, obsToLoadCar, 1);

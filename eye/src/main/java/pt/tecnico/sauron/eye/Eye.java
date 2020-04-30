@@ -35,7 +35,7 @@ public class Eye {
         this.siloFrontend = siloFrontend;
         this.cam = new FrontendCam(name, lat, lon);
 
-        this.siloFrontend.camJoin(this.cam, null);
+        this.siloFrontend.camJoin(this.cam);
         System.out.println("Registered Successfully!");
     }
 
@@ -91,7 +91,7 @@ public class Eye {
     private void sendObservations() {
         if(observationBuffer.size() > 0) {
             try {
-                int numAcked = this.siloFrontend.report(this.cam.getName(), observationBuffer, null);
+                int numAcked = this.siloFrontend.report(this.cam.getName(), observationBuffer);
                 System.out.printf("Successfully reported %d observations!%n", numAcked);
             } catch (FrontendException e) {
                 System.err.println("Could not add all observations:\n" + e.getMessage());

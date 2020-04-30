@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 
 public class SiloFrontend {
     private static final int NUM_REPLICAS = 3; // TODO
+    private static final int NUM_RETRIES = 10;
     private VectorTimestamp frontendTS = new VectorTimestamp(NUM_REPLICAS);
     private int opCount = 0;
     private String uuid = UUID.randomUUID().toString();
@@ -102,6 +103,8 @@ public class SiloFrontend {
         Collection<ZKRecord> records = zkNaming.listRecords(SERVER_PATH);
         ZKRecord record = ((ArrayList<ZKRecord>) records).get(new Random().nextInt(records.size()));
         siloInfo(record);
+        System.out.println(ErrorMessages.NO_CONNECTION);
+
     }
 
     private String genOpID() {
@@ -113,258 +116,341 @@ public class SiloFrontend {
     // GRPC FRONTEND
     // ===================================================
     public String ctrlPing(String sentence) throws FrontendException, ZKNamingException {
+        int numRetries = 0;
+        while(numRetries < NUM_RETRIES) {
+            try {
+                return executePing(sentence);
+            } catch (StatusRuntimeException e) {
+                Status status = Status.fromThrowable(e);
+                if (status.getCode() == Status.Code.UNAVAILABLE) {
+                    makeNewConnection();
+                    numRetries++;
+                } else {
+                    throw new PingException(e.getStatus().getDescription());
+                }
+            }
+        }
+        throw new FrontendException(ErrorMessages.NO_ONLINE_SERVERS);
+    }
+
+    private String executePing(String sentence) {
         Silo.PingRequest request = createPingRequest(sentence);
-        try {
-            Silo.PingResponse response = this.ctrlBlockingStub.ping(request);
-            return response.getText();
-        } catch (StatusRuntimeException e) {
-            Status status = Status.fromThrowable(e);
-            if (status.getCode() == Status.Code.UNAVAILABLE) {
-                makeNewConnection();
-                // repeat operation
-                ctrlPing(sentence);
-                throw new FrontendException(ErrorMessages.NO_CONNECTION);
-            }
-            throw new PingException(e.getStatus().getDescription());
-        }
+        Silo.PingResponse response = this.ctrlBlockingStub.ping(request);
+        return response.getText();
     }
 
 
-    public void ctrlInitCams(List<FrontendCam> cams, String opID) throws RuntimeException, FrontendException, ZKNamingException {
-        String newOpId = opID == null ? genOpID() : opID;
-        Silo.InitCamsRequest request = createInitCamsRequest(cams, newOpId);
-        try {
-            this.ctrlBlockingStub.initCams(request);
-        } catch(RuntimeException e) {
-            Status status = Status.fromThrowable(e);
-            if (status.getCode() == Status.Code.UNAVAILABLE) {
-                makeNewConnection();
-                ctrlInitCams(cams, newOpId);
+    public void ctrlInitCams(List<FrontendCam> cams) throws RuntimeException, FrontendException, ZKNamingException {
+        String newOpId = genOpID();
+        int numRetries = 0;
+        while(numRetries < NUM_RETRIES) {
+            try {
+                executeInitCams(cams, newOpId);
+                return;
+            } catch(RuntimeException e) {
+                Status status = Status.fromThrowable(e);
+                if (status.getCode() == Status.Code.UNAVAILABLE) {
+                    makeNewConnection();
+                    numRetries++;
+                } else {
+                    throw new FrontendException(e.getMessage());
+                }
             }
-            throw new FrontendException(e.getMessage());
         }
     }
 
-    public void ctrlInitObservations(List<FrontendReport> reports, String opID) throws FrontendException, ZKNamingException {
-        String newOpId = opID == null ? genOpID() : opID;
-        Silo.InitObservationsRequest request = createInitObservationsRequest(reports, newOpId);
-        try {
-            this.ctrlBlockingStub.initObservations(request);
-        } catch (RuntimeException e) {
-            Status status = Status.fromThrowable(e);
-            if (status.getCode() == Status.Code.UNAVAILABLE) {
-                makeNewConnection();
-                ctrlInitObservations(reports, newOpId);
-            }
-            throw new FrontendException(e.getMessage());
-        }
+    private void executeInitCams(List<FrontendCam> cams, String opID) {
+        Silo.InitCamsRequest request = createInitCamsRequest(cams, opID);
+        this.ctrlBlockingStub.initCams(request);
     }
 
-    public void ctrlClear(String opID) throws FrontendException, ZKNamingException{
-        String newOpId = opID == null ? genOpID() : opID;
-        try {
-            Silo.ClearResponse response =  this.ctrlBlockingStub.clear(createClearRequest(newOpId));
-        } catch (StatusRuntimeException e) {
-            Status status = Status.fromThrowable(e);
-            if (status.getCode() == Status.Code.UNAVAILABLE) {
-                makeNewConnection();
-                ctrlClear(newOpId);
-                throw new FrontendException(ErrorMessages.NO_CONNECTION);
+    public void ctrlInitObservations(List<FrontendReport> reports) throws FrontendException, ZKNamingException {
+        String newOpId = genOpID();
+        int numRetries = 0;
+        while(numRetries < NUM_RETRIES) {
+            try {
+                executeInitObs(reports, newOpId);
+                return;
+            } catch (RuntimeException e) {
+                Status status = Status.fromThrowable(e);
+                if (status.getCode() == Status.Code.UNAVAILABLE) {
+                    makeNewConnection();
+                    numRetries++;
+                } else {
+                    throw new FrontendException(e.getMessage());
+                }
             }
-            throw new ClearException(e.getStatus().getDescription());
         }
+
+    }
+
+    private void executeInitObs(List<FrontendReport> reports, String opID) {
+        Silo.InitObservationsRequest request = createInitObservationsRequest(reports, opID);
+        this.ctrlBlockingStub.initObservations(request);
+    }
+
+    public void ctrlClear() throws FrontendException, ZKNamingException{
+        int numRetries = 0;
+        while (numRetries < NUM_RETRIES) {
+            try {
+                executeClear();
+                return;
+            } catch (StatusRuntimeException e) {
+                Status status = Status.fromThrowable(e);
+                if (status.getCode() == Status.Code.UNAVAILABLE) {
+                    makeNewConnection();
+                    numRetries++;
+                } else {
+                    throw new ClearException(e.getStatus().getDescription());
+                }
+            }
+        }
+
+    }
+
+    private void executeClear() {
+        this.ctrlBlockingStub.clear(createClearRequest());
     }
 
 
-    public void camJoin(FrontendCam cam, String opID) throws ZKNamingException, FrontendException {
-        String newOpId = opID == null ? genOpID() : opID;
-        Silo.JoinRequest request = createJoinRequest(cam, newOpId);
-        try {
-            this.reportBlockingStub.camJoin(request);
-        } catch(RuntimeException e) {
-            Status status = Status.fromThrowable(e);
-            if (status.getCode() == Status.Code.UNAVAILABLE) {
-                makeNewConnection();
-                camJoin(cam, newOpId);
-                throw new FrontendException(ErrorMessages.NO_CONNECTION);
+    public void camJoin(FrontendCam cam) throws ZKNamingException, FrontendException {
+        String newOpId = genOpID();
+        int numRetries = 0;
+        while (numRetries < NUM_RETRIES) {
+            try {
+                executeCamJoin(cam, newOpId);
+                return;
+            } catch(RuntimeException e) {
+                Status status = Status.fromThrowable(e);
+                if (status.getCode() == Status.Code.UNAVAILABLE) {
+                    makeNewConnection();
+                    numRetries++;
+                } else if(status.getCode() == Status.Code.ALREADY_EXISTS) {
+                    throw new CameraAlreadyExistsException();
+                } else if(status.getCode() == Status.Code.INVALID_ARGUMENT) {
+                    throw new CameraRegisterException(status.getDescription());
+                } else {
+                    throw new CameraRegisterException(status.getDescription());
+                }
             }
-            if(status.getCode() == Status.Code.ALREADY_EXISTS) {
-                throw new CameraAlreadyExistsException();
-            }
-            if(status.getCode() == Status.Code.INVALID_ARGUMENT) {
-                throw new CameraRegisterException(status.getDescription());
-            }
-            throw new CameraRegisterException();
         }
+
+    }
+
+    private void executeCamJoin(FrontendCam cam, String opID) {
+        Silo.JoinRequest request = createJoinRequest(cam, opID);
+        this.reportBlockingStub.camJoin(request);
     }
 
     public FrontendCoords camInfo(String name) throws FrontendException, ZKNamingException {
-        Silo.InfoRequest request = createInfoRequest(name);
-
-        try {
-            Silo.InfoResponse response = this.reportBlockingStub.camInfo(request);
-            this.frontendTS.merge(vectorTimestampFromGRPC(response.getNew()));
-            return new FrontendCoords(response.getCoords().getLatitude(), response.getCoords().getLongitude());
-        } catch (RuntimeException e) {
-            Status status = Status.fromThrowable(e);
-            if (status.getCode() == Status.Code.UNAVAILABLE) {
-                makeNewConnection();
-                throw new FrontendException(ErrorMessages.NO_CONNECTION);
+        int numRetries = 0;
+        while (numRetries < NUM_RETRIES) {
+            try {
+                return executeCamInfo(name);
+            } catch (RuntimeException e) {
+                Status status = Status.fromThrowable(e);
+                if (status.getCode() == Status.Code.UNAVAILABLE) {
+                    makeNewConnection();
+                    numRetries++;
+                } else if(status.getCode() == Status.Code.NOT_FOUND) {
+                    throw new CameraNotFoundException();
+                } else {
+                    throw new CameraInfoException();
+                }
+            } catch (InvalidVectorTimestampException e) {
+                throw new FrontendException(e.getMessage());
             }
-            if(status == Status.NOT_FOUND) {
-                throw new CameraNotFoundException();
-            }
-            throw new CameraInfoException();
-        } catch (InvalidVectorTimestampException e) {
-            throw new FrontendException(e.getMessage());
         }
+        throw new FrontendException(ErrorMessages.NO_ONLINE_SERVERS);
     }
 
-    public int report(String name, List<FrontendObservation> observations, String opID)
+    private FrontendCoords executeCamInfo(String name) throws InvalidVectorTimestampException {
+        Silo.InfoRequest request = createInfoRequest(name);
+        Silo.InfoResponse response = this.reportBlockingStub.camInfo(request);
+        this.frontendTS.merge(vectorTimestampFromGRPC(response.getNew()));
+        return new FrontendCoords(response.getCoords().getLatitude(), response.getCoords().getLongitude());
+    }
+
+    public int report(String name, List<FrontendObservation> observations)
             throws FrontendException, ZKNamingException {
         if(observations.size() == 0) return 0;
-        String newOpId = opID == null ? genOpID() : opID;
-        Silo.ReportRequest request = createReportRequest(name, observations, newOpId);
-        Silo.ReportResponse response;
-        try {
-            response = this.reportBlockingStub.report(request);
-        } catch (RuntimeException e) {
-            Status status = Status.fromThrowable(e);
-            switch (status.getCode()) {
-                case UNAVAILABLE:
-                    makeNewConnection();
-                    report(name, observations, newOpId);
-                    throw new FrontendException(e.getMessage());
-                case NOT_FOUND:
-                    throw new CameraNotFoundException();
-                case INVALID_ARGUMENT:
-                    throw new InvalidArgumentException(status.getDescription());
-                default:
-                    throw new ReportException(status.getDescription());
+        String newOpId = genOpID();
+        int numRetries = 0;
+        while (numRetries < NUM_RETRIES) {
+            try {
+                return executeReport(name, observations, newOpId);
+            } catch (RuntimeException e) {
+                Status status = Status.fromThrowable(e);
+                switch (status.getCode()) {
+                    case UNAVAILABLE:
+                        makeNewConnection();
+                        numRetries++;
+                        break;
+                    case NOT_FOUND:
+                        throw new CameraNotFoundException();
+                    case INVALID_ARGUMENT:
+                        throw new InvalidArgumentException(status.getDescription());
+                    default:
+                        throw new ReportException(status.getDescription());
+                }
             }
         }
+        throw new FrontendException(ErrorMessages.NO_ONLINE_SERVERS);
+    }
 
+    private int executeReport(String name, List<FrontendObservation> observations, String opID) {
+        Silo.ReportRequest request = createReportRequest(name, observations, opID);
+        Silo.ReportResponse response = this.reportBlockingStub.report(request);
         return response.getNumAcked();
     }
 
 
     public FrontendReport track(FrontendObservation.ObservationType type, String id) throws FrontendException, ZKNamingException {
-        Silo.TrackRequest request = createTrackRequest(type, id);
-
-        try {
-            Silo.TrackResponse response = queryBlockingStub.track(request);
-            VectorTimestamp newTS = vectorTimestampFromGRPC(response.getNew());
-            if (newTS.lessOrEqualThan(frontendTS)) {
-                if (trackCache.get(type).containsKey(id)) // don't && with above condition.
-                    return trackCache.get(type).get(id);
-            } else {
-                frontendTS.merge(newTS);
+        int numRetries = 0;
+        while (numRetries < NUM_RETRIES) {
+            try {
+                return executeTrack(type, id);
+            } catch(StatusRuntimeException e) {
+                Status status = Status.fromThrowable(e);
+                if(status.getCode() == Status.Code.UNAVAILABLE) {
+                    makeNewConnection();
+                    numRetries++;
+                } else if (status.getCode() == Status.Code.NOT_FOUND) {
+                    if (trackCache.get(type).containsKey(id))
+                        return trackCache.get(type).get(id);
+                    else
+                        throw new NotFoundException();
+                } else if(status.getCode() == Status.Code.INVALID_ARGUMENT) {
+                    throw new InvalidArgumentException(status.getDescription());
+                } else {
+                    throw new QueryException();
+                }
+            } catch (InvalidVectorTimestampException e) {
+                throw new FrontendException(e.getMessage());
             }
-            FrontendReport result = reportFromGRPC(response.getReport());
-            trackCache.get(type).put(id, result);
-            return result;
-        } catch(StatusRuntimeException e) {
-            Status status = Status.fromThrowable(e);
-            if(status.getCode() == Status.Code.UNAVAILABLE) {
-                makeNewConnection();
-                throw new FrontendException(ErrorMessages.NO_CONNECTION);
-            }
-            if (status.getCode() == Status.Code.NOT_FOUND) {
-                if (trackCache.get(type).containsKey(id))
-                    return trackCache.get(type).get(id);
-                else
-                    throw new NotFoundException();
-            }
-            if(status.getCode() == Status.Code.INVALID_ARGUMENT) {
-                throw new InvalidArgumentException(status.getDescription());
-            }
-
-            throw new QueryException();
-        } catch (InvalidVectorTimestampException e) {
-            throw new FrontendException(e.getMessage());
         }
+        throw new FrontendException(ErrorMessages.NO_ONLINE_SERVERS);
+    }
+
+    private FrontendReport executeTrack(FrontendObservation.ObservationType type, String id) throws InvalidVectorTimestampException {
+        Silo.TrackRequest request = createTrackRequest(type, id);
+        Silo.TrackResponse response = queryBlockingStub.track(request);
+        VectorTimestamp newTS = vectorTimestampFromGRPC(response.getNew());
+        System.out.println("frontendTS: " + this.frontendTS);
+        System.out.println("newTS: " + newTS);
+        if (newTS.lessOrEqualThan(frontendTS)) {
+            if (trackCache.get(type).containsKey(id)) // don't && with above condition.
+                return trackCache.get(type).get(id);
+        } else {
+            frontendTS.merge(newTS);
+        }
+        FrontendReport result = reportFromGRPC(response.getReport());
+        trackCache.get(type).put(id, result);
+        System.out.println("Cache: " + trackCache);
+        return result;
     }
 
     public List<FrontendReport> trackMatch(FrontendObservation.ObservationType type, String query) throws FrontendException, ZKNamingException {
+        int numRetries = 0;
+        while (numRetries < NUM_RETRIES) {
+            try {
+                return executeTrackMatch(type, query);
+            } catch(StatusRuntimeException e) {
+                Status status = Status.fromThrowable(e);
+                if(status.getCode() == Status.Code.UNAVAILABLE) {
+                    makeNewConnection();
+                    numRetries++;
+                } else if (status.getCode() == Status.Code.NOT_FOUND) {
+                    if (trackMatchCache.get(type).containsKey(query))
+                        return trackMatchCache.get(type).get(query);
+                    else
+                        throw new NotFoundException();
+                } else if (status.getCode() == Status.Code.INVALID_ARGUMENT) {
+                    throw new InvalidArgumentException(status.getDescription());
+                } else {
+                    throw new QueryException();
+                }
+            } catch (InvalidVectorTimestampException e) {
+                throw new FrontendException(e.getMessage());
+            }
+        }
+        throw new FrontendException(ErrorMessages.NO_ONLINE_SERVERS);
+    }
+
+    private List<FrontendReport> executeTrackMatch(FrontendObservation.ObservationType type, String query) throws InvalidVectorTimestampException {
         LinkedList<FrontendReport> results = new LinkedList<>();
         Silo.TrackMatchRequest request = createTrackMatchRequest(type, query);
-
-        try {
-            Silo.TrackMatchResponse response = queryBlockingStub.trackMatch(request);
-            VectorTimestamp newTS = vectorTimestampFromGRPC(response.getNew());
-            if (newTS.lessOrEqualThan(this.frontendTS)) {
-                if (trackMatchCache.get(type).containsKey(query))
-                    return trackMatchCache.get(type).get(query);
-            } else {
-                this.frontendTS.merge(newTS);
-            }
-            List<Silo.Report> reports = response.getReportsList();
-            for (Silo.Report report : reports) {
-                results.push(reportFromGRPC(report));
-            }
-            trackMatchCache.get(type).put(query, results);
-            return results;
-        } catch(StatusRuntimeException e) {
-            Status status = Status.fromThrowable(e);
-            if(status.getCode() == Status.Code.UNAVAILABLE) {
-                makeNewConnection();
-                throw new FrontendException(ErrorMessages.NO_CONNECTION);
-            }
-            if (status.getCode() == Status.Code.NOT_FOUND) {
-                if (trackMatchCache.get(type).containsKey(query))
-                    return trackMatchCache.get(type).get(query);
-                else
-                    throw new NotFoundException();
-            }
-            if (status.getCode() == Status.Code.INVALID_ARGUMENT) {
-                throw new InvalidArgumentException(status.getDescription());
-            }
-
-            throw new QueryException();
-        } catch (InvalidVectorTimestampException e) {
-            throw new FrontendException(e.getMessage());
+        Silo.TrackMatchResponse response = queryBlockingStub.trackMatch(request);
+        VectorTimestamp newTS = vectorTimestampFromGRPC(response.getNew());
+        if (newTS.lessOrEqualThan(this.frontendTS)) {
+            if (trackMatchCache.get(type).containsKey(query))
+                return trackMatchCache.get(type).get(query);
+        } else {
+            this.frontendTS.merge(newTS);
         }
+        List<Silo.Report> reports = response.getReportsList();
+        for (Silo.Report report : reports) {
+            results.push(reportFromGRPC(report));
+        }
+        trackMatchCache.get(type).put(query, results);
+        return results;
     }
 
     public List<FrontendReport> trace(FrontendObservation.ObservationType type, String id) throws FrontendException, ZKNamingException {
+        int numRetries = 0;
+        while (numRetries < NUM_RETRIES) {
+            try {
+                return executeTrace(type, id);
+            } catch(StatusRuntimeException e) {
+                Status status = Status.fromThrowable(e);
+                if(status.getCode() == Status.Code.UNAVAILABLE) {
+                    makeNewConnection();
+                    numRetries++;
+                } else if (status.getCode() == Status.Code.NOT_FOUND) {
+                    if (traceCache.get(type).containsKey(id))
+                        return traceCache.get(type).get(id);
+                    else
+                        throw new NotFoundException();
+                } else if (status.getCode() == Status.Code.INVALID_ARGUMENT) {
+                    throw new InvalidArgumentException(status.getDescription());
+                } else {
+                    throw new QueryException();
+                }
+            } catch (InvalidVectorTimestampException e) {
+                throw new FrontendException(e.getMessage());
+            }
+        }
+        throw new FrontendException(ErrorMessages.NO_ONLINE_SERVERS);
+    }
+
+    private List<FrontendReport> executeTrace(FrontendObservation.ObservationType type, String id) throws InvalidVectorTimestampException {
         LinkedList<FrontendReport> results = new LinkedList<>();
         Silo.TraceRequest request = createTraceRequest(type, id);
-
-        try {
-            Silo.TraceResponse response = queryBlockingStub.trace(request);
-            VectorTimestamp newTS = vectorTimestampFromGRPC(response.getNew());
-            if (newTS.lessOrEqualThan(this.frontendTS)) {
-                if (traceCache.get(type).containsKey(id))
-                    return traceCache.get(type).get(id);
-            } else {
-                this.frontendTS.merge(newTS);
-            }
-            List<Silo.Report> reports = response.getReportsList();
-            for (Silo.Report report : reports) {
-                results.addLast(reportFromGRPC(report));
-            }
-            traceCache.get(type).put(id, results);
-            return results;
-        } catch(StatusRuntimeException e) {
-            Status status = Status.fromThrowable(e);
-            if(status.getCode() == Status.Code.UNAVAILABLE) {
-                makeNewConnection();
-                throw new FrontendException(ErrorMessages.NO_CONNECTION);
-            }
-            if (status.getCode() == Status.Code.NOT_FOUND) {
-                if (traceCache.get(type).containsKey(id))
-                    return traceCache.get(type).get(id);
-                else
-                    throw new NotFoundException();
-            }
-            if (status.getCode() == Status.Code.INVALID_ARGUMENT) {
-                throw new InvalidArgumentException(status.getDescription());
-            }
-
-            throw new QueryException();
-        } catch (InvalidVectorTimestampException e) {
-            throw new FrontendException(e.getMessage());
+        Silo.TraceResponse response = queryBlockingStub.trace(request);
+        VectorTimestamp newTS = vectorTimestampFromGRPC(response.getNew());
+        if (newTS.lessOrEqualThan(this.frontendTS)) {
+            if (traceCache.get(type).containsKey(id))
+                return traceCache.get(type).get(id);
+        } else {
+            this.frontendTS.merge(newTS);
         }
+        List<Silo.Report> reports = response.getReportsList();
+        for (Silo.Report report : reports) {
+            results.addLast(reportFromGRPC(report));
+        }
+        traceCache.get(type).put(id, results);
+        return results;
+    }
+
+
+
+    // ===================================================
+    // HELPER FUNCTION
+    // ===================================================
+
+    //Since the clear method clears all structures, in the IT tests we need to reset the frontend TS as well
+    protected void resetFrontendTS() {
+        this.frontendTS = new VectorTimestamp(new int[NUM_REPLICAS]);
     }
 
 
@@ -397,11 +483,8 @@ public class SiloFrontend {
                 .build();
     }
 
-    private Silo.ClearRequest createClearRequest(String opId) {
-        return Silo.ClearRequest.newBuilder()
-                .setPrev(vecTimestampToGRPC(this.frontendTS))
-                .setOpId(opId)
-                .build();
+    private Silo.ClearRequest createClearRequest() {
+        return Silo.ClearRequest.getDefaultInstance();
     }
 
 

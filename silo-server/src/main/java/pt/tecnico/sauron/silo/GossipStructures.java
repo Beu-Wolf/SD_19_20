@@ -104,6 +104,14 @@ public class GossipStructures {
         }
     }
 
+    public void clearAll() {
+        this.setReplicaTS(new VectorTimestamp(new int[NUM_REPLICAS]));
+        this.setValueTS(new VectorTimestamp(new int[NUM_REPLICAS]));
+        this.setExecutedOperations(new ConcurrentLinkedDeque<>());
+        this.setUpdateLog( new LinkedList<>());
+        this.setTimestampTable(new ArrayList<>());
+    }
+
 
 
 }

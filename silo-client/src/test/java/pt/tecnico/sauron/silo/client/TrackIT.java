@@ -75,8 +75,8 @@ public class TrackIT extends BaseIT {
                 instant));
 
         try {
-            siloFrontend.ctrlInitCams(new LinkedList<>(Arrays.asList(cams)), null);
-            siloFrontend.ctrlInitObservations(reports, null);
+            siloFrontend.ctrlInitCams(new LinkedList<>(Arrays.asList(cams)));
+            siloFrontend.ctrlInitObservations(reports);
         } catch(Exception e) {
             System.err.println(e);
         }
@@ -158,7 +158,7 @@ public class TrackIT extends BaseIT {
     @AfterAll
     public static void tearDown() {
         try {
-            siloFrontend.ctrlClear(null);
+            siloFrontend.ctrlClear();
         } catch( ZKNamingException | FrontendException e) {
             e.printStackTrace();
         }
