@@ -109,7 +109,9 @@ public class GossipStructures {
         this.setValueTS(new VectorTimestamp(new int[NUM_REPLICAS]));
         this.setExecutedOperations(new ConcurrentLinkedDeque<>());
         this.setUpdateLog( new LinkedList<>());
-        this.setTimestampTable(new ArrayList<>());
+        for (int i = 0; i < this.timestampTable.size(); i++) {
+            this.timestampTable.set(i, new VectorTimestamp(new int[NUM_REPLICAS]));
+        }
     }
 
 

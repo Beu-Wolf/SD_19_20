@@ -12,25 +12,25 @@ public class LogEntry {
     private String opId;
 
     public LogEntry() {}
-    public LogEntry(int replicaId, VectorTimestamp ts) {
+    public LogEntry(int replicaId, String opId, VectorTimestamp prev,  VectorTimestamp ts) {
         this.replicaId = replicaId;
+        this.opId = opId;
+        this.prev = prev;
         this.ts = ts;
     }
+
+    public LogEntry(int replicaId, String opId, VectorTimestamp prev,  VectorTimestamp ts, Command command) {
+        this(replicaId, opId, prev, ts);
+        this.command = command;
+    }
+
 
     public int getReplicaId() {
         return replicaId;
     }
 
-    public void setReplicaId(int replicaId) {
-        this.replicaId = replicaId;
-    }
-
     public VectorTimestamp getTs() {
         return ts;
-    }
-
-    public void setTs(VectorTimestamp ts) {
-        this.ts = ts;
     }
 
     public Command getCommand() {
@@ -45,16 +45,8 @@ public class LogEntry {
         return prev;
     }
 
-    public void setPrev(VectorTimestamp prev) {
-        this.prev = prev;
-    }
-
     public String getOpId() {
         return opId;
-    }
-
-    public void setOpId(String opId) {
-        this.opId = opId;
     }
 
     public int compareByPrev(LogEntry le) throws InvalidVectorTimestampException {

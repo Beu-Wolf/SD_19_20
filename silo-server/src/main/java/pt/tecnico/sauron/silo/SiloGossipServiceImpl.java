@@ -98,14 +98,11 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
     }
 
     private LogEntry recordToLogEntry(Gossip.Record record) {
-        LogEntry le = new LogEntry();
-        le.setOpId(record.getOpId());
-        le.setReplicaId(record.getReplicaId());
-        le.setPrev(vectorTimestampFromGRPC(record.getPrev()));
-        le.setTs(vectorTimestampFromGRPC(record.getTs()));
-        // get command
-        le.setCommand(getCommandFromGRPC(record));
-        return le;
+        return new LogEntry(record.getReplicaId(),
+                record.getOpId(),
+                vectorTimestampFromGRPC(record.getPrev()),
+                vectorTimestampFromGRPC(record.getTs()),
+                getCommandFromGRPC(record));
     }
 
     private Command getCommandFromGRPC(Gossip.Record record) {

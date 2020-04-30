@@ -60,10 +60,10 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
     @Override
     public void initCams(Silo.InitCamsRequest request, StreamObserver<Silo.InitCamsResponse> responseObserver) {
         CompositeSiloException exceptions = new CompositeSiloException();
-        LogEntry newLe = receiveUpdate(request.getOpId(), request.getPrev());
 
         // if is not executed yet
-        if (newLe != null) {
+        if (!this.gossipStructures.getExecutedOperations().contains(request.getOpId())) {
+            LogEntry newLe = receiveUpdateAndSetLogEntry(request.getOpId(), request.getPrev());
             LinkedList<Cam> camList = new LinkedList<>();
 
             // add cam to a helper list
@@ -110,10 +110,10 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
     @Override
     public void initObservations(Silo.InitObservationsRequest request, StreamObserver<Silo.InitObservationsResponse> responseObserver) {
         CompositeSiloException exceptions = new CompositeSiloException();
-        LogEntry newLe = receiveUpdate(request.getOpId(), request.getPrev());
 
         // If is not executed yet
-        if (newLe != null) {
+        if (!this.gossipStructures.getExecutedOperations().contains(request.getOpId())) {
+            LogEntry newLe = receiveUpdateAndSetLogEntry(request.getOpId(), request.getPrev());
             LinkedList<Report> reportList = new LinkedList<>();
 
             // put in helper list
@@ -159,26 +159,19 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
     // HELPER FUNCTIONS
     // ===================================================
 
-    private LogEntry receiveUpdate(String opID, Silo.VecTimestamp prev) {
+    private LogEntry receiveUpdateAndSetLogEntry(String opID, Silo.VecTimestamp prev) {
         // Check if it has been executed before
-        if (!this.gossipStructures.getExecutedOperations().contains(opID)) {
-            LogEntry newLe = new LogEntry();
-            int instance = this.gossipStructures.getInstance();
-            newLe.setReplicaId(instance);
-            newLe.setOpId(opID);
-            newLe.setPrev(vectorTimestampFromGRPC(prev));
-            // increment replicaTS
-            VectorTimestamp replicaTS = this.gossipStructures.getReplicaTS();
-            int newVal = replicaTS.get(this.gossipStructures.getInstance() - 1) + 1;
-            replicaTS.set(this.gossipStructures.getInstance() - 1, newVal);
-            this.gossipStructures.setReplicaTS(replicaTS);
-            // create unique TS
-            VectorTimestamp uniqueTS = vectorTimestampFromGRPC(prev);
-            uniqueTS.set(this.gossipStructures.getInstance() - 1, newVal);
-            newLe.setTs(uniqueTS);
-            return newLe;
-        }
-        return null;
+        int instance = this.gossipStructures.getInstance();
+        // increment replicaTS
+        VectorTimestamp replicaTS = this.gossipStructures.getReplicaTS();
+        int newVal = replicaTS.get(this.gossipStructures.getInstance() - 1) + 1;
+        replicaTS.set(this.gossipStructures.getInstance() - 1, newVal);
+        this.gossipStructures.setReplicaTS(replicaTS);
+        // create unique TS
+        VectorTimestamp uniqueTS = vectorTimestampFromGRPC(prev);
+        uniqueTS.set(this.gossipStructures.getInstance() - 1, newVal);
+        return new LogEntry(instance, opID, vectorTimestampFromGRPC(prev), uniqueTS);
+
     }
 
     // ===================================================

@@ -28,9 +28,11 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
     // ===================================================
     @Override
     public void camJoin(pt.tecnico.sauron.silo.grpc.Silo.JoinRequest request, io.grpc.stub.StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.JoinResponse> responseObserver) {
-        LogEntry le = receiveUpdate(request.getOpId(), request.getPrev());
+
+
         // If it has not been executed before
-        if (le != null) {
+        if (!this.gossipStructures.getExecutedOperations().contains(request.getOpId())) {
+            LogEntry le = receiveUpdateAndSetLogEntry(request.getOpId(), request.getPrev());
             try {
                 Cam cam = camFromGRPC(request.getCam());
 
@@ -56,9 +58,11 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
             } catch (InvalidVectorTimestampException e) {
                 System.out.println(e.getMessage());
             }
+            responseObserver.onNext(createJoinResponse(le.getTs()));
+        } else {
+            responseObserver.onNext(createJoinResponse(vectorTimestampFromGRPC(request.getPrev())));
         }
-        pt.tecnico.sauron.silo.grpc.Silo.JoinResponse response = createJoinResponse(le.getTs());
-        responseObserver.onNext(response);
+
         responseObserver.onCompleted();
     }
 
@@ -79,11 +83,10 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
 
     @Override
     public void report(pt.tecnico.sauron.silo.grpc.Silo.ReportRequest request, io.grpc.stub.StreamObserver<pt.tecnico.sauron.silo.grpc.Silo.ReportResponse> responseObserver) {
-        LogEntry le = receiveUpdate(request.getOpId(), request.getPrev());
-        int numAcked = 0;
-
         // If has not been executed before
-        if (le != null) {
+        int numAcked = 0;
+        if (!this.gossipStructures.getExecutedOperations().contains(request.getOpId())) {
+            LogEntry le = receiveUpdateAndSetLogEntry(request.getOpId(), request.getPrev());
 
             Cam cam;
             try {
@@ -136,9 +139,12 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
                         .asRuntimeException());
                 return;
             }
+            responseObserver.onNext(createReportResponse(numAcked, le.getTs()));
+        } else {
+            // If the operation was already executed, return the prev Timestamp
+            responseObserver.onNext(createReportResponse(numAcked, vectorTimestampFromGRPC(request.getPrev())));
         }
 
-        responseObserver.onNext(createReportResponse(numAcked, le.getTs()));
         responseObserver.onCompleted();
     }
 
@@ -146,26 +152,18 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
     // HELPER FUNCTIONS
     // ===================================================
 
-    private LogEntry receiveUpdate(String opID, pt.tecnico.sauron.silo.grpc.Silo.VecTimestamp prev) {
+    private LogEntry receiveUpdateAndSetLogEntry(String opID, pt.tecnico.sauron.silo.grpc.Silo.VecTimestamp prev) {
         // Check if it has been executed before
-        if (!this.gossipStructures.getExecutedOperations().contains(opID)) {
-            LogEntry newLe = new LogEntry();
-            int instance = this.gossipStructures.getInstance();
-            newLe.setReplicaId(instance);
-            newLe.setOpId(opID);
-            newLe.setPrev(vectorTimestampFromGRPC(prev));
-            // increment replicaTS
-            VectorTimestamp replicaTS = this.gossipStructures.getReplicaTS();
-            int newVal = replicaTS.get(this.gossipStructures.getInstance() - 1) + 1;
-            replicaTS.set(this.gossipStructures.getInstance() - 1, newVal);
-            this.gossipStructures.setReplicaTS(replicaTS);
-            // create unique TS
-            VectorTimestamp uniqueTS = vectorTimestampFromGRPC(prev);
-            uniqueTS.set(this.gossipStructures.getInstance() - 1, newVal);
-            newLe.setTs(uniqueTS);
-            return newLe;
-        }
-        return null;
+        int instance = this.gossipStructures.getInstance();
+        // increment replicaTS
+        VectorTimestamp replicaTS = this.gossipStructures.getReplicaTS();
+        int newVal = replicaTS.get(this.gossipStructures.getInstance() - 1) + 1;
+        replicaTS.set(this.gossipStructures.getInstance() - 1, newVal);
+        this.gossipStructures.setReplicaTS(replicaTS);
+        // create unique TS
+        VectorTimestamp uniqueTS = vectorTimestampFromGRPC(prev);
+        uniqueTS.set(this.gossipStructures.getInstance() - 1, newVal);
+        return new LogEntry(instance, opID, vectorTimestampFromGRPC(prev), uniqueTS);
     }
 
 
