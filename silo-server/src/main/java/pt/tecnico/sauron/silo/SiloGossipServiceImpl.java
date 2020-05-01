@@ -35,8 +35,7 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
             applyUpdates();
             //Update timestampTable
             this.gossipStructures.setTimestampTableRow(request.getSenderId()-1, vectorTimestampFromGRPC(request.getReplicaTimeStamp()));
-
-
+            
             responseObserver.onNext(Gossip.GossipResponse.getDefaultInstance());
             responseObserver.onCompleted();
 

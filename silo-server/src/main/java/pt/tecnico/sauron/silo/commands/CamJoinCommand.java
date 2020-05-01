@@ -31,4 +31,11 @@ public class CamJoinCommand extends Command {
         Gossip.CamJoinCommand camJoinCommand = Gossip.CamJoinCommand.newBuilder().setRequest(joinRequest).build();
         return Gossip.Record.newBuilder(record).setCamJoin(camJoinCommand).build();
     }
+
+    @Override
+    public String toString() {
+        return "CamJoinCommand{" +
+                "cam=" + cam +
+                '}';
+    }
 }

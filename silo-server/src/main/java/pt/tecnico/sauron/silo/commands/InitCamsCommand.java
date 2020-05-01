@@ -49,4 +49,11 @@ public class InitCamsCommand extends Command {
                 .setInitCams(initCamsCommand)
                 .build();
     }
+
+    @Override
+    public String toString() {
+        return "InitCamsCommand{" +
+                "camList=" + camList +
+                '}';
+    }
 }

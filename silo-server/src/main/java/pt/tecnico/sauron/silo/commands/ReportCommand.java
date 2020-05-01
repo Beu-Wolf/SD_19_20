@@ -11,26 +11,26 @@ import java.util.LinkedList;
 
 public class ReportCommand extends Command {
 
-    private Cam cam;
+    private String camName;
     private LinkedList<Observation> obs;
     private Instant observationInstant;
 
-    public ReportCommand(Silo silo, Cam cam, LinkedList<Observation> obs, Instant observationInstant) {
+    public ReportCommand(Silo silo, String camName, LinkedList<Observation> obs, Instant observationInstant) {
         super(silo);
-        this.cam = cam;
+        this.camName = camName;
         this.obs = obs;
         this.observationInstant = observationInstant;
     }
 
     public ReportCommand( Silo silo, Gossip.ReportCommand reportCommand) throws SiloException {
         super(silo);
-        Cam camObj = this.silo.getCam(reportCommand.getRequest().getCamName());
+        this.camName = reportCommand.getRequest().getCamName();
         LinkedList<Observation> obs = new LinkedList<>();
         for (pt.tecnico.sauron.silo.grpc.Silo.Observation o : reportCommand.getRequest().getObservationsList()) {
             obs.add(observationFromGRPC(o));
         }
         Instant instant = timestampFromGRPC(reportCommand.getObservationInstant());
-        this.cam = camObj;
+
         this.obs = obs;
         this.observationInstant = instant;
 
@@ -41,9 +41,9 @@ public class ReportCommand extends Command {
     }
 
     @Override
-    public void execute() {
+    public void execute()  throws SiloException{
         for (Observation o : this.obs) {
-            silo.registerGossipObservation(this.cam, o, observationInstant);
+            silo.registerGossipObservation(this.silo.getCam(this.camName), o, observationInstant);
         }
     }
 
@@ -58,8 +58,8 @@ public class ReportCommand extends Command {
             System.out.println(e.getMessage());
         }
 
-        pt.tecnico.sauron.silo.grpc.Silo.ReportRequest reportRequest = pt.tecnico.sauron.silo.grpc.Silo.ReportRequest.newBuilder().
-                setCamName(this.cam.getName())
+        pt.tecnico.sauron.silo.grpc.Silo.ReportRequest reportRequest = pt.tecnico.sauron.silo.grpc.Silo.ReportRequest.newBuilder()
+                .setCamName(this.camName)
                 .addAllObservations(siloObs)
                 .build();
 
@@ -70,5 +70,14 @@ public class ReportCommand extends Command {
 
         return Gossip.Record.newBuilder(record).setReport(reportCommand).build();
 
+    }
+
+    @Override
+    public String toString() {
+        return "ReportCommand{" +
+                "camName=" + camName +
+                ", obs=" + obs +
+                ", observationInstant=" + observationInstant +
+                '}';
     }
 }

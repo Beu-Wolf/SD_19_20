@@ -131,7 +131,7 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
             }
 
             // add to update log
-            le.setCommand(new ReportCommand(this.silo, cam, obsList, instant));
+            le.setCommand(new ReportCommand(this.silo, cam.getName(), obsList, instant));
             this.gossipStructures.addLogEntry(le);
             System.out.println( "Added: " + this.gossipStructures.getUpdateLog());
 

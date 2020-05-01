@@ -59,4 +59,11 @@ public class InitObsCommand extends Command {
         return Gossip.Record.newBuilder(record).setInitObservations(reportCommand).build();
 
     }
+
+    @Override
+    public String toString() {
+        return "InitObsCommand{" +
+                "reports=" + reports +
+                '}';
+    }
 }

@@ -103,4 +103,9 @@ public abstract class Command {
         return null;
     }
 
+
+    @Override
+    public String toString() {
+        return "";
+    }
 }
