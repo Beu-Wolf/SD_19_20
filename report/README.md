@@ -55,11 +55,22 @@ Contudo, esta solução não tolera:
  * Crash numa réplica com updates críticos para o estado de outras réplicas
  * Instâncias de réplicas atribuídas de forma não incremental
 
+ * Para garantir que uma replica possa falhar temporariamente, nao podemos apagar o update log das replicas, para que as que falham consigam recuperar o seu estado.
+
 ## Solução
 
-_(Figura da solução de tolerância a faltas)_
+**_(Figura da solução de tolerância a faltas)_**
 
-_(Breve explicação da solução, suportada pela figura anterior)_
+A solução implementada foi baseada no *Gossip Architecture*, descrito em **<TODO: REF LIVRO>**. Cada réplica tem o seu estado interno (`Value`, na figura) associado a um timestamp vetorial (`Value timestamp` na figura)**[TODO: CHECK THIS]**. Este timestamp representa a versão do estado da réplica, resultante da execução cumulativa de um conjunto de atualizações. Para além destes componentes, existe ainda um `Update Log`, que contém um conjunto de atualizações que a réplica ainda não executou. Estes updates estão associados ao timestamp (`prevTS`) que a entidade que o criou tinha no momento da sua criação. Os updates apenas podem ser executados quando o `Value timestamp` da réplica for posterior ao `prevTS` do update, pois apenas aí se pode garantir que a réplica tem um estado posterior **[TODO: POSTERIOR?]** ao estado que originou o update. Deste modo, é possível garantir a causabilidade e, por isso, a coerência fraca **[TODO: IS IT?]**. No entanto, não foi implementado nenhum mecanismo que garanta a linearizabilidade, não havendo coerência forte **[TODO: AQUI ESTA BOM? REFACTOR PODEMOS MUDAR DE SITIO]**.
+
+As réplicas atualizam-se regularmente, enviando umas às outras mensagens de update (`Gossip Message` na figura), contendo as entradas existentes no `Update Log` da réplica que as enviou. A réplica que as recebe adiciona-as ao seu `Update Log`, para serem executadas assim que possível. Estas atualizações são enviadas por defeito de 30 em 30 segundos, de acordo com o definido no enunciado. Contudo, este intervalo pode ser configurado **[TODO: RELEVANTE?]**. Por uma questão de simplicidade, aconselhada no feedback da primeira entrega, as entradas do `Update Log` foram enviadas num campo `repeated` da mensagem de gossip definida no gRPC. Esta abordagem tem uma limitação: Como apenas é possível enviar 4MB por mensagem, há a possibilidade que num perído de pico de atividade, as réplicas não consigam enviar todos os updates que tẽm para enviar. Será necessário estimar uma frequẽncia de atualização das réplicas adequada para que isto não aconteça **[TODO: ???]**.
+
+Um leitor mais perspicaz reparará que este modelo de atualizações permite que as réplicas enviem *updates* que o seu destino já tenha registado, podendo levar a duplicação de instruções (quando estas não forem idempotentes será problemático) e a um congestionamento desnecessário da rede.
+
+ * O primeiro problema é trivialmente mitigado atribuindo um ID único a cada *update* (`opId`): Antes de uma réplica adicionar um update ao seu *update log*, esta verifica se ainda não a acrescentou. O `opId` é criado usando um gerador aleatório de **[TODO: NOME E PROS E CONTAS?]**
+ * O segundo problema pode ser atenuado se as réplicas forem registando o *timestamp* mais atual das outras e enviarem apenas os updates que a réplica de destino garantidamente ainda não tenha visto. Para tal, ao enviar uma `Gossip Message`, a réplica envia também o seu `Value timestamp`, que é guardado na `Timestamp Table` da réplica destino.
+
+Sempre que uma réplica recebe uma `Gossip Message`, há a possiblidade de receber updates críticos para a atualização do seu estado. Desse modo, a réplica verifica que updates do seu `Update Log` é que podem ser executados. Ao receber um *update* de um cliente, este é adicionado ao `Update Log` e imediatamente executado se o `prevTS` associado a este for anterior ao `Value timestamp` da réplica.
 
 
 ## Protocolo de replicação
