@@ -118,6 +118,19 @@ Existem 3 tipos de mensagens relevantes:
 
 _(Descrição de opções de implementação, incluindo otimizações e melhorias introduzidas)_
 
+**Ordem de leituras**
+
+A execução de queries que devolvam consigo timestamps anteriores ao registado no Frontend acionam um busca na cache. Porém, no caso em que não existam entradas na cache, aceita-se o resultado devolvido pela réplica, embora este seja antigo. Esta decisão não viola a ordem de leituras, pois se a cache não continha uma entrada para o pedido, então o cliente não teria lido um valor mais recente que o recebido. Queries posteriores à criação da entrada da cache serão então sujeitos a comparação de timestamps.
+Contudo, isto é válido para a presunção de que as leituras são independentes entre si.
+
+Notamos a exceção do query `trackMatch`:
+
+* Efetuando um procura pelo padrão "A*", consideremos os seguintes valores dos ids devolvidos: ["AAA", "AAB", "AAC"]
+* Estes resultados são colocados na cache para a entrada "A*"
+* Efetuando agora uma outra procura pelo padrão "AA*", recebendo um timestamp mais antigo que o do query anterior, e com resultado ["AAA", "AAB"]. 
+
+Dado que não existe uma entrada na cache para "AA*", o resultado ["AAA", "AAB"] é devolvido ao cliente, apesar de "AAC" se encontrar no padrão e já ter sido lido anteriormente.
+Isto deve-se ao facto de considerarmos os queries `trackMatch` como independentes.
 
 
 ## Notas finais
