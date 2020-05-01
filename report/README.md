@@ -55,7 +55,7 @@ Contudo, esta solução não tolera:
  * Crash numa réplica com updates críticos para o estado de outras réplicas
  * Instâncias de réplicas atribuídas de forma não incremental
 
- * Para garantir que uma replica possa falhar temporariamente, nao podemos apagar o update log das replicas, para que as que falham consigam recuperar o seu estado.
+ * Para garantir que uma replica possa falhar temporariamente, não podemos apagar o update log das réplicas, para que as que falham consigam recuperar o seu estado.
 
 ## Solução
 
