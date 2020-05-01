@@ -91,6 +91,7 @@ A cada `gossipMessage` recebida, há a possiblidade que esta contenha updates cr
 
 _(Descrição de opções de implementação, incluindo otimizações e melhorias introduzidas)_
 
+
 **Ordem de leituras**
 
 A execução de queries que devolvam consigo timestamps anteriores ao registado no Frontend acionam um busca na cache. Porém, no caso em que não existam entradas na cache, aceita-se o resultado devolvido pela réplica, embora este seja antigo. Esta decisão não viola a ordem de leituras, pois se a cache não continha uma entrada para o pedido, então o cliente não teria lido um valor mais recente que o recebido. Queries posteriores à criação da entrada da cache serão então sujeitos a comparação de timestamps.
@@ -105,9 +106,15 @@ Notamos a exceção do query `trackMatch`:
 Dado que não existe uma entrada na cache para "AA*", o resultado ["AAA", "AAB"] é devolvido ao cliente, apesar de "AAC" se encontrar no padrão e já ter sido lido anteriormente.
 Isto deve-se ao facto de considerarmos os queries `trackMatch` como independentes.
 
-Por uma questão de simplicidade, aconselhada no feedback da primeira entrega, as entradas do `updateLog` foram enviadas num campo `repeated` da mensagem de gossip definida no gRPC. Contudo, apenas é possível enviar 4MB por mensagem, havendo a possibilidade que num perído de pico de atividade, as réplicas não consigam enviar todos os updates que tenham para enviar. Será necessário estimar uma frequência de atualização adequada para que isto não aconteça.
+**Geração do opID**
 
-Cada instância de Frontend possui um `UUID` **TODO: DECISAO DE IMPLEMENTACAO**de 128 bits e regista o número de updates enviados a réplicas em `opCount`. O `opId` resulta da concatenação de `UUID` e `opCount`. Embora não sejam garantidamente únicos, as chances de colisão são extremamente baixas.
+Cada instância de Frontend possui um `UUID` de 128 bits e regista o número de updates enviados a réplicas em `opCount`. O `opId` resulta da concatenação de `UUID` e `opCount`. Embora não sejam garantidamente únicos, as chances de colisão são extremamente baixas.
+
+**Campos repeated no gRPC**
+
+Por uma questão de simplicidade, aconselhada no feedback da primeira entrega, as entradas do `updateLog` foram enviadas num campo `repeated` da mensagem de gossip definida no gRPC. Contudo, apenas é possível enviar 4MB por mensagem, havendo a possibilidade que num perído de pico de atividade, as réplicas não consigam enviar todos os updates que tenham para enviar. Será necessário estimar uma frequência de atualização adequada para que isto não aconteça. Outra possível solução será enviar as `gossipMessages` no intervalo definido ou antes, se o número de updates exceder um *treshold* previamente definido.
+
+**A que réplicas enviar as `gossipMessages`**
 
  * As replicas enviam as gossip messages a todas as que conseguirem
 
