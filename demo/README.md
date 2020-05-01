@@ -1,5 +1,177 @@
 # Sauron demonstration guide
 
+## Part 1
+
+With the project already installed,
+
+Run the server:
+```
+cd silo-server
+mvn exec:java
+```
+
+### Case 1: Load test data using Spotter
+
+```
+./spotter/target/appassembler/bin/spotter localhost 8080 < demo/initSilo.txt
+```
+
+### Case 2: Register observations using the Eye client
+
+Verify success in reporting:
+```
+./eye/target/appassembler/bin/eye localhost 8080 testCam2 12.456789 -8.987654
+person,89427
+person,89399
+person,89496
+\n
+```
+Verify invalid person ID response:
+
+```
+person,R4a_
+\n
+```
+Verify success in reporting:
+
+```
+car,20SD20
+car,AA00AA
+\n
+```
+Verify invalid car ID response:
+
+```
+car,124_87
+\n
+```
+
+Press `^C` to exit client Eye
+
+### Case 3: Verify Eye's sleep operations
+
+Verify 10 second pause until observation reported:
+
+```
+./eye/target/appassembler/bin/eye localhost 8080 testCam3 12.987654 -8.123456
+zzz,10000
+person,7777
+\n
+```
+
+Press `^C` to exit client Eye
+
+### Case 4: Usage of Spotter to execute some queries
+
+Verify that the help screen is displayed:
+
+```
+./spotter/target/appassembler/bin/spotter localhost 8080
+help
+```
+
+Verify that:
+
+* Person 1234 was observed
+* Car 20SD20 was observed
+* Person 0101 was not observed
+* Spotting car 7T_Ea2 is invalid
+
+```
+spot person 1234
+spot car 20SD20
+spot person 0101
+spot car 7T_Ea2
+```
+
+Verify that
+
+* all people shown are ordered by their id
+* all people whose id starts with 89 are shown, ordered by their id
+* all people whose id ends in 7 are shown, ordered by their id
+* all cars whose license plate starts with 20 are shown, ordered by their id
+* There are no observations of cars with license plate starting with NE
+
+```
+spot person *
+spot person 89*
+spot person *7
+spot car 20*
+spot car NE*
+```
+
+Verify that:
+
+* person 89427 was spotted by cameras testCam2, camera2, camera1
+* car 20SD20 was spotted by cameras testCam2, camera4, camera3
+* person with id 0101 was never spotted
+* car to spot as invalid license plate
+
+```
+trail person 89427
+trail car 20SD20
+trail person 0101
+trail car 7T_Ea2
+```
+```
+exit 
+```
+
+### Case 5: Usage of Spotter for control operations
+
+Execute new Spotter:
+```
+./spotter/target/appassembler/bin/spotter localhost 8080
+help
+```
+Verify that the server answers with "Hello friend!":
+
+```
+ping friend
+```
+Verify there is no longer any car or person in the server:
+
+```
+clear
+spot person *
+spot car *
+```
+
+Verify success in registering cameras:
+
+```
+init cams
+$ mockCamera1,14.645678,8.534568
+$ mockCamera2,19.994536,7.789765
+$ done
+```
+Verify success in registering observations:
+
+```
+init obs
+$ mockCamera1,person,89399
+$ mockCamera2,car,20SD21
+$ mockCamera1,car,20SD21
+$ mockCamera2,person 89399
+$ done
+```
+Verify that
+
+* person 89399 as it's most recent observation at the camera mockCamera2
+* car 20SD21 appears in 2 observations at the cameras MockCamera1 and MockCamera2
+
+```
+spot person 89399
+trail car 20SD21
+```
+```
+exit 
+```
+
+Exit server by pressing `Enter`
+
+## Part 2
+ 
 With the project already installed,
 
 Launch 3 replicas
@@ -10,7 +182,7 @@ mvn exec:java -Dinstance=2
 mvn exec:java -Dinstance=3
 ```
 
-Load some data in Replica 1
+Load some data in replica 1
 
 ```
 ./spotter/target/appassembler/bin/spotter localhost 2181 1 < demo/initSilo.txt
@@ -43,23 +215,24 @@ Received 2 updates
 Verify that both the Spotters have:
 
  * person 89427 as it's most recent observation at the camera2
- * car 20SD20 appears in 2 observations at 
+ * car 20SD20 appears in 2 observations at camera4 and camera 3
  
  ```
- spot person 89399
- trail car 20SD21
+ spot person 89427
+ trail car 20SD20
 exit
  ```
 
 ### Case 2: Updates in one replica reflected in another
-Kill all 3 replicas, navigate to `silo-server/src/main/resources/server.properties` and set the `gossipMessageInterval` 
+Kill all 3 replicas, by pressing `Enter`, navigate to `silo-server/src/main/resources/server.properties` and set the `gossipMessageInterval` 
 to 5;
 
 Launch the 3 replicas, exactly the same way as in the beginning.
 
-Connect a new Spotter to replica 1 and load some data
+Load some data in replica 1 and connect a new Spotter to it
 ```
 ./spotter/target/appassembler/bin/spotter localhost 2181 1 < demo/initSilo.txt
+./spotter/target/appassembler/bin/spotter localhost 2181 1
 help
 ```
 
@@ -95,7 +268,6 @@ In Spotter, verify that:
 spot person 1234
 spot car 20SD20
 spot person 0101
-exit
 ```
 
 Verify that:
@@ -108,6 +280,7 @@ Verify that:
 trail person 89427
 trail car 20SD20
 trail person 0101
+exit
 ```
 
 
@@ -141,7 +314,7 @@ exit
 
 ### Case 4: Coherent readings
 
-Kill all 3 replicas, navigate to `silo-server/src/main/resources/server.properties` and set the `gossipMessageInterval` 
+Kill all 3 replicas, by pressing `Enter`, navigate to `silo-server/src/main/resources/server.properties` and set the `gossipMessageInterval` 
 to 100;
 
 Launch the 3 replicas, exactly the same way as in the beginning.
@@ -188,16 +361,18 @@ exit
 
 ### Case 5: Execute more operations with replica 1 still down
 
-Kill all remaining replicas, navigate to `silo-server/src/main/resources/server.properties` and set the `gossipMessageInterval` 
+Kill all remaining replicas , by pressing `Enter`, navigate to `silo-server/src/main/resources/server.properties` and set the `gossipMessageInterval` 
 to 30;
 
-This time, launch only 2 replicas
+This time, launch only 2 replicas, replica 2 and replica 3
 
 ```
 cd silo-server
-mvn exec:java -Dinstance=1
 mvn exec:java -Dinstance=2
+mvn exec:java -Dinstance=3  
 ```
+
+Verify that gossip messages sent say `Could not connect to replica #1`
 
 Execute a new Eye connected to a random replica
 ```
@@ -228,4 +403,3 @@ spot person 9876
 trail car SDSD20
 exit
 ```
-

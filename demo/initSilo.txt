@@ -11,4 +11,4 @@ camera2,person,89427
 camera3,car,20SD20
 camera4,car,20SD20
 done
-
+exit
