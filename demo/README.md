@@ -4,23 +4,23 @@
 
 With the project already installed,
 
-Run the server:
+Run replica 1
 ```
 cd silo-server
-mvn exec:java
+mvn exec:java -Dinstance=1
 ```
 
 ### Case 1: Load test data using Spotter
 
 ```
-./spotter/target/appassembler/bin/spotter localhost 8080 < demo/initSilo.txt
+./spotter/target/appassembler/bin/spotter localhost 2181 1 < demo/initSilo.txt
 ```
 
 ### Case 2: Register observations using the Eye client
 
 Verify success in reporting:
 ```
-./eye/target/appassembler/bin/eye localhost 8080 testCam2 12.456789 -8.987654
+./eye/target/appassembler/bin/eye localhost 2181 testCam2 12.456789 -8.987654 1
 person,89427
 person,89399
 person,89496
@@ -53,7 +53,7 @@ Press `^C` to exit client Eye
 Verify 10 second pause until observation reported:
 
 ```
-./eye/target/appassembler/bin/eye localhost 8080 testCam3 12.987654 -8.123456
+./eye/target/appassembler/bin/eye localhost 2181 testCam3 12.987654 -8.123456 1
 zzz,10000
 person,7777
 \n
@@ -66,7 +66,7 @@ Press `^C` to exit client Eye
 Verify that the help screen is displayed:
 
 ```
-./spotter/target/appassembler/bin/spotter localhost 8080
+./spotter/target/appassembler/bin/spotter localhost 2181 1
 help
 ```
 
@@ -121,7 +121,7 @@ exit
 
 Execute new Spotter:
 ```
-./spotter/target/appassembler/bin/spotter localhost 8080
+./spotter/target/appassembler/bin/spotter localhost 2181 1
 help
 ```
 Verify that the server answers with "Hello friend!":
@@ -391,7 +391,7 @@ help
 
 Ping the replica
 ```
-ping good morning
+ping amazing
 ```
 
 Verify that
