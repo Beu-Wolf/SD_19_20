@@ -23,10 +23,10 @@ public class GossipStructures {
 
     public GossipStructures(int numReplicas) {
         this.numReplicas = numReplicas;
-        this.replicaTS = new VectorTimestamp(new int[this.numReplicas]);
-        this.valueTS = new VectorTimestamp(new int[this.numReplicas]) ;
+        this.replicaTS = new VectorTimestamp(this.numReplicas);
+        this.valueTS = new VectorTimestamp(this.numReplicas) ;
         for (int i = 0; i < this.numReplicas; i++) {
-            timestampTable.add(new VectorTimestamp(new int[this.numReplicas]));
+            timestampTable.add(new VectorTimestamp(this.numReplicas));
         }
     }
 
@@ -117,12 +117,12 @@ public class GossipStructures {
     }
 
     public void clearAll() {
-        this.setReplicaTS(new VectorTimestamp(new int[this.numReplicas]));
-        this.setValueTS(new VectorTimestamp(new int[this.numReplicas]));
+        this.setReplicaTS(new VectorTimestamp(this.numReplicas));
+        this.setValueTS(new VectorTimestamp(this.numReplicas));
         this.setExecutedOperations(new ConcurrentLinkedDeque<>());
         this.setUpdateLog( new LinkedList<>());
         for (int i = 0; i < this.timestampTable.size(); i++) {
-            this.timestampTable.set(i, new VectorTimestamp(new int[this.numReplicas]));
+            this.timestampTable.set(i, new VectorTimestamp(this.numReplicas));
         }
     }
 

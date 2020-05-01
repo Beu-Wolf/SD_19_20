@@ -101,7 +101,7 @@ public class SiloFrontend {
             System.out.println(msg);
             this.numReplicas = 3;
         }
-        this.frontendTS = new VectorTimestamp(new int[this.numReplicas]);
+        this.frontendTS = new VectorTimestamp(this.numReplicas);
 
     }
 
@@ -472,7 +472,7 @@ public class SiloFrontend {
 
     //Since the clear method clears all structures, in the IT tests we need to reset the frontend TS as well
     protected void resetFrontendTS() {
-        this.frontendTS = new VectorTimestamp(new int[this.numReplicas]);
+        this.frontendTS = new VectorTimestamp(this.numReplicas);
     }
 
 
