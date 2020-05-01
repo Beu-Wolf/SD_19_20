@@ -290,19 +290,21 @@ public class SiloFrontend {
         return new FrontendCoords(response.getCoords().getLatitude(), response.getCoords().getLongitude());
     }
 
-    public int report(String name, List<FrontendObservation> observations)
+    public int report(FrontendCam cam, List<FrontendObservation> observations)
             throws FrontendException, ZKNamingException {
         if(observations.size() == 0) return 0;
         String newOpId = genOpID();
         int numRetries = 0;
         while (numRetries < NUM_RETRIES) {
             try {
-                return executeReport(name, observations, newOpId);
+                return executeReport(cam.getName(), observations, newOpId);
             } catch (RuntimeException e) {
                 Status status = Status.fromThrowable(e);
                 switch (status.getCode()) {
                     case UNAVAILABLE:
                         makeNewConnection();
+                        // resend camJoinInformation
+                        camJoin(cam);
                         numRetries++;
                         break;
                     case NOT_FOUND:
