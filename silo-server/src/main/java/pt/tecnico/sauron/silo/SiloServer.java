@@ -1,6 +1,7 @@
 package pt.tecnico.sauron.silo;
 
 import io.grpc.*;
+import pt.tecnico.sauron.silo.contract.VectorTimestamp;
 import pt.tecnico.sauron.silo.contract.exceptions.InvalidVectorTimestampException;
 import pt.tecnico.sauron.silo.domain.Silo;
 import pt.tecnico.sauron.silo.grpc.Gossip;
@@ -10,10 +11,7 @@ import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 import pt.ulisboa.tecnico.sdis.zk.ZKRecord;
 
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.NoSuchElementException;
-import java.util.Properties;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.*;
 
 public class SiloServer {
@@ -117,6 +115,7 @@ public class SiloServer {
         // find available connections
         int replicaInstance;
         try {
+            removeRedundantEntries();
             // send to all possible replicas. do not block waiting for one
             for (ZKRecord record: zkNaming.listRecords(SERVER_PATH)) {
                 if ( (replicaInstance = getZKRecordInstance(record)) != this.gossipStructures.getInstance()) {
@@ -188,7 +187,26 @@ public class SiloServer {
         return new LinkedList<>();
     }
 
+    private void removeRedundantEntries() {
+        this.gossipStructures.getUpdateLog().removeIf(le -> {
+            ArrayList<VectorTimestamp> table = this.gossipStructures.getTimestampTable();
+            int instance = this.gossipStructures.getInstance();
+            for (int i = 0; i < table.size(); i++) {
+                if (i == instance - 1) {
+                    if (!this.gossipStructures.getExecutedOperations().contains(le.getOpId()))
+                        return false;
+                } else {
+                    try {
+                        if (!le.getTs().lessOrEqualThan(table.get(i))) return false;
+                    } catch (InvalidVectorTimestampException e) {
+                        System.out.println(e.getStackTrace());
+                    }
+                }
+            }
 
+            return true;
+        });
+    }
 
     // ===================================================
     // CONVERT BETWEEN OBJECTS AND GRPC
