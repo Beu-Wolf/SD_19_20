@@ -93,11 +93,12 @@ public class ReportIT extends BaseIT {
     @Test
     public void unknownCamera() {
         String camName = "thisCamDoesntExist123";
+        FrontendCam cam = new FrontendCam(camName, 1.1,1.1);
         FrontendObservation frontendObservation = new FrontendObservation(FrontendObservation.ObservationType.PERSON, "asdf");
         LinkedList<FrontendObservation> list = new LinkedList<>();
         list.add(frontendObservation);
         assertEquals("Camera not found",
-                assertThrows(CameraNotFoundException.class, () -> siloFrontend.report(frontendCam, list)).getMessage());
+                assertThrows(CameraNotFoundException.class, () -> siloFrontend.report(cam, list)).getMessage());
     }
 
     @AfterAll
