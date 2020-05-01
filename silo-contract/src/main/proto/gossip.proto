@@ -39,9 +39,8 @@ message Record {
     oneof commands {        // command
         CamJoinCommand camJoin = 5;
         ReportCommand report = 6;
-        ClearCommand clear = 7;
-        InitCamsCommand initCams = 8;
-        InitObservationsCommand initObservations = 9;
+        InitCamsCommand initCams = 7;
+        InitObservationsCommand initObservations = 8;
      };
 }
 
