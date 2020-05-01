@@ -161,18 +161,20 @@ public class SiloServer {
             pt.tecnico.sauron.silo.grpc.Silo.VecTimestamp.newBuilder()
                 .addAllTimestamps(
                     gossipStructures
-                    .getReplicaTS()
+                    .getValueTS()
                     .getValues()
                 ).build();
 
         // add records to send
         LinkedList<Gossip.Record> listRecords = updatesToSend(replicaInstance);
+        System.out.println("Sending this ReplicaTS: (gossip) " + vecTimestamp + " (real) " + this.gossipStructures.getReplicaTS());
         return Gossip.GossipRequest.newBuilder().addAllRecords(listRecords).setReplicaTimeStamp(vecTimestamp).setSenderId(this.gossipStructures.getInstance()).build();
     }
 
     private LinkedList<Gossip.Record> updatesToSend(int replicaInstance) {
         try {
             LinkedList<Gossip.Record> recordList = new LinkedList<>();
+            System.out.println("TableTS: " + gossipStructures.getTimestampTable().get(replicaInstance-1));
             for (LogEntry le : gossipStructures.getUpdateLog()) {
                 // if the timestamp in the table is lower, we need to send the update
                 if (!gossipStructures.getTimestampTable().get(replicaInstance-1).greaterOrEqualThan(le.getTs()))

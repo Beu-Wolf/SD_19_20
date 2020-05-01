@@ -47,16 +47,9 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
 
 
     private void mergeLogs(List<Gossip.Record> records) {
+        for (Gossip.Record record : records) {
+            gossipStructures.addLogEntry(recordToLogEntry(record));
 
-        try {
-            for (Gossip.Record record : records) {
-                LogEntry logEntry = recordToLogEntry(record);
-                if (!logEntry.getTs().lessOrEqualThan(gossipStructures.getReplicaTS())) {
-                    gossipStructures.addLogEntry(logEntry);
-                }
-            }
-        } catch (InvalidVectorTimestampException e) {
-            System.out.println(e.getMessage());
         }
     }
 
@@ -76,6 +69,7 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
                     throw new ClassCastException(); // If the sizes are different, they are not comparable
                 }
             });
+            System.out.println(this.gossipStructures.getUpdateLog());
             // for each update, merge structures and execute
             for(LogEntry logEntry: this.gossipStructures.getUpdateLog()) {
                 if (logEntry.getPrev().lessOrEqualThan(this.gossipStructures.getValueTS())) {

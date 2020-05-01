@@ -49,10 +49,11 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
     }
 
     @Override
-    public void clear(Silo.ClearRequest request, StreamObserver<Silo.ClearResponse> responseObserver) {
+    public synchronized void clear(Silo.ClearRequest request, StreamObserver<Silo.ClearResponse> responseObserver) {
         this.silo.clearObservations();
         this.silo.clearCams();
         this.gossipStructures.clearAll();
+        System.out.println("New replicaTS is: " + this.gossipStructures.getReplicaTS());
         responseObserver.onNext(Silo.ClearResponse.getDefaultInstance());
         responseObserver.onCompleted();
     }
