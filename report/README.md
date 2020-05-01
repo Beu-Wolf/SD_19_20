@@ -55,13 +55,13 @@ Contudo, esta solução não tolera:
  * Crash numa réplica com updates críticos para o estado de outras réplicas
  * Instâncias de réplicas atribuídas de forma não incremental
 
- * Para garantir que uma replica possa falhar temporariamente, nao podemos apagar o update log das replicas, para que as que falham consigam recuperar o seu estado.
+ * Para garantir que uma replica possa falhar temporariamente, não podemos apagar o update log das réplicas, para que as que falham consigam recuperar o seu estado.
 
 ## Solução
 
 ![](solution.png)
 
-A solução implementada foi baseada no *Gossip Architecture*, descrito em **<TODO: REF LIVRO>**. Cada réplica tem o seu estado interno (`Value`) associado a um timestamp vetorial (`Value timestamp`) **[TODO: CHECK THIS]**. Este timestamp representa a versão do estado da réplica, resultante da execução cumulativa de um conjunto de atualizações. Para além destes componentes, existe ainda um `Update Log`, que contém um conjunto de atualizações que a réplica ainda não executou.
+A solução implementada foi baseada no *Gossip Architecture*, descrito em **<TODO: REF LIVRO>**. Cada réplica tem o seu estado interno (`Value`) associado a um timestamp vetorial (`Value timestamp`) **[TODO: CHECK THIS]**. Este timestamp representa a versão do estado da réplica, resultante da execução cumulativa de um conjunto de atualizações. Para além destes componentes, existe ainda um `Update Log`, que contém o conjunto de atualizações que a réplica recebeu.
 
 Os updates estão associados ao timestamp (`prevTS`) que a entidade que o criou tinha no momento da sua criação. Os updates apenas podem ser executados quando o `Value timestamp` da réplica for posterior ao `prevTS` do update, pois apenas aí se pode garantir que a réplica tem um estado posterior **[TODO: POSTERIOR?]** ao estado que originou o update. Deste modo, é possível garantir a causabilidade e, por isso, a coerência fraca **[TODO: IS IT?]**. No entanto, não foi implementado nenhum mecanismo que garanta a linearizabilidade, não havendo coerência forte **[TODO: AQUI ESTA BOM? REFACTOR PODEMOS MUDAR DE SITIO]**.
 
