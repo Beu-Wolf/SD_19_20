@@ -12,32 +12,39 @@ import pt.ulisboa.tecnico.sdis.zk.ZKRecord;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
+import java.util.Properties;
 import java.util.Scanner;
 import java.util.concurrent.*;
 
 public class SiloServer {
 
     private static final String SERVER_PATH = "/grpc/sauron/silo";
+    private static final String PROPERTIES = "/main.properties";
+
+    private static Properties gossipProperties = new Properties();
+
 
     private final int port;
     private final Server server;
     private final Silo silo = new Silo();
+    private int messageInterval;
 
     // Timer to send gossip messages regularly
     ScheduledFuture<?> scheduledFuture;
 
     // Gossip architecture specific structures
-    private GossipStructures gossipStructures = new GossipStructures();
+    private GossipStructures gossipStructures;
+
 
     private final ZKNaming zkNaming;
 
     // gossip messages
-    final BindableService gossipImpl = new SiloGossipServiceImpl(silo, gossipStructures);
+    final BindableService gossipImpl;
 
     // silo services
-    final BindableService controlImpl = new SiloControlServiceImpl(silo, gossipStructures);
-    final BindableService reportImpl = new SiloReportServiceImpl(silo, gossipStructures);
-    final BindableService queryImpl = new SiloQueryServiceImpl(silo, gossipStructures);
+    final BindableService controlImpl;
+    final BindableService reportImpl;
+    final BindableService queryImpl;
 
     public SiloServer(int port, ZKNaming zkNaming, int instance){
         this(ServerBuilder.forPort(port), port, zkNaming, instance);
@@ -46,13 +53,31 @@ public class SiloServer {
     // Create a Silo server using serverBuilder as a base
     public SiloServer(ServerBuilder<?> serverBuilder, int port, ZKNaming zkNaming, int instance) {
         this.port = port;
+        this.zkNaming = zkNaming;
+
+        try {
+            gossipProperties.load(SiloServer.class.getResourceAsStream(PROPERTIES));
+            this.messageInterval = Integer.parseInt(gossipProperties.getProperty("gossipMessageInterval"));
+            this.gossipStructures = new GossipStructures(Integer.parseInt(gossipProperties.getProperty("numReplicas")));
+        } catch (IOException e) {
+            final String msg = String.format("Could not load properties file {}", PROPERTIES);
+            System.out.println(msg);
+            this.messageInterval = 30;
+            this.gossipStructures = new GossipStructures(3);
+        }
+        this.gossipStructures.setInstance(instance);
+        // since the gossip structures can be manipulated in the constructor, the services can only be created here
+        this.gossipImpl = new SiloGossipServiceImpl(this.silo, this.gossipStructures);
+        this.controlImpl = new SiloControlServiceImpl(silo, gossipStructures);
+        this.reportImpl = new SiloReportServiceImpl(silo, gossipStructures);
+        this.queryImpl = new SiloQueryServiceImpl(silo, gossipStructures);
+
         this.server = serverBuilder.addService(this.controlImpl)
                 .addService(this.reportImpl)
                 .addService(this.queryImpl)
                 .addService(this.gossipImpl)
                 .build();
-        this.zkNaming = zkNaming;
-        gossipStructures.setInstance(instance);
+
     }
 
     public void start() throws IOException {
@@ -85,7 +110,7 @@ public class SiloServer {
         Runnable gossip = () -> {
             sendGossipMessage();
         };
-        this.scheduledFuture = ses.scheduleAtFixedRate(gossip, 30, 30, TimeUnit.SECONDS); // TODO change to be configurable
+        this.scheduledFuture = ses.scheduleAtFixedRate(gossip, this.messageInterval, this.messageInterval, TimeUnit.SECONDS);
     }
 
     private void sendGossipMessage() {

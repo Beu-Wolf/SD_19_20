@@ -60,6 +60,10 @@
 				<directory>src/main/resources</directory>
 				<filtering>true</filtering>
 			</resource>
+			<resource>
+				<directory>../silo-contract/main/resources</directory>
+				<filtering>true</filtering>
+			</resource>
 		</resources>
 		<testResources>
 			<testResource>
