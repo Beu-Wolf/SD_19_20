@@ -20,6 +20,8 @@ Sistemas Distribuídos 2019-2020, segundo semestre
 
 ## Melhorias da primeira parte
 
+ * Remover synchronized das funções, por criar *bottlenecks* desnecessários
+   * [Commit message errada](https://github.com/tecnico-distsys/A04-Sauron/commit/a7f573348f1d560f1c656fc5e5258a5a4123c529#diff-b94f1f24a093eef8b0edea4f48dae955)
  * O conjunto de testes foi melhorado.
     * [Added load test to report](https://github.com/tecnico-distsys/A04-Sauron/commit/70a1cda17eb81cea50e55d32ae13052a0b54d1af)
     * [Added verification of coordinates](https://github.com/tecnico-distsys/A04-Sauron/commit/a7f573348f1d560f1c656fc5e5258a5a4123c529)
@@ -58,61 +60,32 @@ Contudo, esta solução não tolera:
  * Para garantir que uma replica possa falhar temporariamente, não podemos apagar o update log das réplicas, para que as que falham consigam recuperar o seu estado.
 
 ## Solução
-
 ![](solution.png)
+Face ao problema de replicar o servidor e tendo em conta o Teorema CAP, decidiu-se apostar numa forte disponibilidade e tolerância a partições na rede, sacrificando a coerência forte. Para garantir a maior coerência possível, as réplicas vão-se atualizando regularmente, enviando (em *background*) mensagens umas às outras, indicando o seu estado de atualização. Deste modo, o cliente pode contactar apenas uma réplica para o seu pedido ser atendido e receber uma resposta "atualizada".
 
-A solução implementada foi baseada no *Gossip Architecture*, descrito em *Coulouris, George F. Distributed Systems : Concepts and Design. Boston, Addison-Wesley, 2012*. Cada réplica tem o seu estado interno (`Value`) associado a um timestamp vetorial (`Value timestamp`). Este timestamp representa a versão do estado da réplica, resultante da execução cumulativa de um conjunto de atualizações. Para além destes componentes, existe ainda um `Update Log`, que contém um conjunto de atualizações que a réplica ainda não executou.
+Esta solução cobre o caso em que as réplicas falham silenciosamente: Quando uma dessas réplicas voltar ao seu comportamento normal, esta será atualizadas pelas outras. É possível, no entanto, que um cliente receba um estado mais antigo do que um que já tenha recebido enquanto essa réplica estiver numa fase de recuperação. Para resolver esse problema, implementou-se uma cache no cliente que vai guardando as respostas a cada pedido. No caso em que o cliente receba uma resposta mais antiga do que uma que já tenha recebido, este fica com a mais atual.
 
-Os updates estão associados ao timestamp (`prevTS`) que a entidade que o criou tinha no momento da sua criação. Os updates apenas podem ser executados quando o `Value timestamp` da réplica for posterior ao `prevTS` do update, pois apenas aí se pode garantir que a réplica tem um estado mais atualizado do que o estado que originou o update. Deste modo, é possível garantir a dependência causal.
-
-As réplicas atualizam-se regularmente (de 30 em 30 segundos por *default*, que podem ser configurados), enviando umas às outras mensagens de update (`Gossip Message`), contendo as entradas existentes no `Update Log` da réplica que as enviou. A réplica que as recebe adiciona-as ao seu `Update Log`, para serem executadas assim que possível. Por uma questão de simplicidade, aconselhada no feedback da primeira entrega, as entradas do `Update Log` foram enviadas num campo `repeated` da mensagem de gossip definida no gRPC. Esta abordagem tem uma limitação: Como apenas é possível enviar 4MB por mensagem, há a possibilidade que num perído de pico de atividade, as réplicas não consigam enviar todos os updates que tẽm para enviar. Será necessário estimar uma frequẽncia de atualização das réplicas adequada para que isto não aconteça.
-
-O modelo até agora descrito permite que as réplicas enviem *updates* que o seu destino já tenha registado, podendo levar a duplicação de instruções (quando estas não forem idempotentes será problemático) e a um congestionamento desnecessário da rede. O primeiro problema é mitigado atribuindo um ID único (`opId`) a cada *update*: As réplicas apenas adicionam um update ao seu `Update Log` se ainda não o tiverem feito. Cada instância de Frontend possui um `UUID` de 128 bits e regista o número de updates enviados a réplicas em `opCount`. O `opId` resulta da concatenação de `UUID` e `opCount`. Embora não sejam garantidamente únicos, as chances de colisão são extremamente baixas. O segundo problema pode ser atenuado se as réplicas forem registando o *timestamp* mais atual das outras e enviarem apenas os updates que a réplica de destino garantidamente ainda não tenha visto. Para tal, ao enviar uma `Gossip Message`, a réplica envia também o seu `Value timestamp`, que é guardado na `Timestamp Table` da réplica destino.
-
-Sempre que uma réplica recebe uma `Gossip Message`, há a possiblidade de receber updates críticos para a atualização do seu estado. A réplica verifica, portanto, que updates do seu `Update Log` é que podem ser executados. Ao receber um *update* de um cliente, este é adicionado ao `Update Log` e imediatamente executado se o `prevTS` associado a este for anterior ao `Value timestamp` da réplica.
-
+Deste modo, para tolerar *f* faltas serão apenas necessárias *f+1* réplicas
 
 ## Protocolo de replicação
-_(Explicação do protocolo)_
+O protocolo implementado foi baseado no *Gossip Architecture*, descrito em *Coulouris, George F. Distributed Systems Concepts and Design*.
 
-_(descrição das trocas de mensagens)_
+Cada réplica tem o seu estado interno (`value`), cuja versão é representada por um timestamp vetorial (`valueTimestamp`). Esta versão resulta da execução cumulativa de um conjunto de atualizações. Para além destes componentes, existe ainda um `updateLog`, que contém o conjunto de todas as atualizações recebidas pela réplica.
 
-O protocolo seguido foi uma variante do _Gossip_ estudado nas aulas práticas. As réplicas respondem sempre ao cliente,
-garantindo uma alta disponibilidade e tolerância a partições de rede. No entanto seguem uma filosofia de updates "relaxados",
-em que apenas é garantido que eventualmente as réplicas estarão coerentes. O segredo do protocolo reside em **timestamps vetoriais**
-que permitem representar o estado de cada réplica através dos seus updates mais atuais. Estes timestamps são trocados entre réplicas
-e entre clientes e réplicas, de forma a poder responder a pedidos e atualizar cada réplica.
+Cada entrada do `updateLog` contém:
+ * Update a ser executado
+ * Timestamp único do update
+ * Timestamp do cliente que antecedeu o update (`prevTS`)
+ * Identificador único do update (`opId`)
+ * Identificador da réplica que registou o *update*
 
-Outros dos aspetos importantes é o `update log`, uma lista dos updates aceites por uma réplica, mas ainda não aplicados ao
-sistema. Cada entrada deste log contém:
-* identificador da réplica que o enviou
-* timestamp vetorial único
-* identificador da operação
-* `prev` (explicado com mais detalhe abaixo)
-* update a ser executado
+Os updates apenas são executados quando o `valueTimestamp` da réplica for posterior ao seu `prevTS`, para se garantir que a réplica tem um estado mais ou igualmente atualizado do que o estado que originou o update. Deste modo, é possível garantir a dependência causal.
 
-Existem 3 tipos de mensagens relevantes:
+As réplicas atualizam-se regularmente (intervalos de 30 segundos por norma, que podem ser configurados), trocando mensagens de update (`gossipMessage`), contendo as entradas existentes no `updateLog` da réplica que as enviou. A réplica que as recebe adiciona-as ao seu `updateLog`, para serem executadas assim que possível.
 
- **1 - Mensagens de Query**
- 
- Nestas mensagens, o cliente faz um pedido por informação a uma réplica enviando o seu timestamp (`prev`) representativo da última
- versão do sistema vista por ele. A réplica responde com a informação pedida e outro timestamp (`ValueTS`), que representa os updates
- estáveis do sistema. O cliente, de seguida, verifica se a informação pedida é mais recente que a do seu pedido anterior. Se sim, apresenta-a,
- se não, aprensenta o que tinha guardado na sua "cache".
- 
- **2 - Mensagens de Update**
- 
- Nestas mensagens, o cliente, para além do `prev` anteriormente falado, envia também uma representação do update a executar e um identificador
- único do mesmo. Isto (aliado ao `update log`), garante que não se executará a mesma operação mais que
- 1 vez. Ao receber esta mensagem, o servidor adiciona este update a uma estrutura de updates por executar.
- 
- **3 - Mensagens de Gossip**
- 
- Estas mensagens ocorrem sempre com um dado intervalo de tempo entre elas (30 segundos, por norma). Uma dada réplica junta os seus updates que estima 
- que a réplica a que quer enviar não tenha. Envia também o seu `replicaTS`, um timestamp indicativo dos updates aceites mas ainda não executados.
- A réplica que recebe esta mensagem, junta os updates aos que já tem, e tenta verificar quais podem ser executados. Todas as réplicas enviam a todas as 
- outras réplicas que conhecem.
+O modelo até agora descrito permite que as réplicas enviem *updates* que o seu destino já tenha registado, podendo levar a duplicação de instruções (problemático quando estas não forem idempotentes) e a um congestionamento da rede. O primeiro problema é mitigado pois as réplicas adicionam um update ao seu `upateLog` se e só se o `opId` deste ainda não se encontrar no `updateLog`. O segundo problema pode ser atenuado se as réplicas forem registando o `valueTimestamp` das outras e enviarem apenas os updates que a réplica de destino garantidamente ainda não tenha aplicado. Para tal, ao enviar uma `gossipMessage`, a réplica envia também o seu `valueTimestamp`, que é guardado na `timestampTable` da réplica destino.
 
+A cada `gossipMessage` recebida, há a possiblidade que esta contenha updates críticos para a atualização do estado da réplica. Esta verifica, portanto, que updates do seu `updateLog` é que podem ser executados. Ao receber um *update* de um cliente, este é adicionado ao `updateLog` e imediatamente executado se o `prevTS` associado a este for anterior ao `valueTimestamp` da réplica.
 
 ## Opções de implementação
 
@@ -132,6 +105,11 @@ Notamos a exceção do query `trackMatch`:
 Dado que não existe uma entrada na cache para "AA*", o resultado ["AAA", "AAB"] é devolvido ao cliente, apesar de "AAC" se encontrar no padrão e já ter sido lido anteriormente.
 Isto deve-se ao facto de considerarmos os queries `trackMatch` como independentes.
 
+Por uma questão de simplicidade, aconselhada no feedback da primeira entrega, as entradas do `updateLog` foram enviadas num campo `repeated` da mensagem de gossip definida no gRPC. Contudo, apenas é possível enviar 4MB por mensagem, havendo a possibilidade que num perído de pico de atividade, as réplicas não consigam enviar todos os updates que tenham para enviar. Será necessário estimar uma frequência de atualização adequada para que isto não aconteça.
+
+Cada instância de Frontend possui um `UUID` **TODO: DECISAO DE IMPLEMENTACAO**de 128 bits e regista o número de updates enviados a réplicas em `opCount`. O `opId` resulta da concatenação de `UUID` e `opCount`. Embora não sejam garantidamente únicos, as chances de colisão são extremamente baixas.
+
+ * As replicas enviam as gossip messages a todas as que conseguirem
 
 ## Notas finais
 
