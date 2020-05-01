@@ -46,7 +46,6 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
                 // add to update log
                 le.setCommand(new CamJoinCommand(this.silo, cam));
                 this.gossipStructures.addLogEntry(le);
-                System.out.println( "Added: " + this.gossipStructures.getUpdateLog());
 
             } catch(DuplicateCameraNameException e) {
                 responseObserver.onError(Status.ALREADY_EXISTS.asRuntimeException());
@@ -133,7 +132,6 @@ public class SiloReportServiceImpl extends ReportServiceGrpc.ReportServiceImplBa
             // add to update log
             le.setCommand(new ReportCommand(this.silo, cam.getName(), obsList, instant));
             this.gossipStructures.addLogEntry(le);
-            System.out.println( "Added: " + this.gossipStructures.getUpdateLog());
 
             if (!exceptions.isEmpty()) {
                 responseObserver.onError(Status.INVALID_ARGUMENT

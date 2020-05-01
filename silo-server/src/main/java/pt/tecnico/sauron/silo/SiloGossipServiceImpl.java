@@ -28,6 +28,7 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
         try {
             //merge with receiver update log
             System.out.println("Got gossip from " + request.getSenderId());
+            System.out.println("Received " + request.getRecordsList().size() + " updates");
             mergeLogs(request.getRecordsList());
             //merge receiver replicaTS with senderReplicaTS
             mergeReplicaTS(request.getReplicaTimeStamp());

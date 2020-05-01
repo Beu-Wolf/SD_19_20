@@ -359,8 +359,6 @@ public class SiloFrontend {
         Silo.TrackRequest request = createTrackRequest(type, id);
         Silo.TrackResponse response = queryBlockingStub.track(request);
         VectorTimestamp newTS = vectorTimestampFromGRPC(response.getNew());
-        System.out.println("frontendTS: " + this.frontendTS);
-        System.out.println("newTS: " + newTS);
         if (newTS.lessOrEqualThan(frontendTS)) {
             if (trackCache.get(type).containsKey(id)) // don't && with above condition.
                 return trackCache.get(type).get(id);
@@ -369,7 +367,6 @@ public class SiloFrontend {
         }
         FrontendReport result = reportFromGRPC(response.getReport());
         trackCache.get(type).put(id, result);
-        System.out.println("Cache: " + trackCache);
         return result;
     }
 
