@@ -17,7 +17,8 @@ import java.util.concurrent.*;
 public class SiloServer {
 
     private static final String SERVER_PATH = "/grpc/sauron/silo";
-    private static final String PROPERTIES = "/main.properties";
+    private static final String GLOBAL_PROPERTIES = "/main.properties";
+    private static final String REPLICA_PROPERTIES = "/server.properties";
 
     private static Properties gossipProperties = new Properties();
 
@@ -54,12 +55,12 @@ public class SiloServer {
         this.zkNaming = zkNaming;
 
         try {
-            gossipProperties.load(SiloServer.class.getResourceAsStream(PROPERTIES));
+            gossipProperties.load(SiloServer.class.getResourceAsStream(REPLICA_PROPERTIES));
             this.messageInterval = Integer.parseInt(gossipProperties.getProperty("gossipMessageInterval"));
+            gossipProperties.load(SiloServer.class.getResourceAsStream(GLOBAL_PROPERTIES));
             this.gossipStructures = new GossipStructures(Integer.parseInt(gossipProperties.getProperty("numReplicas")));
         } catch (IOException e) {
-            final String msg = String.format("Could not load properties file {}", PROPERTIES);
-            System.out.println(msg);
+            System.out.println("Could not load properties file");
             this.messageInterval = 30;
             this.gossipStructures = new GossipStructures(3);
         }
@@ -119,7 +120,7 @@ public class SiloServer {
             // send to all possible replicas. do not block waiting for one
             for (ZKRecord record: zkNaming.listRecords(SERVER_PATH)) {
                 if ( (replicaInstance = getZKRecordInstance(record)) != this.gossipStructures.getInstance()) {
-                    System.out.println("Sending to " + replicaInstance);
+                    System.out.println("Sending to #" + replicaInstance);
 
                     // create stub for target replica
                     ManagedChannel channel = ManagedChannelBuilder.forTarget(record.getURI()).usePlaintext().build();
@@ -173,13 +174,10 @@ public class SiloServer {
             LinkedList<Gossip.Record> recordList = new LinkedList<>();
             for (LogEntry le : gossipStructures.getUpdateLog()) {
                 // if the timestamp in the table is lower, we need to send the update
-                System.out.println("TS: " + gossipStructures.getTimestampTable().get(replicaInstance-1));
-                System.out.println("le: " + le.getTs());
                 if (!gossipStructures.getTimestampTable().get(replicaInstance-1).greaterOrEqualThan(le.getTs()))
                     recordList.add(logEntryToRecord(le));
             }
-            System.out.println("Update log is: " + this.gossipStructures.getUpdateLog());
-            System.out.println("Sendind " + recordList.size() + " updates" );
+            System.out.println("Sending " + recordList.size() + " updates" );
             return recordList;
         } catch (InvalidVectorTimestampException e) {
             System.out.println(e.getMessage());

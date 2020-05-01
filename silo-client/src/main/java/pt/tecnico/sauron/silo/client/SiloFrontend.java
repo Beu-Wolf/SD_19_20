@@ -290,19 +290,21 @@ public class SiloFrontend {
         return new FrontendCoords(response.getCoords().getLatitude(), response.getCoords().getLongitude());
     }
 
-    public int report(String name, List<FrontendObservation> observations)
+    public int report(FrontendCam cam, List<FrontendObservation> observations)
             throws FrontendException, ZKNamingException {
         if(observations.size() == 0) return 0;
         String newOpId = genOpID();
         int numRetries = 0;
         while (numRetries < NUM_RETRIES) {
             try {
-                return executeReport(name, observations, newOpId);
+                return executeReport(cam.getName(), observations, newOpId);
             } catch (RuntimeException e) {
                 Status status = Status.fromThrowable(e);
                 switch (status.getCode()) {
                     case UNAVAILABLE:
                         makeNewConnection();
+                        // resend camJoinInformation
+                        camJoin(cam);
                         numRetries++;
                         break;
                     case NOT_FOUND:
@@ -359,8 +361,6 @@ public class SiloFrontend {
         Silo.TrackRequest request = createTrackRequest(type, id);
         Silo.TrackResponse response = queryBlockingStub.track(request);
         VectorTimestamp newTS = vectorTimestampFromGRPC(response.getNew());
-        System.out.println("frontendTS: " + this.frontendTS);
-        System.out.println("newTS: " + newTS);
         if (newTS.lessOrEqualThan(frontendTS)) {
             if (trackCache.get(type).containsKey(id)) // don't && with above condition.
                 return trackCache.get(type).get(id);
@@ -369,7 +369,6 @@ public class SiloFrontend {
         }
         FrontendReport result = reportFromGRPC(response.getReport());
         trackCache.get(type).put(id, result);
-        System.out.println("Cache: " + trackCache);
         return result;
     }
 
