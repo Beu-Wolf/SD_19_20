@@ -11,19 +11,22 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class GossipStructures {
 
-    private static final int NUM_REPLICAS = 3;
 
-    private VectorTimestamp replicaTS = new VectorTimestamp(new int[NUM_REPLICAS]);
-    private VectorTimestamp valueTS = new VectorTimestamp(new int[NUM_REPLICAS]) ;
+    private VectorTimestamp replicaTS;
+    private VectorTimestamp valueTS;
     private ConcurrentLinkedDeque<String> executedOperations = new ConcurrentLinkedDeque<>();
     // Maybe change to Map<instance, VectorTimestamp>
     private ArrayList<VectorTimestamp> timestampTable = new ArrayList<>();
     private LinkedList<LogEntry> updateLog = new LinkedList<>();
     private int instance;
+    private int numReplicas;
 
-    public GossipStructures() {
-        for (int i = 0; i < NUM_REPLICAS; i++) {
-            timestampTable.add(new VectorTimestamp(new int[NUM_REPLICAS]));
+    public GossipStructures(int numReplicas) {
+        this.numReplicas = numReplicas;
+        this.replicaTS = new VectorTimestamp(new int[this.numReplicas]);
+        this.valueTS = new VectorTimestamp(new int[this.numReplicas]) ;
+        for (int i = 0; i < this.numReplicas; i++) {
+            timestampTable.add(new VectorTimestamp(new int[this.numReplicas]));
         }
     }
 
@@ -114,12 +117,12 @@ public class GossipStructures {
     }
 
     public void clearAll() {
-        this.setReplicaTS(new VectorTimestamp(new int[NUM_REPLICAS]));
-        this.setValueTS(new VectorTimestamp(new int[NUM_REPLICAS]));
+        this.setReplicaTS(new VectorTimestamp(new int[this.numReplicas]));
+        this.setValueTS(new VectorTimestamp(new int[this.numReplicas]));
         this.setExecutedOperations(new ConcurrentLinkedDeque<>());
         this.setUpdateLog( new LinkedList<>());
         for (int i = 0; i < this.timestampTable.size(); i++) {
-            this.timestampTable.set(i, new VectorTimestamp(new int[NUM_REPLICAS]));
+            this.timestampTable.set(i, new VectorTimestamp(new int[this.numReplicas]));
         }
     }
 

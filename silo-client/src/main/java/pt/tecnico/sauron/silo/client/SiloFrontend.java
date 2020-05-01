@@ -18,14 +18,16 @@ import pt.ulisboa.tecnico.sdis.zk.ZKNaming;
 import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 import pt.ulisboa.tecnico.sdis.zk.ZKRecord;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class SiloFrontend {
-    private static final int NUM_REPLICAS = 3; // TODO
+
     private static final int NUM_RETRIES = 10;
-    private VectorTimestamp frontendTS = new VectorTimestamp(NUM_REPLICAS);
+    private int numReplicas;
+    private VectorTimestamp frontendTS;
     private int opCount = 0;
     private String uuid = UUID.randomUUID().toString();
     private ManagedChannel channel;
@@ -38,6 +40,9 @@ public class SiloFrontend {
     private ReportServiceGrpc.ReportServiceBlockingStub reportBlockingStub;
 
     public static final String SERVER_PATH = "/grpc/sauron/silo";
+    public static final String PROPERTIES = "/main.properties";
+
+    private static Properties gossipProperties = new Properties();
 
     private HashMap<FrontendObservation.ObservationType, HashMap<String, FrontendReport>> trackCache = new HashMap<>();
     private HashMap<FrontendObservation.ObservationType, HashMap<String, List<FrontendReport>>> trackMatchCache = new HashMap<>();
@@ -87,6 +92,17 @@ public class SiloFrontend {
 
         this.reportStub = ReportServiceGrpc.newStub(this.channel);
         this.reportBlockingStub = ReportServiceGrpc.newBlockingStub(this.channel);
+
+        try {
+            gossipProperties.load(SiloFrontend.class.getResourceAsStream(PROPERTIES));
+            this.numReplicas = Integer.parseInt(gossipProperties.getProperty("numReplicas"));
+        } catch (IOException e) {
+            final String msg = String.format("Could not load properties file {}", PROPERTIES);
+            System.out.println(msg);
+            this.numReplicas = 3;
+        }
+        this.frontendTS = new VectorTimestamp(new int[this.numReplicas]);
+
     }
 
     public void shutdown() {
@@ -457,7 +473,7 @@ public class SiloFrontend {
 
     //Since the clear method clears all structures, in the IT tests we need to reset the frontend TS as well
     protected void resetFrontendTS() {
-        this.frontendTS = new VectorTimestamp(new int[NUM_REPLICAS]);
+        this.frontendTS = new VectorTimestamp(new int[this.numReplicas]);
     }
 
 

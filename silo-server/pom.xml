@@ -47,6 +47,10 @@
 	<build>
 		<resources>
 			<resource>
+				<directory>../silo-contract/main/resources</directory>
+				<filtering>true</filtering>
+			</resource>
+			<resource>
 				<directory>src/main/resources</directory>
 				<filtering>true</filtering>
 			</resource>
