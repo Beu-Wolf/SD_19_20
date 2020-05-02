@@ -69,7 +69,6 @@ public class SiloGossipServiceImpl extends GossipServiceGrpc.GossipServiceImplBa
                     throw new ClassCastException(); // If the sizes are different, they are not comparable
                 }
             });
-            System.out.println(this.gossipStructures.getUpdateLog());
             // for each update, merge structures and execute
             for(LogEntry logEntry: this.gossipStructures.getUpdateLog()) {
                 if (logEntry.getPrev().lessOrEqualThan(this.gossipStructures.getValueTS())) {
