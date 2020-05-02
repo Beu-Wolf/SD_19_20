@@ -43,21 +43,22 @@ Sistemas Distribuídos 2019-2020, segundo semestre
     * [Separate QueryRequest/Response](https://github.com/tecnico-distsys/A04-Sauron/commit/9fb98d61550271844a01b61e8fb640826241dbcb)
 
 ## Modelo de faltas
-**TODO: STILL WIP**
-_(que faltas são toleradas, que faltas não são toleradas)_
-
-Esta solução tolera as faltas requeridas pelo Modelo de Interação de Faltas do enunciado deste projeto:
-
- * Crash de uma réplica sem updates críticos para o estado de outras réplicas;
- * Updates enviados fora de ordem;
- * Crash no fronted de cada cliente;
+O modelo desenvolvido tolera diversos tipos de faltas:
+ 1. **Partições (temporárias ou permanentes) da rede**: O serviço continua a funcionar, mesmo não havendo uma atualização total de todas as réplicas;
+ 2. **Falha silenciosa (temporária ou permanente) de réplica sem updates não divulgados**: Essa informação já existe noutras réplicas e, por isso, é recuperada quando for retransmitida par a réplica que falhou.
+ 3. **Duplicação, omissão e reordenação de mensagens**: A identificação e reenvio de mensagens resolve esta falta
+ 4. **Crash de uma réplica a meio de trocas de mensagens**: A identificação e reenvio de mensagens resolve esta falta
+ 5. **Alteração do endereço/porto de uma réplica**: As ligações são estabelecidas dinamicamente usando o servidor de nomes
  
 Contudo, esta solução não tolera:
- * Falhas no ZooKeeper
- * Crash numa réplica com updates críticos para o estado de outras réplicas
- * Instâncias de réplicas atribuídas de forma não incremental
+ 7. **Falha (silenciosa ou arbitrária) do Zookeeper**: Deixa de se conseguir ligar a réplicas
+ 6. **Crash de todas as réplicas com informação não totalmente divulgada**: A informação é perdida.
+ 6. **Criação de mais réplicas do que as inicialmente acordadas**: Nova réplica ão é considerada nas outras
+ 6. **Réplicas instanciadas de forma não incremental (números não sequenciais)**: Réplica não tem um slot nos *timestamps* vetoriais das outras
+ 6. **Esgotamento de memória nas réplicas**: Perda de novas atualizações
 
- * Para garantir que uma replica possa falhar temporariamente, não podemos apagar o update log das réplicas, para que as que falham consigam recuperar o seu estado.
+Para além destes casos mais simples, ainda há faltas mais complexas que não são toleradas:
+ * No caso em que duas novas câmaras duplicadas se registam em réplicas diferentes antes de estas divulgarem o registo, passam a haver câmaras duplicadas no sistema. Esta falta não é contornada por não serem implementados updates imediatos em atualizações desta natureza.
 
 ## Solução
 ![](solution.png)
@@ -89,9 +90,6 @@ A cada `gossipMessage` recebida, há a possiblidade que esta contenha updates cr
 
 ## Opções de implementação
 
-_(Descrição de opções de implementação, incluindo otimizações e melhorias introduzidas)_
-
-
 **Ordem de leituras**
 
 A execução de queries que devolvam consigo timestamps anteriores ao registado no Frontend acionam um busca na cache. Porém, no caso em que não existam entradas na cache, aceita-se o resultado devolvido pela réplica, embora este seja antigo. Esta decisão não viola a ordem de leituras, pois se a cache não continha uma entrada para o pedido, então o cliente não teria lido um valor mais recente que o recebido. Queries posteriores à criação da entrada da cache serão então sujeitos a comparação de timestamps.
@@ -106,13 +104,13 @@ Notamos a exceção do query `trackMatch`:
 Dado que não existe uma entrada na cache para "AA*", o resultado ["AAA", "AAB"] é devolvido ao cliente, apesar de "AAC" se encontrar no padrão e já ter sido lido anteriormente.
 Isto deve-se ao facto de considerarmos os queries `trackMatch` como independentes.
 
-**Geração do opID**
+**Geração do `opID`**
 
-Cada instância de Frontend possui um `UUID` de 128 bits e regista o número de updates enviados a réplicas em `opCount`. O `opId` resulta da concatenação de `UUID` e `opCount`. Embora não sejam garantidamente únicos, as chances de colisão são extremamente baixas.
+Cada instância de Frontend possui um `UUID` de 128 bits e regista o número de updates enviados a réplicas em `opCount`. O `opId` resulta da concatenação de `UUID` e `opCount`. Embora não sejam garantidamente únicos, as chances de colisão são extremamente baixas. Esta abordagem foi optada por ser a mais simples de implementar.
 
 **Campos repeated no gRPC**
 
-Por uma questão de simplicidade, aconselhada no feedback da primeira entrega, as entradas do `updateLog` foram enviadas num campo `repeated` da mensagem de gossip definida no gRPC. Contudo, apenas é possível enviar 4MB por mensagem, havendo a possibilidade que num perído de pico de atividade, as réplicas não consigam enviar todos os updates que tenham para enviar. Será necessário estimar uma frequência de atualização adequada para que isto não aconteça. Outra possível solução será enviar as `gossipMessages` no intervalo definido ou antes, se o número de updates exceder um *treshold* previamente definido.
+Por uma questão de simplicidade, aconselhada no feedback da primeira entrega, as entradas do `updateLog` foram enviadas num campo `repeated` da mensagem de gossip definida no gRPC. Contudo, apenas é possível enviar 4MB por mensagem, havendo a possibilidade que num perído de pico de atividade, as réplicas não consigam enviar todos os updates que tenham para enviar. Será necessário estimar uma frequência de atualização adequada para que isto não aconteça. Outra possível solução será enviar as `gossipMessages` antes do intervalo definido no caso em que o número de updates exceder um *treshold* pré-definido. Assumimos que esta situação não acontece.
 
 **A que réplicas enviar as `gossipMessages`**
 
