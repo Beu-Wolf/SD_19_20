@@ -71,7 +71,7 @@ Deste modo, para tolerar *f* faltas serão apenas necessárias *f+1* réplicas
 ## Protocolo de replicação
 O protocolo implementado foi baseado no *Gossip Architecture*, descrito em *Coulouris, George F. Distributed Systems Concepts and Design*.
 
-Cada réplica tem o seu estado interno (`value`), cuja versão é representada por um timestamp vetorial (`valueTimestamp`). Esta versão resulta da execução cumulativa de um conjunto de atualizações. Para além destes componentes, existe ainda um `updateLog`, que contém o conjunto de todas as atualizações recebidas pela réplica.
+Cada réplica tem o seu estado interno (`value`), cuja versão é representada por um timestamp vetorial (`valueTS`). Esta versão resulta da execução cumulativa de um conjunto de atualizações. Para além destes componentes, existe ainda um `updateLog`, que contém o conjunto de todas as atualizações recebidas pela réplica.
 
 Cada entrada do `updateLog` contém:
  * Update a ser executado
@@ -80,13 +80,13 @@ Cada entrada do `updateLog` contém:
  * Identificador único do update (`opId`)
  * Identificador da réplica que registou o *update*
 
-Os updates apenas são executados quando o `valueTimestamp` da réplica for maior ou igual ao seu `prevTS`, para se garantir que a réplica tem um estado mais ou igualmente atualizado do que o estado que originou o update. Deste modo, é possível garantir a dependência causal.
+Os updates apenas são executados quando o `valueTS` da réplica for maior ou igual ao seu `prevTS`, para se garantir que a réplica tem um estado mais ou igualmente atualizado do que o estado que originou o update. Deste modo, é possível garantir a dependência causal.
 
 As réplicas atualizam-se regularmente (intervalos de 30 segundos por norma, que podem ser configurados), trocando mensagens de update (`gossipMessage`), contendo as entradas existentes no `updateLog` da réplica que as enviou. A réplica que as recebe adiciona-as ao seu `updateLog`, para serem executadas assim que possível.
 
-O modelo até agora descrito permite que as réplicas enviem *updates* que o seu destino já tenha registado, podendo levar a duplicação de instruções (problemático quando estas não forem idempotentes) e a um congestionamento da rede. O primeiro problema é mitigado pois as réplicas adicionam um update ao seu `upateLog` se e só se o `opId` deste ainda não se encontrar no `updateLog`. O segundo problema pode ser atenuado se as réplicas forem registando o `valueTimestamp` das outras e enviarem apenas os updates que a réplica de destino garantidamente ainda não tenha aplicado. Para tal, ao enviar uma `gossipMessage`, a réplica envia também o seu `valueTimestamp`, que é guardado na `timestampTable` da réplica destino.
+O modelo até agora descrito permite que as réplicas enviem *updates* que o seu destino já tenha registado, podendo levar a duplicação de instruções (problemático quando estas não forem idempotentes) e a um congestionamento da rede. O primeiro problema é mitigado pois as réplicas adicionam um update ao seu `upateLog` se e só se o `opId` deste ainda não se encontrar no `updateLog`. O segundo problema pode ser atenuado se as réplicas forem registando o `valueTS` das outras e enviarem apenas os updates que a réplica de destino garantidamente ainda não tenha aplicado. Para tal, ao enviar uma `gossipMessage`, a réplica envia também o seu `valueTS`, que é guardado na `timestampTable` da réplica destino.
 
-A cada `gossipMessage` recebida, há a possiblidade que esta contenha updates críticos para a atualização do estado da réplica. Esta verifica, portanto, que updates do seu `updateLog` é que podem ser executados. Ao receber um *update* de um cliente, este é adicionado ao `updateLog` e imediatamente executado se o `prevTS` associado a este for anterior ao `valueTimestamp` da réplica.
+A cada `gossipMessage` recebida, há a possiblidade que esta contenha updates críticos para a atualização do estado da réplica. Esta verifica, portanto, que updates do seu `updateLog` é que podem ser executados. Ao receber um *update* de um cliente, este é adicionado ao `updateLog` e imediatamente executado se o `prevTS` associado a este for anterior ao `valueTS` da réplica.
 
 ## Opções de implementação
 
