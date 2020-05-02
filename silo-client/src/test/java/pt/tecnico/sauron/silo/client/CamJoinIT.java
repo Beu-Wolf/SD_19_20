@@ -120,6 +120,7 @@ public class CamJoinIT extends BaseIT {
     public void clear() {
         try {
             siloFrontend.ctrlClear();
+            siloFrontend.resetFrontendTS();
         } catch (FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }

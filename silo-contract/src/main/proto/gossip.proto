@@ -7,10 +7,6 @@ package pt.tecnico.sauron.silo.grpc;
 import "google/protobuf/timestamp.proto";
 import "silo.proto";
 
-message VecTimestamp {
-    repeated int32 timestamps = 1;
-}
-
 message CamJoinCommand {
     JoinRequest request = 1;
 }
@@ -43,16 +39,16 @@ message Record {
     oneof commands {        // command
         CamJoinCommand camJoin = 5;
         ReportCommand report = 6;
-        ClearCommand clear = 7;
-        InitCamsCommand initCams = 8;
-        InitObservationsCommand initObservations = 9;
+        InitCamsCommand initCams = 7;
+        InitObservationsCommand initObservations = 8;
      };
 }
 
 message GossipRequest {
     VecTimestamp replicaTimeStamp = 1; // sender replica update log timestamp
                                        // on gossip sending instant
-    repeated Record records = 2;
+    int32 senderId = 2;                // gossip message sender. Needed to update timestampTables
+    repeated Record records = 3;
 }
 
 message GossipResponse {}

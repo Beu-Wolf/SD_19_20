@@ -14,11 +14,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ReportIT extends BaseIT {
     private static String cameraName = "testCamera";
-    private static int LOADTESTOBS = 200;
+    private static FrontendCam frontendCam;
+    private static int LOADTESTOBS = 100;
 
     @BeforeAll
     public static void registerCamera() {
-        FrontendCam frontendCam = new FrontendCam(cameraName, 10, 10);
+        frontendCam = new FrontendCam(cameraName, 10, 10);
         try {
             siloFrontend.camJoin(frontendCam);
         } catch(CameraAlreadyExistsException e) {
@@ -37,7 +38,7 @@ public class ReportIT extends BaseIT {
         list.add(personDto);
         list.add(carDto);
 
-        assertDoesNotThrow(() -> siloFrontend.report(this.cameraName, list));
+        assertDoesNotThrow(() -> siloFrontend.report(frontendCam, list));
     }
 
     @Test
@@ -51,7 +52,7 @@ public class ReportIT extends BaseIT {
             list.add(carDto);
         }
 
-        assertDoesNotThrow(()->siloFrontend.report(this.cameraName, list));
+        assertDoesNotThrow(()->siloFrontend.report(frontendCam, list));
     }
 
     @Test
@@ -61,7 +62,7 @@ public class ReportIT extends BaseIT {
         LinkedList<FrontendObservation> list = new LinkedList<>();
         list.add(frontendObservation);
         assertEquals(invalidId + ": Person ID must be an unsigned long!",
-                assertThrows(FrontendException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
+                assertThrows(FrontendException.class, () -> siloFrontend.report(frontendCam, list)).getMessage());
     }
 
     @Test
@@ -71,7 +72,7 @@ public class ReportIT extends BaseIT {
         LinkedList<FrontendObservation> list = new LinkedList<>();
         list.add(frontendObservation);
         assertEquals(invalidId + ": Car ID must be a valid portuguese license plate!",
-                assertThrows(FrontendException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
+                assertThrows(FrontendException.class, () -> siloFrontend.report(frontendCam, list)).getMessage());
     }
 
     @Test
@@ -80,29 +81,31 @@ public class ReportIT extends BaseIT {
         LinkedList<FrontendObservation> list = new LinkedList<>();
         list.add(frontendObservation);
         assertEquals("Type to observe not supported!",
-                assertThrows(FrontendException.class, () -> siloFrontend.report(this.cameraName, list)).getMessage());
+                assertThrows(FrontendException.class, () -> siloFrontend.report(frontendCam, list)).getMessage());
     }
 
     @Test
     public void emptyList() {
         LinkedList<FrontendObservation> list = new LinkedList<>();
-        assertDoesNotThrow(() -> siloFrontend.report(this.cameraName, list));
+        assertDoesNotThrow(() -> siloFrontend.report(frontendCam , list));
     }
 
     @Test
     public void unknownCamera() {
         String camName = "thisCamDoesntExist123";
+        FrontendCam cam = new FrontendCam(camName, 1.1,1.1);
         FrontendObservation frontendObservation = new FrontendObservation(FrontendObservation.ObservationType.PERSON, "asdf");
         LinkedList<FrontendObservation> list = new LinkedList<>();
         list.add(frontendObservation);
         assertEquals("Camera not found",
-                assertThrows(CameraNotFoundException.class, () -> siloFrontend.report(camName, list)).getMessage());
+                assertThrows(CameraNotFoundException.class, () -> siloFrontend.report(cam, list)).getMessage());
     }
 
     @AfterAll
     public static void clear() {
         try {
             siloFrontend.ctrlClear();
+            siloFrontend.resetFrontendTS();
         } catch (FrontendException | ZKNamingException e) {
             e.printStackTrace();
         }

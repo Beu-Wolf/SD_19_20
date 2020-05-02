@@ -21,6 +21,7 @@ public class FrontendCoords {
     public boolean equals(Object o) {
         if (o instanceof FrontendCoords) {
             FrontendCoords c = (FrontendCoords) o;
+            // equals if latitude and longitude equals
             return getLat() == c.getLat() && getLon() == c.getLon();
         }
         return false;

@@ -7,6 +7,10 @@ package pt.tecnico.sauron.silo.grpc;
 import "google/type/latlng.proto";
 import "google/protobuf/timestamp.proto";
 
+message VecTimestamp {
+    repeated int32 timestamps = 1;
+}
+
 message Cam {
     string name = 1;
     google.type.LatLng coords = 2;
@@ -14,11 +18,12 @@ message Cam {
 
 message JoinRequest {
     Cam cam = 1;
+    string opId = 2;
+    VecTimestamp prev = 3;
 }
 
 message JoinResponse {
-    // empty
-    // On error, status message will be sent
+    VecTimestamp new = 1;
 }
 
 message InfoRequest {
@@ -27,6 +32,7 @@ message InfoRequest {
 
 message InfoResponse {
     google.type.LatLng coords = 1;
+    VecTimestamp new = 2;
 }
 
 enum ObservationType {
@@ -43,10 +49,13 @@ message Observation {
 message ReportRequest {
     string camName = 1;
     repeated Observation observations = 2;
+    string opId = 3;
+    VecTimestamp prev = 4;
 }
 
 message ReportResponse {
     int32 numAcked = 1;
+    VecTimestamp new = 2;
 }
 
 service ReportService {
@@ -55,43 +64,49 @@ service ReportService {
     rpc Report(ReportRequest) returns (ReportResponse);
 }
 
-message TrackRequest {
-    ObservationType type = 1;
-    string id = 2;
-}
-
-message TrackResponse {
+message Report {
     Observation observation = 1;
     google.protobuf.Timestamp timestamp = 2;
     Cam cam = 3;
+}
+
+message TrackRequest {
+    ObservationType type = 1;
+    string id = 2;
+    VecTimestamp prev = 3;
+}
+
+message TrackResponse {
+    Report report = 1;
+    VecTimestamp new = 2;
 }
 
 message TrackMatchRequest {
     ObservationType type = 1;
     string pattern = 2;
+    VecTimestamp prev = 3;
 }
 
 message TrackMatchResponse {
-    Observation observation = 1;
-    google.protobuf.Timestamp timestamp = 2;
-    Cam cam = 3;
+    repeated Report reports = 1;
+    VecTimestamp new = 2;
 }
 
 message TraceRequest {
     ObservationType type = 1;
     string id = 2;
+    VecTimestamp prev = 3;
 }
 
 message TraceResponse {
-    Observation observation = 1;
-    google.protobuf.Timestamp timestamp = 2;
-    Cam cam = 3;
+    repeated Report reports = 1;
+    VecTimestamp new = 2;
 }
 
 service QueryService {
     rpc Track (TrackRequest) returns (TrackResponse);
-    rpc TrackMatch (TrackMatchRequest) returns (stream TrackMatchResponse);
-    rpc Trace (TraceRequest) returns (stream TraceResponse);
+    rpc TrackMatch (TrackMatchRequest) returns (TrackMatchResponse);
+    rpc Trace (TraceRequest) returns (TraceResponse);
 }
 
 message PingRequest {
@@ -112,6 +127,8 @@ message ClearResponse {
 
 message InitCamsRequest {
     repeated Cam cams = 1;
+    string opId = 2;
+    VecTimestamp prev = 3;
 }
 
 message InitCamsResponse {
@@ -126,6 +143,8 @@ message InitObservationsItem {
 
 message InitObservationsRequest {
     repeated InitObservationsItem observations = 1;
+    string opId = 2;
+    VecTimestamp prev = 3;
 }
 
 message InitObservationsResponse {

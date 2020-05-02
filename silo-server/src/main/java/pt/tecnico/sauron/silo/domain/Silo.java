@@ -19,12 +19,18 @@ public class Silo {
 
     public void registerCam(Cam cam) throws DuplicateCameraNameException, InvalidCameraCoordsException {
         String name = cam.getName();
+        // check if cam name already exists
         if(this.cams.containsKey(name)) {
+            // if it does, it must be the same camera
             if(!cam.equals(this.cams.get(name))) {
                 throw new DuplicateCameraNameException();
             }
+
+        // check coordinates
         } else if (!validCoords(cam.getCoords())) {
             throw new InvalidCameraCoordsException();
+
+        // add camera
         } else {
             cams.put(cam.getName(), cam);
         }
@@ -32,6 +38,7 @@ public class Silo {
 
 
 
+    // used by ctrl operations
     public void recordReport(Report report) {
         reports.addFirst(report);
     }
@@ -40,6 +47,11 @@ public class Silo {
     public void registerObservation(Cam cam, Observation observation) {
         // let the server register the time
         Report report = new Report(cam, observation, Instant.now());
+        recordReport(report);
+    }
+
+    public void registerGossipObservation(Cam cam, Observation observation, Instant instant) {
+        Report report = new Report(cam, observation, instant);
         recordReport(report);
     }
 

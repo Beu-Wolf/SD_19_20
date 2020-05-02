@@ -12,4 +12,5 @@ public class ErrorMessages {
     public static final String OBSERVATION_NOT_FOUND = "Observation not found!";
     public static final String NO_CONNECTION = "Server is down, attempting new connection...";
     public static final String NO_ONLINE_SERVERS = "No servers online!";
+    public static final String INVALID_VECTOR_TIMESTAMP = "Frontend and Replica timestamps' size inconsistent";
 }

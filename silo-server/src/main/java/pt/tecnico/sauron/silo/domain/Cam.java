@@ -33,6 +33,7 @@ public class Cam {
     public boolean equals(Object o) {
         if(o instanceof Cam) {
             Cam c = (Cam)o;
+            // equals if same name and same location
             return c.getName().equals(this.name) && this.coords.equals(c.getCoords());
         }
         return false;

@@ -49,29 +49,35 @@ public class Eye {
                     sendObservations();
                     observationBuffer.clear();
                 } else if(Pattern.matches(CAR_OBSERVATION, line)) {
+                    // car observation
                     Matcher m = carObservationPattern.matcher(line);
                     m.find();
                     registerObservation(FrontendObservation.ObservationType.CAR, m.group(1));
 
                 } else if(Pattern.matches(PERSON_OBSERVATION, line)) {
+                    // person observation
                     Matcher m = personObservationPattern.matcher(line);
                     m.find();
                     registerObservation(FrontendObservation.ObservationType.PERSON, m.group(1));
 
                 } else if(Pattern.matches(COMMENT, line)) {
+                    // comment: ignore
                     continue;
 
                 } else if(Pattern.matches(SLEEP, line)) {
+                    // sleep
                     Matcher m = sleepPattern.matcher(line);
                     m.find();
                     int sleepAmt = Integer.parseInt(m.group(1));
                     Thread.sleep(sleepAmt);
 
                 } else {
+                    // unknown command
                     System.err.println("Input not recognized");
                 }
             }
 
+            // after reading all the input, close the scanner
             scanner.close();
         } catch (NoSuchElementException e) {
             // no more lines in input
@@ -79,11 +85,13 @@ public class Eye {
             sendObservations();
             System.exit(0);
         } catch (InterruptedException e) {
+            // interrupt while sleeping
             System.err.printf("Got interrupted while sleeping. %s%nExiting.", e.getMessage());
         }
     }
 
     private void registerObservation(FrontendObservation.ObservationType type, String id) {
+        // add observation to send
         FrontendObservation observation = new FrontendObservation(type, id);
         observationBuffer.add(observation);
     }
@@ -91,10 +99,13 @@ public class Eye {
     private void sendObservations() {
         if(observationBuffer.size() > 0) {
             try {
-                int numAcked = this.siloFrontend.report(this.cam.getName(), observationBuffer);
+                // send observations
+                int numAcked = this.siloFrontend.report(this.cam, observationBuffer);
                 System.out.printf("Successfully reported %d observations!%n", numAcked);
             } catch (FrontendException e) {
                 System.err.println("Could not add all observations:\n" + e.getMessage());
+            } catch (ZKNamingException e) {
+                System.err.println("Could not find server in given path. Make sure the server is up and running.");
             }
         }
     }
