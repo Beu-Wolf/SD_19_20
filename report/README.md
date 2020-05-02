@@ -104,18 +104,22 @@ Notamos a exceção do query `trackMatch`:
 Dado que não existe uma entrada na cache para "AA*", o resultado ["AAA", "AAB"] é devolvido ao cliente, apesar de "AAC" se encontrar no padrão e já ter sido lido anteriormente.
 Isto deve-se ao facto de considerarmos os queries `trackMatch` como independentes.
 
+
 **Geração do `opID`**
 
 Cada instância de Frontend possui um `UUID` de 128 bits e regista o número de updates enviados a réplicas em `opCount`. O `opId` resulta da concatenação de `UUID` e `opCount`. Embora não sejam garantidamente únicos, as chances de colisão são extremamente baixas. Esta abordagem foi optada por ser a mais simples de implementar.
+
 
 **Campos repeated no gRPC**
 
 Por uma questão de simplicidade, aconselhada no feedback da primeira entrega, as entradas do `updateLog` foram enviadas num campo `repeated` da mensagem de gossip definida no gRPC. Contudo, apenas é possível enviar 4MB por mensagem, havendo a possibilidade que num perído de pico de atividade, as réplicas não consigam enviar todos os updates que tenham para enviar. Será necessário estimar uma frequência de atualização adequada para que isto não aconteça. Outra possível solução será enviar as `gossipMessages` antes do intervalo definido no caso em que o número de updates exceder um *threshold* pré-definido. Assumimos que esta situação não acontece.
 
+
 **A que réplicas enviar as `gossipMessages`**
 
- * As replicas enviam as gossip messages a todas as que conseguirem
+Considerando a dimensão do projeto, decidiu-se que as réplicas enviassem as `gossipMessages` a todas as outras réplicas alcançáveis, tornando a difusão de updates muito rápida. Contudo, esta abordagem não é escalável com o número de réplicas, causando grandes *overheads* e congestionando a rede. Para situações com muitas réplicas pensámos em enviar as tais mensagens para um subconjunto aleatório de réplicas disponíveis. Ao escolher as réplicas aleatoriamente aumenta-se a dispersão dos updates.
 
 ## Notas finais
 
-Tendo em conta que não existe um relógio universal neste sistema, os timestamps registados por cada réplica aquando de um report dependem do seu relógio local. Isto pode levar a anomalias em que reports `r1` e `r2`, registados por essa ordem, possuam timestamps tais que `r2.timestamp` < `r1.timestamp`.
+ * Tendo em conta que não existe um relógio universal neste sistema, os timestamps registados por cada réplica aquando de um report dependem do seu relógio local. Isto pode levar a anomalias em que reports `r1` e `r2`, registados por essa ordem, possuam timestamps tais que `r2.timestamp` < `r1.timestamp`.
+ * Usaram-se Objetos para representar a informação dos updates dos clientes, pois estes não são imediatamente executados. Deste modo torna-se mais simples enviar a informação. Tomou-se partido do polimorfismo para simplificar a execução destes comandos.
