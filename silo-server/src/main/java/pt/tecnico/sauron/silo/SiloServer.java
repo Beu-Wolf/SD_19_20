@@ -10,10 +10,11 @@ import pt.ulisboa.tecnico.sdis.zk.ZKNamingException;
 import pt.ulisboa.tecnico.sdis.zk.ZKRecord;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.NoSuchElementException;
+import java.util.Properties;
+import java.util.Scanner;
 import java.util.concurrent.*;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public class SiloServer {
 
@@ -24,13 +25,10 @@ public class SiloServer {
     private static Properties gossipProperties = new Properties();
 
 
-
     private final int port;
     private final Server server;
     private final Silo silo = new Silo();
     private int messageInterval;
-    private int gossipThreshold;
-    private double gossipTargetPercentage;
 
     // Timer to send gossip messages regularly
     ScheduledFuture<?> scheduledFuture;
@@ -61,16 +59,11 @@ public class SiloServer {
         try {
             gossipProperties.load(SiloServer.class.getResourceAsStream(REPLICA_PROPERTIES));
             this.messageInterval = Integer.parseInt(gossipProperties.getProperty("gossipMessageInterval"));
-            this.gossipThreshold = Integer.parseInt(gossipProperties.getProperty("gossipTargetThreshold"));
-            this.gossipTargetPercentage = Double.parseDouble(gossipProperties.getProperty("gossipTargetPercentage"));
             gossipProperties.load(SiloServer.class.getResourceAsStream(GLOBAL_PROPERTIES));
             this.gossipStructures = new GossipStructures(Integer.parseInt(gossipProperties.getProperty("numReplicas")));
         } catch (IOException e) {
             System.out.println("Could not load properties file");
-            // default
             this.messageInterval = 30;
-            this.gossipThreshold = 20;
-            this.gossipTargetPercentage = 0.2;
             this.gossipStructures = new GossipStructures(3);
         }
         this.gossipStructures.setInstance(instance);
@@ -115,7 +108,9 @@ public class SiloServer {
 
     private void gossipMessageSchedule() {
         ScheduledExecutorService ses = Executors.newScheduledThreadPool(1);
-        Runnable gossip = this::sendGossipMessage;
+        Runnable gossip = () -> {
+            sendGossipMessage();
+        };
         this.scheduledFuture = ses.scheduleAtFixedRate(gossip, this.messageInterval, this.messageInterval, TimeUnit.SECONDS);
     }
 
@@ -124,28 +119,28 @@ public class SiloServer {
         int replicaInstance;
         try {
             // send to all possible replicas. do not block waiting for one
-            HashSet<ZKRecord> replicasToReceive = selectReplicas();
-            for (ZKRecord record: replicasToReceive) {
-                int zkRecordInstance = getZKRecordInstance(record);
-                System.out.println("Sending to #" + zkRecordInstance);
+            for (ZKRecord record: zkNaming.listRecords(SERVER_PATH)) {
+                if ( (replicaInstance = getZKRecordInstance(record)) != this.gossipStructures.getInstance()) {
+                    System.out.println("Sending to #" + replicaInstance);
 
-                // create stub for target replica
-                ManagedChannel channel = ManagedChannelBuilder.forTarget(record.getURI()).usePlaintext().build();
-                GossipServiceGrpc.GossipServiceBlockingStub gossipBlockingStub = GossipServiceGrpc.newBlockingStub(channel);
+                    // create stub for target replica
+                    ManagedChannel channel = ManagedChannelBuilder.forTarget(record.getURI()).usePlaintext().build();
+                    GossipServiceGrpc.GossipServiceBlockingStub gossipBlockingStub = GossipServiceGrpc.newBlockingStub(channel);
 
-                // create gossip message
-                Gossip.GossipRequest request = createGossipRequest(zkRecordInstance);
-                try {
-                    // send gRPC gossip message
-                    gossipBlockingStub.gossip(request);
+                    // create gossip message
+                    Gossip.GossipRequest request = createGossipRequest(replicaInstance);
+                    try {
+                        // send gRPC gossip message
+                        gossipBlockingStub.gossip(request);
 
-                } catch (StatusRuntimeException e) {
-                    Status status = Status.fromThrowable(e);
-                    if (status.getCode() == Status.Code.UNAVAILABLE) {
-                        System.out.println("Could not connect to replica #" + zkRecordInstance);
-                        continue;
+                    } catch (StatusRuntimeException e) {
+                        Status status = Status.fromThrowable(e);
+                        if (status.getCode() == Status.Code.UNAVAILABLE) {
+                            System.out.println("Could not connect to replica #" + replicaInstance);
+                            continue;
+                        }
+                        throw new StatusRuntimeException(e.getStatus());
                     }
-                    throw new StatusRuntimeException(e.getStatus());
                 }
             }
         } catch (ZKNamingException e) {
@@ -154,7 +149,7 @@ public class SiloServer {
     }
 
     // receives record path and returns record instance number
-    private static int getZKRecordInstance(ZKRecord record) {
+    private int getZKRecordInstance(ZKRecord record) {
         // instance is the last member of the path
         String[] pathSplit = record.getPath().split("/");
         return Integer.parseInt(pathSplit[pathSplit.length-1]);
@@ -189,41 +184,6 @@ public class SiloServer {
             System.out.println(e.getMessage());
         }
         return new LinkedList<>();
-    }
-
-    private HashSet<ZKRecord> selectReplicas() throws ZKNamingException {
-        // Select all the replicas if below a threshold,
-        // Or select a percentage of them if it's bigger than the threshold
-        int numReplicasToSend = (int) Math.min(this.gossipStructures.getNumReplicas()-1, Math.max(this.gossipThreshold, this.gossipTargetPercentage*this.gossipStructures.getNumReplicas()-1));
-        if (numReplicasToSend == this.gossipStructures.getNumReplicas()) {
-            return zkNaming.listRecords(SERVER_PATH).stream().filter(Predicate.not(this::isEqualInstance)).collect(Collectors.toCollection(HashSet::new));
-        } else {
-            // Select numReplicasToSend unique random records
-            HashSet<ZKRecord> selected = new HashSet<>();
-            HashSet<Integer> instanceMatch = new HashSet<>();
-            while (selected.size() != numReplicasToSend) {
-                Optional<ZKRecord> optRecord = getRandomRecord(zkNaming.listRecords(SERVER_PATH));
-                if (optRecord.isPresent()) {
-                    ZKRecord record = optRecord.get();
-                    // If not already selected and not itself, add
-                    if(!isEqualInstance(record) && !instanceMatch.contains(getZKRecordInstance(record))) {
-                        selected.add(record);
-                        instanceMatch.add(getZKRecordInstance(record));
-                    }
-                }
-            }
-            return selected;
-        }
-    }
-
-    public static <ZKRecord> Optional<ZKRecord> getRandomRecord(Collection<ZKRecord> e) {
-        return e.stream()
-                .skip((int) (e.size()* Math.random()))
-                .findFirst();
-    }
-
-    private boolean isEqualInstance(ZKRecord record) {
-        return this.gossipStructures.getInstance() == getZKRecordInstance(record);
     }
 
 
