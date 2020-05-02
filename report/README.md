@@ -45,7 +45,7 @@ Sistemas Distribuídos 2019-2020, segundo semestre
 ## Modelo de faltas
 O modelo desenvolvido tolera diversos tipos de faltas:
  * Partições (temporárias ou permanentes) da rede: O serviço continua a funcionar, mesmo não havendo uma atualização total de todas as réplicas;
- * Falha silenciosa (temporária ou permanente) de réplica sem updates não divulgados: Essa informação já existe noutras réplicas e, por isso, é recuperada quando for retransmitida par a réplica que falhou.
+ * Falha silenciosa (temporária ou permanente) de réplica sem updates não divulgados: Essa informação já existe noutras réplicas e, por isso, é recuperada quando for retransmitida para a réplica que falhou.
  * Duplicação, omissão e reordenação de mensagens: A identificação e reenvio de mensagens resolve esta falta
  * Crash de uma réplica a meio de trocas de mensagens: A identificação e reenvio de mensagens resolve esta falta
  * Alteração do endereço/porto de uma réplica: As ligações são estabelecidas dinamicamente usando o Zookeeper (servidor de nomes)
@@ -80,7 +80,7 @@ Cada entrada do `updateLog` contém:
  * Identificador único do update (`opId`)
  * Identificador da réplica que registou o *update*
 
-Os updates apenas são executados quando o `valueTimestamp` da réplica for posterior ao seu `prevTS`, para se garantir que a réplica tem um estado mais ou igualmente atualizado do que o estado que originou o update. Deste modo, é possível garantir a dependência causal.
+Os updates apenas são executados quando o `valueTimestamp` da réplica for maior ou igual ao seu `prevTS`, para se garantir que a réplica tem um estado mais ou igualmente atualizado do que o estado que originou o update. Deste modo, é possível garantir a dependência causal.
 
 As réplicas atualizam-se regularmente (intervalos de 30 segundos por norma, que podem ser configurados), trocando mensagens de update (`gossipMessage`), contendo as entradas existentes no `updateLog` da réplica que as enviou. A réplica que as recebe adiciona-as ao seu `updateLog`, para serem executadas assim que possível.
 
@@ -110,7 +110,7 @@ Cada instância de Frontend possui um `UUID` de 128 bits e regista o número de 
 
 **Campos repeated no gRPC**
 
-Por uma questão de simplicidade, aconselhada no feedback da primeira entrega, as entradas do `updateLog` foram enviadas num campo `repeated` da mensagem de gossip definida no gRPC. Contudo, apenas é possível enviar 4MB por mensagem, havendo a possibilidade que num perído de pico de atividade, as réplicas não consigam enviar todos os updates que tenham para enviar. Será necessário estimar uma frequência de atualização adequada para que isto não aconteça. Outra possível solução será enviar as `gossipMessages` antes do intervalo definido no caso em que o número de updates exceder um *treshold* pré-definido. Assumimos que esta situação não acontece.
+Por uma questão de simplicidade, aconselhada no feedback da primeira entrega, as entradas do `updateLog` foram enviadas num campo `repeated` da mensagem de gossip definida no gRPC. Contudo, apenas é possível enviar 4MB por mensagem, havendo a possibilidade que num perído de pico de atividade, as réplicas não consigam enviar todos os updates que tenham para enviar. Será necessário estimar uma frequência de atualização adequada para que isto não aconteça. Outra possível solução será enviar as `gossipMessages` antes do intervalo definido no caso em que o número de updates exceder um *threshold* pré-definido. Assumimos que esta situação não acontece.
 
 **A que réplicas enviar as `gossipMessages`**
 
@@ -118,4 +118,4 @@ Por uma questão de simplicidade, aconselhada no feedback da primeira entrega, a
 
 ## Notas finais
 
-_(Algo mais a dizer?)_
+Tendo em conta que não existe um relógio universal neste sistema, os timestamps registados por cada réplica aquando de um report dependem do seu relógio local. Isto pode levar a anomalias em que reports `r1` e `r2`, registados por essa ordem, possuam timestamps tais que `r2.timestamp` < `r1.timestamp`.
