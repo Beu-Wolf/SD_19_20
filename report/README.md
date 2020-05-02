@@ -118,4 +118,4 @@ Por uma questão de simplicidade, aconselhada no feedback da primeira entrega, a
 
 ## Notas finais
 
-_(Algo mais a dizer?)_
+Tendo em conta que não existe um relógio universal neste sistema, os timestamps registados por cada réplica aquando de um report dependem do seu relógio local. Isto pode levar a anomalias em que reports `r1` e `r2`, registados por essa ordem, possuam timestamps tais que `r2.timestamp` < `r1.timestamp`.
