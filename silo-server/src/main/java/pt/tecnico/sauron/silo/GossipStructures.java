@@ -29,10 +29,6 @@ public class GossipStructures {
         }
     }
 
-    public int getNumReplicas() {
-        return numReplicas;
-    }
-
     public VectorTimestamp getReplicaTS() {
         return replicaTS;
     }
