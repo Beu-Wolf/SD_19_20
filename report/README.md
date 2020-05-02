@@ -20,14 +20,12 @@ Sistemas Distribuídos 2019-2020, segundo semestre
 
 ## Melhorias da primeira parte
 
- * Remover synchronized das funções, por criar *bottlenecks* desnecessários
-   * [Commit message errada](https://github.com/tecnico-distsys/A04-Sauron/commit/a7f573348f1d560f1c656fc5e5258a5a4123c529#diff-b94f1f24a093eef8b0edea4f48dae955)
+ * [Remover synchronized das funções](https://github.com/tecnico-distsys/A04-Sauron/commit/a7f573348f1d560f1c656fc5e5258a5a4123c529#diff-b94f1f24a093eef8b0edea4f48dae955), por criar *bottlenecks*
  * O conjunto de testes foi melhorado.
     * [Added load test to report](https://github.com/tecnico-distsys/A04-Sauron/commit/70a1cda17eb81cea50e55d32ae13052a0b54d1af)
     * [Added verification of coordinates](https://github.com/tecnico-distsys/A04-Sauron/commit/a7f573348f1d560f1c656fc5e5258a5a4123c529)
 
- * A resposta ao `CamInfo` passa a retornar apenas as coordenadas da câmara, em vez de retornar a câmara em si.
-    * [Update proto to send coords in cam info](https://github.com/tecnico-distsys/A04-Sauron/commit/c7bc13b00d9e540ea367eb94c47af874e8a7642b)
+ * A resposta ao `CamInfo` passa a retornar [apenas as coordenadas da câmara](https://github.com/tecnico-distsys/A04-Sauron/commit/c7bc13b00d9e540ea367eb94c47af874e8a7642b)
 
  * Os objetos de representação de informação usados no cliente (`...DTO`) foram renomeados para objetos do domínio (`Frontend...`). Os objetos do domínio do cliente e servidor não foram unificados para manter a abstração e o isolamento dos dois.
     * [Rename DTO](https://github.com/tecnico-distsys/A04-Sauron/commit/1146664b562161ba149b6084e0632dc6340382a5)
@@ -39,16 +37,15 @@ Sistemas Distribuídos 2019-2020, segundo semestre
     * [Primeiro commit da melhoria](https://github.com/tecnico-distsys/A04-Sauron/commit/6776f84bb2e991349f311d1f313ab7afc59ec12a)
     * [Último commit da melhoria](https://github.com/tecnico-distsys/A04-Sauron/commit/4101f632e92975d5170ee29e798c154b73eb18da)
 
- * A mensagem usada para fazer pedidos de `Track`, `Trace` e `TrackMatch` foi dividida em diferentes mensagens, uma para cada request.
-    * [Separate QueryRequest/Response](https://github.com/tecnico-distsys/A04-Sauron/commit/9fb98d61550271844a01b61e8fb640826241dbcb)
+ * A mensagem usada para fazer pedidos de `Track`, `Trace` e `TrackMatch` foi [dividida em diferentes mensagens](https://github.com/tecnico-distsys/A04-Sauron/commit/9fb98d61550271844a01b61e8fb640826241dbcb), uma para cada request.
 
 ## Modelo de faltas
 O modelo desenvolvido tolera diversos tipos de faltas:
- * Partições (temporárias ou permanentes) da rede: O serviço continua a funcionar, mesmo não havendo uma atualização total de todas as réplicas;
- * Falha silenciosa (temporária ou permanente) de réplica sem updates não divulgados: Essa informação já existe noutras réplicas e, por isso, é recuperada quando for retransmitida para a réplica que falhou.
+ * Partições (temporárias ou permanentes) da rede: O serviço continua a funcionar, mesmo não havendo uma atualização de todas as réplicas;
+ * Falha silenciosa (temporária ou permanente) de réplica sem updates não divulgados: Essa informação já existe noutras réplicas, logo é recuperada quando for retransmitida para a réplica que falhou.
  * Duplicação, omissão e reordenação de mensagens: A identificação e reenvio de mensagens resolve esta falta
- * Crash de uma réplica a meio de trocas de mensagens: A identificação e reenvio de mensagens resolve esta falta
- * Alteração do endereço/porto de uma réplica: As ligações são estabelecidas dinamicamente usando o Zookeeper (servidor de nomes)
+ * Crash de uma réplica durante trocas de mensagens: Igual ao anterior
+ * Alteração do endereço/porto de uma réplica: As ligações são estabelecidas dinamicamente usando o Zookeeper
  
 Contudo, esta solução não tolera:
  * Falha (silenciosa ou arbitrária) do Zookeeper: Deixa de se conseguir ligar a réplicas
@@ -62,31 +59,33 @@ Para além destes casos mais simples, ainda há faltas mais complexas que não s
 
 ## Solução
 ![](solution.png)
-Face ao problema de replicar o servidor e tendo em conta o Teorema CAP, decidiu-se apostar numa forte disponibilidade e tolerância a partições na rede, sacrificando a coerência forte. Para garantir a maior coerência possível, as réplicas vão-se atualizando regularmente, enviando (em *background*) mensagens umas às outras, indicando o seu estado de atualização. Deste modo, o cliente pode contactar apenas uma réplica para o seu pedido ser atendido e receber uma resposta "atualizada".
+Face ao problema de replicar o servidor e tendo em conta o Teorema CAP, decidiu-se apostar numa forte disponibilidade e tolerância a partições na rede, sacrificando a coerência forte. Para garantir a maior coerência possível, as réplicas vão-se atualizando regularmente, trocando (em *background*) mensagens entre si, indicando o seu estado de atualização. Deste modo, o cliente pode contactar apenas uma réplica para o seu pedido ser atendido e receber uma resposta "atualizada".
 
-Esta solução cobre o caso em que as réplicas falham silenciosamente: Quando uma dessas réplicas voltar ao seu comportamento normal, esta será atualizadas pelas outras. É possível, no entanto, que um cliente receba um estado mais antigo do que um que já tenha recebido enquanto essa réplica estiver numa fase de recuperação. Para resolver esse problema, implementou-se uma cache no cliente que vai guardando as respostas a cada pedido. No caso em que o cliente receba uma resposta mais antiga do que uma que já tenha recebido, este fica com a mais atual.
+Esta solução cobre o caso em que as réplicas falham silenciosamente: Quando uma dessas réplicas voltar ao seu comportamento normal, esta será atualizadas pelas outras. É possível que um cliente receba um estado mais antigo do que um já recebido enquanto essa réplica estiver numa fase de recuperação. Para resolver esse problema, implementou-se uma cache no cliente que guarda as respostas a cada pedido. No caso em que o cliente receba uma resposta mais antiga do que uma que já tenha recebido, este fica com a mais atual.
 
-Deste modo, para tolerar *f* faltas serão apenas necessárias *f+1* réplicas
+Deste modo, para tolerar *f* faltas serão necessárias *f+1* réplicas
 
 ## Protocolo de replicação
-O protocolo implementado foi baseado no *Gossip Architecture*, descrito em *Coulouris, George F. Distributed Systems Concepts and Design*.
+O protocolo implementado foi baseado no *Gossip Architecture*, descrito no livro da cadeira.
 
-Cada réplica tem o seu estado interno (`value`), cuja versão é representada por um timestamp vetorial (`valueTS`). Esta versão resulta da execução cumulativa de um conjunto de atualizações. Para além destes componentes, existe ainda um `updateLog`, que contém o conjunto de todas as atualizações recebidas pela réplica.
+Cada réplica tem o seu estado interno (`value`), cuja versão é representada por um timestamp vetorial (`valueTS`). Esta versão resulta da execução cumulativa de um conjunto de atualizações. Existe ainda um `updateLog`, que contém o conjunto de todas as atualizações recebidas pela réplica.
 
 Cada entrada do `updateLog` contém:
  * Update a ser executado
  * Timestamp único do update
  * Timestamp do cliente que antecedeu o update (`prevTS`)
  * Identificador único do update (`opId`)
- * Identificador da réplica que registou o *update*
+ * Identificador da réplica que o registou
 
 Os updates apenas são executados quando o `valueTS` da réplica for maior ou igual ao seu `prevTS`, para se garantir que a réplica tem um estado mais ou igualmente atualizado do que o estado que originou o update. Deste modo, é possível garantir a dependência causal.
 
-As réplicas atualizam-se regularmente (intervalos de 30 segundos por norma, que podem ser configurados), trocando mensagens de update (`gossipMessage`), contendo as entradas existentes no `updateLog` da réplica que as enviou. A réplica que as recebe adiciona-as ao seu `updateLog`, para serem executadas assim que possível.
+As réplicas atualizam-se regularmente (intervalos de 30 segundos por norma, configuráveis), trocando mensagens de update (`gossipMessage`), contendo as entradas existentes no `updateLog` da réplica que as enviou. A réplica que as recebe adiciona-as ao seu `updateLog`, para mais tarde serem executadas.
 
-O modelo até agora descrito permite que as réplicas enviem *updates* que o seu destino já tenha registado, podendo levar a duplicação de instruções (problemático quando estas não forem idempotentes) e a um congestionamento da rede. O primeiro problema é mitigado pois as réplicas adicionam um update ao seu `upateLog` se e só se o `opId` deste ainda não se encontrar no `updateLog`. O segundo problema pode ser atenuado se as réplicas forem registando o `valueTS` das outras e enviarem apenas os updates que a réplica de destino garantidamente ainda não tenha aplicado. Para tal, ao enviar uma `gossipMessage`, a réplica envia também o seu `valueTS`, que é guardado na `timestampTable` da réplica destino.
+Para evitar duplicação de instruções, as réplicas adicionam um update ao seu `upateLog` se e só se o `opId` deste ainda não se encontrar registado.
 
-A cada `gossipMessage` recebida, há a possiblidade que esta contenha updates críticos para a atualização do estado da réplica. Esta verifica, portanto, que updates do seu `updateLog` é que podem ser executados. Ao receber um *update* de um cliente, este é adicionado ao `updateLog` e imediatamente executado se o `prevTS` associado a este for anterior ao `valueTS` da réplica.
+Um eventual congestionamento da rede pode ser atenuado se as réplicas forem registando o `valueTS` das outras e enviarem apenas os updates que a réplica de destino garantidamente ainda não tenha aplicado. Para tal, ao enviar uma `gossipMessage`, a réplica envia também o seu `valueTS`, que é guardado na `timestampTable` da réplica destino.
+
+A cada `gossipMessage` recebida, há a possiblidade que esta contenha updates críticos para a atualização do estado da réplica. Esta verifica, portanto, que updates do seu `updateLog` é que podem ser executados. Ao receber um *update* de um cliente, este é adicionado ao `updateLog` e imediatamente executado se o seu `prevTS` for anterior ao `valueTS` da réplica.
 
 ## Opções de implementação
 
