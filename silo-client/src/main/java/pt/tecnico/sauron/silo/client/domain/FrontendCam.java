@@ -25,6 +25,7 @@ public class FrontendCam {
     public boolean equals(Object o) {
         if (o instanceof FrontendCam) {
             FrontendCam c = (FrontendCam) o;
+            // equals if same location and same name
             return this.name.equals(c.getName()) && this.coords.equals(c.getCoords());
         }
         return false;

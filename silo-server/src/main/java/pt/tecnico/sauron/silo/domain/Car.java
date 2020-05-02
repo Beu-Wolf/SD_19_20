@@ -25,16 +25,19 @@ public class Car extends Observation {
         boolean valid = false;
 
         if (id.length() == 6) {
+            // split in groups of 2 characters
             String[] subgroups = id.split("(?<=\\G.{2})");
 
             for (String subgroup : subgroups) {
                 Matcher charMatcher = charPattern.matcher(subgroup);
                 Matcher numMatcher = numPattern.matcher(subgroup);
 
+                // count number of char and number groups
                 if (charMatcher.find()) charGroupCount++;
                 if (numMatcher.find()) numGroupCount++;
             }
 
+            // if this happens, the license is valid
             if (numGroupCount == 2 && charGroupCount == 1 ||
                     numGroupCount == 1 && charGroupCount == 2) {
                 valid = true;
