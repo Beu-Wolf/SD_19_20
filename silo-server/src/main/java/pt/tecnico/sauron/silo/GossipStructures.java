@@ -15,7 +15,6 @@ public class GossipStructures {
     private VectorTimestamp replicaTS;
     private VectorTimestamp valueTS;
     private ConcurrentLinkedDeque<String> executedOperations = new ConcurrentLinkedDeque<>();
-    // Maybe change to Map<instance, VectorTimestamp>
     private ArrayList<VectorTimestamp> timestampTable = new ArrayList<>();
     private LinkedList<LogEntry> updateLog = new LinkedList<>();
     private int instance;
@@ -28,6 +27,10 @@ public class GossipStructures {
         for (int i = 0; i < this.numReplicas; i++) {
             timestampTable.add(new VectorTimestamp(this.numReplicas));
         }
+    }
+
+    public int getNumReplicas() {
+        return numReplicas;
     }
 
     public VectorTimestamp getReplicaTS() {
