@@ -48,12 +48,12 @@ O modelo desenvolvido tolera diversos tipos de faltas:
  * Falha silenciosa (temporária ou permanente) de réplica sem updates não divulgados: Essa informação já existe noutras réplicas e, por isso, é recuperada quando for retransmitida par a réplica que falhou.
  * Duplicação, omissão e reordenação de mensagens: A identificação e reenvio de mensagens resolve esta falta
  * Crash de uma réplica a meio de trocas de mensagens: A identificação e reenvio de mensagens resolve esta falta
- * Alteração do endereço/porto de uma réplica: As ligações são estabelecidas dinamicamente usando o servidor de nomes
+ * Alteração do endereço/porto de uma réplica: As ligações são estabelecidas dinamicamente usando o Zookeeper (servidor de nomes)
  
 Contudo, esta solução não tolera:
  * Falha (silenciosa ou arbitrária) do Zookeeper: Deixa de se conseguir ligar a réplicas
  * Crash de todas as réplicas com informação não totalmente divulgada: A informação é perdida.
- * Criação de mais réplicas do que as inicialmente acordadas: Nova réplica ão é considerada nas outras
+ * Criação de mais réplicas do que as inicialmente acordadas: Nova réplica não é considerada nas outras
  * Réplicas instanciadas de forma não incremental (números não sequenciais): Réplica não tem um slot nos *timestamps* vetoriais das outras
  * Esgotamento de memória nas réplicas: Perda de novas atualizações
 
