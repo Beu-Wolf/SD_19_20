@@ -44,18 +44,18 @@ Sistemas Distribuídos 2019-2020, segundo semestre
 
 ## Modelo de faltas
 O modelo desenvolvido tolera diversos tipos de faltas:
- 1. **Partições (temporárias ou permanentes) da rede**: O serviço continua a funcionar, mesmo não havendo uma atualização total de todas as réplicas;
- 2. **Falha silenciosa (temporária ou permanente) de réplica sem updates não divulgados**: Essa informação já existe noutras réplicas e, por isso, é recuperada quando for retransmitida par a réplica que falhou.
- 3. **Duplicação, omissão e reordenação de mensagens**: A identificação e reenvio de mensagens resolve esta falta
- 4. **Crash de uma réplica a meio de trocas de mensagens**: A identificação e reenvio de mensagens resolve esta falta
- 5. **Alteração do endereço/porto de uma réplica**: As ligações são estabelecidas dinamicamente usando o servidor de nomes
+ * **Partições (temporárias ou permanentes) da rede**: O serviço continua a funcionar, mesmo não havendo uma atualização total de todas as réplicas;
+ * **Falha silenciosa (temporária ou permanente) de réplica sem updates não divulgados**: Essa informação já existe noutras réplicas e, por isso, é recuperada quando for retransmitida par a réplica que falhou.
+ * **Duplicação, omissão e reordenação de mensagens**: A identificação e reenvio de mensagens resolve esta falta
+ * **Crash de uma réplica a meio de trocas de mensagens**: A identificação e reenvio de mensagens resolve esta falta
+ * **Alteração do endereço/porto de uma réplica**: As ligações são estabelecidas dinamicamente usando o servidor de nomes
  
 Contudo, esta solução não tolera:
- 7. **Falha (silenciosa ou arbitrária) do Zookeeper**: Deixa de se conseguir ligar a réplicas
- 6. **Crash de todas as réplicas com informação não totalmente divulgada**: A informação é perdida.
- 6. **Criação de mais réplicas do que as inicialmente acordadas**: Nova réplica ão é considerada nas outras
- 6. **Réplicas instanciadas de forma não incremental (números não sequenciais)**: Réplica não tem um slot nos *timestamps* vetoriais das outras
- 6. **Esgotamento de memória nas réplicas**: Perda de novas atualizações
+ * **Falha (silenciosa ou arbitrária) do Zookeeper**: Deixa de se conseguir ligar a réplicas
+ * **Crash de todas as réplicas com informação não totalmente divulgada**: A informação é perdida.
+ * **Criação de mais réplicas do que as inicialmente acordadas**: Nova réplica ão é considerada nas outras
+ * **Réplicas instanciadas de forma não incremental (números não sequenciais)**: Réplica não tem um slot nos *timestamps* vetoriais das outras
+ * **Esgotamento de memória nas réplicas**: Perda de novas atualizações
 
 Para além destes casos mais simples, ainda há faltas mais complexas que não são toleradas:
  * No caso em que duas novas câmaras duplicadas se registam em réplicas diferentes antes de estas divulgarem o registo, passam a haver câmaras duplicadas no sistema. Esta falta não é contornada por não serem implementados updates imediatos em atualizações desta natureza.
