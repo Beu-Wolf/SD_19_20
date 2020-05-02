@@ -116,6 +116,10 @@ Por uma questão de simplicidade, aconselhada no feedback da primeira entrega, a
 
  * As replicas enviam as gossip messages a todas as que conseguirem
 
+**Envio de valueTS em vez de replicaTS**
+
+Como especificado no livro, `replicaTS` é recebido para as réplicas poderem saber o estado do `updateLog` do sender e consequentemente que updates enviar. De modo a permitir o crash de réplicas, seguido de uma total recuperação do estado, envia-se `valueTS`.
+
 ## Notas finais
 
 Tendo em conta que não existe um relógio universal neste sistema, os timestamps registados por cada réplica aquando de um report dependem do seu relógio local. Isto pode levar a anomalias em que reports `r1` e `r2`, registados por essa ordem, possuam timestamps tais que `r2.timestamp` < `r1.timestamp`.
