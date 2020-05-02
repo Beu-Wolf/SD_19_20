@@ -3,6 +3,7 @@
 ## Part 1
 
 With the project already installed,
+make sure ZooKeeper is running and,
 
 Run replica 1
 ```
@@ -403,3 +404,57 @@ spot person 9876
 trail car SDSD20
 exit
 ```
+
+### Case 6: Change number of replicas
+
+Kill all replicas, navigate to `silo-contract/src/resources/main.properties` and change the number of replicas to 4.
+In the root of the project run `mvn install -DskipTests` again to recompile the project.
+
+Instantiate 4 new replicas 
+
+```
+cd silo-server
+mvn exec:java -Dinstance=1
+mvn exec:java -Dinstance=2
+mvn exec:java -Dinstance=3
+mvn exec:java -Dinstance=4  
+```
+
+Connect a new Eye to replica 1
+```
+./eye/target/appassembler/bin/eye localhost 2181 testCam5 12.456789 -8.987654 1
+person,9876
+car,SDSD20
+\n
+```
+Exit Eye(`^C`)
+
+Verify that replica 1 now sends to other 3 replicas
+
+```
+Sending to #2
+Sending 2 updates
+Sending to #3
+Sending 2 updates
+Sending to #4
+Sending 2 updates
+```
+
+
+Execute a new Spotter connected to a random replica
+```
+./spotter/target/appassembler/bin/spotter localhost 2181
+help
+```
+
+Verify that
+ * person 9876 was observed by testCam5
+ * car SDSD20 was observed by testCam5
+ 
+ ```
+spot person 9876
+trail car SDSD20
+exit
+```
+
+Kill all replicas and stop zooKeeper
