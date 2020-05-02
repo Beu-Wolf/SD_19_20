@@ -18,6 +18,7 @@ public class Coords {
     public boolean equals(Object o) {
         if(o instanceof Coords) {
             Coords c = (Coords)o;
+            // equals if latitude and longitude equals
             return this.lat == c.getLat() && this.lon == c.getLon();
         }
         return false;

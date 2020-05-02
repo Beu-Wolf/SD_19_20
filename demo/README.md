@@ -228,7 +228,14 @@ exit
 Kill all 3 replicas, by pressing `Enter`, navigate to `silo-server/src/main/resources/server.properties` and set the `gossipMessageInterval` 
 to 5;
 
-Launch the 3 replicas, exactly the same way as in the beginning.
+Launch the 3 replicas, with the `clean` and `compile` commands
+
+```
+cd silo-server
+mvn clean compile exec:java -Dinstance=1
+mvn clean compile exec:java -Dinstance=2
+mvn clean compile exec:java -Dinstance=3
+```
 
 Load some data in replica 1 and connect a new Spotter to it
 ```
@@ -318,7 +325,7 @@ exit
 Kill all 3 replicas, by pressing `Enter`, navigate to `silo-server/src/main/resources/server.properties` and set the `gossipMessageInterval` 
 to 100;
 
-Launch the 3 replicas, exactly the same way as in the beginning.
+Launch the 3 replicas, with the `clean` and `compile` commands.
 
 Connect Spotter to replica 1
 ```
@@ -369,11 +376,11 @@ This time, launch only 2 replicas, replica 2 and replica 3
 
 ```
 cd silo-server
-mvn exec:java -Dinstance=2
-mvn exec:java -Dinstance=3  
+mvn clean compile exec:java -Dinstance=2
+mvn clean compile exec:java -Dinstance=3  
 ```
 
-Verify that gossip messages sent say `Could not connect to replica #1`
+Verify that replicas 2 and 3 say `Could not connect to replica #1`
 
 Execute a new Eye connected to a random replica
 ```

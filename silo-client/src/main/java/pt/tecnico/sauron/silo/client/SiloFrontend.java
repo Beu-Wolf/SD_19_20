@@ -44,10 +44,12 @@ public class SiloFrontend {
 
     private static Properties gossipProperties = new Properties();
 
+    // caches for server responses
     private HashMap<FrontendObservation.ObservationType, HashMap<String, FrontendReport>> trackCache = new HashMap<>();
     private HashMap<FrontendObservation.ObservationType, HashMap<String, List<FrontendReport>>> trackMatchCache = new HashMap<>();
     private HashMap<FrontendObservation.ObservationType, HashMap<String, List<FrontendReport>>> traceCache = new HashMap<>();
 
+    // initialize frontend cache
     private void initCache() {
         trackCache.put(FrontendObservation.ObservationType.CAR, new HashMap<>());
         trackCache.put(FrontendObservation.ObservationType.PERSON, new HashMap<>());
@@ -64,9 +66,10 @@ public class SiloFrontend {
         zkNaming = new ZKNaming(zooHost,zooPort);
         Collection<ZKRecord> records = zkNaming.listRecords(SERVER_PATH);
         Optional<ZKRecord> optRecord = getRandomRecord(records);
+        // if found running server, connect
         if (optRecord.isPresent()) {
             ZKRecord record = optRecord.get();
-            siloInfo(record);
+            connectToReplica(record);
         } else {
             throw new FrontendException(ErrorMessages.NO_ONLINE_SERVERS);
         }
@@ -77,10 +80,10 @@ public class SiloFrontend {
         zkNaming = new ZKNaming(zooHost, zooPort);
         String path = SERVER_PATH + "/" + instance.toString();
         ZKRecord record = zkNaming.lookup(path);
-        siloInfo(record);
+        connectToReplica(record);
     }
 
-    private void siloInfo(ZKRecord record) {
+    private void connectToReplica(ZKRecord record) {
         String target = record.getURI();
         this.channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
 
@@ -94,12 +97,14 @@ public class SiloFrontend {
         this.reportBlockingStub = ReportServiceGrpc.newBlockingStub(this.channel);
 
         try {
+            // verify number of replicas
             gossipProperties.load(SiloFrontend.class.getResourceAsStream(PROPERTIES));
             this.numReplicas = Integer.parseInt(gossipProperties.getProperty("numReplicas"));
         } catch (IOException e) {
             final String msg = String.format("Could not load properties file {}", PROPERTIES);
             System.out.println(msg);
-            this.numReplicas = 3;
+            shutdown();
+            System.exit(-1);
         }
         this.frontendTS = new VectorTimestamp(this.numReplicas);
 
@@ -110,19 +115,21 @@ public class SiloFrontend {
     }
 
     public static <ZKRecord> Optional<ZKRecord> getRandomRecord(Collection<ZKRecord> e) {
+        // choose random record from collection
         return e.stream()
                 .skip((int) (e.size()* Math.random()))
                 .findFirst();
     }
 
-    public void makeNewConnection() throws ZKNamingException {
+    public void reconnect() throws ZKNamingException {
+        // inform the user that previous connection went down
+        System.out.println(ErrorMessages.NO_CONNECTION);
         Collection<ZKRecord> records = zkNaming.listRecords(SERVER_PATH);
         ZKRecord record = ((ArrayList<ZKRecord>) records).get(new Random().nextInt(records.size()));
-        siloInfo(record);
-        System.out.println(ErrorMessages.NO_CONNECTION);
-
+        connectToReplica(record);
     }
 
+    // generate unique operation Id
     private String genOpID() {
         this.opCount++;
         return this.uuid + Integer.toString(this.opCount);
@@ -139,7 +146,7 @@ public class SiloFrontend {
             } catch (StatusRuntimeException e) {
                 Status status = Status.fromThrowable(e);
                 if (status.getCode() == Status.Code.UNAVAILABLE) {
-                    makeNewConnection();
+                    reconnect();
                     numRetries++;
                 } else {
                     throw new PingException(e.getStatus().getDescription());
@@ -157,6 +164,7 @@ public class SiloFrontend {
 
 
     public void ctrlInitCams(List<FrontendCam> cams) throws RuntimeException, FrontendException, ZKNamingException {
+        // generate operation ID
         String newOpId = genOpID();
         int numRetries = 0;
         while(numRetries < NUM_RETRIES) {
@@ -166,7 +174,7 @@ public class SiloFrontend {
             } catch(RuntimeException e) {
                 Status status = Status.fromThrowable(e);
                 if (status.getCode() == Status.Code.UNAVAILABLE) {
-                    makeNewConnection();
+                    reconnect();
                     numRetries++;
                 } else {
                     throw new FrontendException(e.getMessage());
@@ -190,7 +198,7 @@ public class SiloFrontend {
             } catch (RuntimeException e) {
                 Status status = Status.fromThrowable(e);
                 if (status.getCode() == Status.Code.UNAVAILABLE) {
-                    makeNewConnection();
+                    reconnect();
                     numRetries++;
                 } else {
                     throw new FrontendException(e.getMessage());
@@ -214,7 +222,7 @@ public class SiloFrontend {
             } catch (StatusRuntimeException e) {
                 Status status = Status.fromThrowable(e);
                 if (status.getCode() == Status.Code.UNAVAILABLE) {
-                    makeNewConnection();
+                    reconnect();
                     numRetries++;
                 } else {
                     throw new ClearException(e.getStatus().getDescription());
@@ -239,7 +247,7 @@ public class SiloFrontend {
             } catch (RuntimeException e) {
                 Status status = Status.fromThrowable(e);
                 if (status.getCode() == Status.Code.UNAVAILABLE) {
-                    makeNewConnection();
+                    reconnect();
                     numRetries++;
                 } else if(status.getCode() == Status.Code.ALREADY_EXISTS) {
                     throw new CameraAlreadyExistsException();
@@ -269,7 +277,7 @@ public class SiloFrontend {
             } catch (RuntimeException e) {
                 Status status = Status.fromThrowable(e);
                 if (status.getCode() == Status.Code.UNAVAILABLE) {
-                    makeNewConnection();
+                    reconnect();
                     numRetries++;
                 } else if(status.getCode() == Status.Code.NOT_FOUND) {
                     throw new CameraNotFoundException();
@@ -302,7 +310,7 @@ public class SiloFrontend {
                 Status status = Status.fromThrowable(e);
                 switch (status.getCode()) {
                     case UNAVAILABLE:
-                        makeNewConnection();
+                        reconnect();
                         // resend camJoinInformation
                         camJoin(cam);
                         numRetries++;
@@ -338,7 +346,7 @@ public class SiloFrontend {
             } catch(StatusRuntimeException e) {
                 Status status = Status.fromThrowable(e);
                 if(status.getCode() == Status.Code.UNAVAILABLE) {
-                    makeNewConnection();
+                    reconnect();
                     numRetries++;
                 } else if (status.getCode() == Status.Code.NOT_FOUND) {
                     if (trackCache.get(type).containsKey(id))
@@ -362,7 +370,9 @@ public class SiloFrontend {
         Silo.TrackResponse response = queryBlockingStub.track(request);
         VectorTimestamp newTS = vectorTimestampFromGRPC(response.getNew());
         if (newTS.lessOrEqualThan(frontendTS)) {
-            if (trackCache.get(type).containsKey(id)) // don't && with above condition.
+            // WARNING: don't && with above condition.
+            // avoiding unnecessary merge
+            if (trackCache.get(type).containsKey(id))
                 return trackCache.get(type).get(id);
         } else {
             frontendTS.merge(newTS);
@@ -380,7 +390,7 @@ public class SiloFrontend {
             } catch(StatusRuntimeException e) {
                 Status status = Status.fromThrowable(e);
                 if(status.getCode() == Status.Code.UNAVAILABLE) {
-                    makeNewConnection();
+                    reconnect();
                     numRetries++;
                 } else if (status.getCode() == Status.Code.NOT_FOUND) {
                     if (trackMatchCache.get(type).containsKey(query))
@@ -426,7 +436,7 @@ public class SiloFrontend {
             } catch(StatusRuntimeException e) {
                 Status status = Status.fromThrowable(e);
                 if(status.getCode() == Status.Code.UNAVAILABLE) {
-                    makeNewConnection();
+                    reconnect();
                     numRetries++;
                 } else if (status.getCode() == Status.Code.NOT_FOUND) {
                     if (traceCache.get(type).containsKey(id))

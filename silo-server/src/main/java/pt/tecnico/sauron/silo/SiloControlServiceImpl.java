@@ -53,7 +53,6 @@ public class SiloControlServiceImpl extends ControlServiceGrpc.ControlServiceImp
         this.silo.clearObservations();
         this.silo.clearCams();
         this.gossipStructures.clearAll();
-        System.out.println("New replicaTS is: " + this.gossipStructures.getReplicaTS());
         responseObserver.onNext(Silo.ClearResponse.getDefaultInstance());
         responseObserver.onCompleted();
     }
