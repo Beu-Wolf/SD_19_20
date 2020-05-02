@@ -21,7 +21,8 @@ Sistemas Distribuídos 2019-2020, segundo semestre
 ## Melhorias da primeira parte
 
  * [Remover synchronized das funções](https://github.com/tecnico-distsys/A04-Sauron/commit/a7f573348f1d560f1c656fc5e5258a5a4123c529#diff-b94f1f24a093eef8b0edea4f48dae955), por criar *bottlenecks*
- * O conjunto de testes foi melhorado.
+ 
+* Melhoria do conjunto de testes
     * [Added load test to report](https://github.com/tecnico-distsys/A04-Sauron/commit/70a1cda17eb81cea50e55d32ae13052a0b54d1af)
     * [Added verification of coordinates](https://github.com/tecnico-distsys/A04-Sauron/commit/a7f573348f1d560f1c656fc5e5258a5a4123c529)
 
@@ -42,16 +43,16 @@ Sistemas Distribuídos 2019-2020, segundo semestre
 ## Modelo de faltas
 O modelo desenvolvido tolera diversos tipos de faltas:
  * Partições (temporárias ou permanentes) da rede: O serviço continua a funcionar, mesmo não havendo uma atualização de todas as réplicas;
- * Falha silenciosa (temporária ou permanente) de réplica sem updates não divulgados: Essa informação já existe noutras réplicas, logo é recuperada quando for retransmitida para a réplica que falhou.
- * Duplicação, omissão e reordenação de mensagens: A identificação e reenvio de mensagens resolve esta falta
+ * Falha silenciosa (temporária ou permanente) de réplica sem updates por divulgar: Essa informação já existe noutras réplicas, logo é recuperada quando for retransmitida para a réplica que falhou.
+ * Duplicação, omissão e reordenação de mensagens: A reenvio e identificação das mensagens resolve esta falta
  * Crash de uma réplica durante trocas de mensagens: Igual ao anterior
  * Alteração do endereço/porto de uma réplica: As ligações são estabelecidas dinamicamente usando o Zookeeper
  
 Contudo, esta solução não tolera:
- * Falha (silenciosa ou arbitrária) do Zookeeper: Deixa de se conseguir ligar a réplicas
+ * Falha do Zookeeper: Não se consegue ligar a outras réplicas
  * Crash de todas as réplicas com informação não totalmente divulgada: A informação é perdida.
  * Criação de mais réplicas do que as inicialmente acordadas: Nova réplica não é considerada nas outras
- * Réplicas instanciadas de forma não incremental (números não sequenciais): Réplica não tem um slot nos *timestamps* vetoriais das outras
+ * Réplicas instanciadas de forma não incremental (números não sequenciais): Igual ao anterior
  * Esgotamento de memória nas réplicas: Perda de novas atualizações
 
 Para além destes casos mais simples, ainda há faltas mais complexas que não são toleradas:
@@ -77,15 +78,15 @@ Cada entrada do `updateLog` contém:
  * Identificador único do update (`opId`)
  * Identificador da réplica que o registou
 
-Os updates apenas são executados quando o `valueTS` da réplica for maior ou igual ao seu `prevTS`, para se garantir que a réplica tem um estado mais ou igualmente atualizado do que o estado que originou o update. Deste modo, é possível garantir a dependência causal.
+Os updates apenas são executados quando o `valueTS` da réplica for maior ou igual do que o `prevTS` do *update*, para se garantir que a réplica tem um estado mais ou igualmente atualizado do que o estado que originou o update, garantindo a dependência causal.
 
 As réplicas atualizam-se regularmente (intervalos de 30 segundos por norma, configuráveis), trocando mensagens de update (`gossipMessage`), contendo as entradas existentes no `updateLog` da réplica que as enviou. A réplica que as recebe adiciona-as ao seu `updateLog`, para mais tarde serem executadas.
 
 Para evitar duplicação de instruções, as réplicas adicionam um update ao seu `upateLog` se e só se o `opId` deste ainda não se encontrar registado.
 
-Um eventual congestionamento da rede pode ser atenuado se as réplicas forem registando o `valueTS` das outras e enviarem apenas os updates que a réplica de destino garantidamente ainda não tenha aplicado. Para tal, ao enviar uma `gossipMessage`, a réplica envia também o seu `valueTS`, que é guardado na `timestampTable` da réplica destino.
+Um eventual congestionamento da rede pode ser atenuado se as réplicas forem monitorizando o `valueTS` das outras e enviarem apenas os updates que a réplica de destino garantidamente ainda não tenha aplicado. Para tal, os `valueTS` são também enviados nas `gossipMessages` e guardados na `timestampTable` da réplica destino.
 
-A cada `gossipMessage` recebida, há a possiblidade que esta contenha updates críticos para a atualização do estado da réplica. Esta verifica, portanto, que updates do seu `updateLog` é que podem ser executados. Ao receber um *update* de um cliente, este é adicionado ao `updateLog` e imediatamente executado se o seu `prevTS` for anterior ao `valueTS` da réplica.
+A cada `gossipMessage` recebida, há a possiblidade que esta contenha updates estáveis para a atualização do estado da réplica. Esta verifica, portanto, que updates do seu `updateLog` podem ser executados. Ao receber um *update* de um cliente, este é adicionado ao `updateLog` e imediatamente executado se o seu `prevTS` for menor ou igual ao `valueTS` da réplica.
 
 ## Opções de implementação
 
